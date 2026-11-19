@@ -7,8 +7,8 @@
   <meta name="theme-color" content="#121212" />
   <meta name="description" content="Sistema de Auditorias" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="icon" type="image/jpeg" href="img/logo.jpg" />
-  <link rel="apple-touch-icon" href="img/logo.jpg" />
+  <link rel="icon" type="image/png" href="img/logo.png" />
+  <link rel="apple-touch-icon" href="img/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -72,7 +72,7 @@
   <aside id="drawer" class="fixed top-0 left-0 h-full w-[280px] max-w-[85vw] bg-white dark:bg-slate-900 z-50 shadow-2xl -translate-x-full transition-transform duration-280 flex flex-col border-r border-slate-200 dark:border-slate-800">
     <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 safe-top">
       <div class="flex items-center gap-3">
-        <img src="img/logo.jpg" alt="Logo SomoGhiro Audit" class="w-10 h-10 rounded-xl object-cover shadow-sm border border-slate-200 dark:border-slate-700" />
+        <img src="img/logo.png" alt="Logo SomoGhiro Audit" class="w-10 h-10 rounded-xl object-cover shadow-sm border border-slate-200 dark:border-slate-700" />
         <div>
           <p class="font-extrabold text-base leading-tight">SomoGhiro Audit</p>
           <p class="text-xs text-slate-500 dark:text-slate-400">Industrial</p>
@@ -126,7 +126,7 @@
           <button onclick="App.openDrawer()" class="p-2.5 -ml-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition shrink-0" aria-label="Abrir menu">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
           </button>
-          <img src="img/logo.jpg" alt="Logo SomoGhiro Audit" class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-700" />
+          <img src="img/logo.png" alt="Logo SomoGhiro Audit" class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg object-cover shrink-0 border border-slate-200 dark:border-slate-700" />
           <div class="min-w-0">
             <h1 class="font-extrabold text-base sm:text-lg leading-tight truncate">SomoGhiro Audit</h1>
             <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block truncate">Sistema de Auditorias</p>
@@ -2139,23 +2139,14 @@
           applyDateFormat(wsRelatorios, rowsRelatorios.length, [0, 6, 8]);
           XLSX.utils.book_append_sheet(wb, wsRelatorios, "RELATÓRIOS");
 
-          // ABA 2: NOTAS POR LINHA — estrutura fixa solicitada, uma coluna por campo/ponto.
-          const pontosHeader = [
-            "1.1", "1.2", "1.3", "1.4", "1.5",
-            "2.1", "2.2", "2.3", "2.4", "2.5",
-            "3.1", "3.2", "3.3", "3.4", "3.5",
-            "4.1", "4.2", "4.3", "4.4", "4.5"
-          ];
-          const questionByCode = new Map(activeQuestions.map(q => [String(q.codigo).trim(), q]));
-          const headersNotasPorLinha = ["DATAS", "ÁREA", "TURNO", "LINHAS", ...pontosHeader, "TIPO DE AUDITORIA"];
-          const rowsNotasPorLinha = [headersNotasPorLinha];
+          // ABA 2: NOTAS POR LINHA ("linhas" na 1ª coluna, pontos 1.1 até 4.5 nas colunas seguintes)
+          const pontosHeader = activeQuestions.map(q => q.codigo);
+          const rowsNotasPorLinha = [["linhas", ...pontosHeader]];
 
           audit.linhas.forEach(linha => {
-            const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea) || "";
-            const row = [dataExcel, areaLinha, audit.turno || "", linha || ""];
-            pontosHeader.forEach(codigo => {
-              const question = questionByCode.get(codigo);
-              const resp = question ? audit.responses?.[question.id]?.[linha] : null;
+            const row = [linha];
+            activeQuestions.forEach(q => {
+              const resp = audit.responses?.[q.id]?.[linha];
               if (!resp || resp.status === "pending") {
                 row.push("");
               } else if (resp.status === "na") {
@@ -2166,19 +2157,13 @@
                 row.push("");
               }
             });
-            row.push(tipoNome || "");
             rowsNotasPorLinha.push(row);
           });
 
-          const wsNotasPorLinha = XLSX.utils.aoa_to_sheet(rowsNotasPorLinha, { cellDates: true });
-          wsNotasPorLinha["!cols"] = [
-            { wch: 13 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
-            ...pontosHeader.map(() => ({ wch: 8 })),
-            { wch: 22 }
-          ];
-          wsNotasPorLinha["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headersNotasPorLinha.length - 1)}${rowsNotasPorLinha.length}` };
-          wsNotasPorLinha["!freeze"] = { xSplit: 4, ySplit: 1 };
-          applyDateFormat(wsNotasPorLinha, rowsNotasPorLinha.length, [0]);
+          const wsNotasPorLinha = XLSX.utils.aoa_to_sheet(rowsNotasPorLinha);
+          wsNotasPorLinha["!cols"] = [{ wch: 16 }, ...pontosHeader.map(() => ({ wch: 8 }))];
+          wsNotasPorLinha["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(pontosHeader.length)}${rowsNotasPorLinha.length}` };
+          wsNotasPorLinha["!freeze"] = { xSplit: 1, ySplit: 1 };
           XLSX.utils.book_append_sheet(wb, wsNotasPorLinha, "NOTAS POR LINHA");
 
           // ABA 3: RESPOSTAS DETALHADAS (Base tabular granular sem redundância de resumo)
@@ -2978,33 +2963,156 @@
 
     async load(files) {
       let nr = 0, ns = 0;
+      const present = v => v !== null && v !== undefined && String(v).trim() !== "";
+      const pick = (row, ...names) => {
+        const keys = Object.keys(row || {});
+        for (const name of names) {
+          const key = keys.find(k => norm(k) === norm(name));
+          if (key !== undefined) return row[key];
+        }
+        return "";
+      };
+      const parseScore = value => {
+        if (!present(value)) return null;
+        const n = typeof value === "number" ? value : Number(String(value).trim().replace(",", "."));
+        return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;
+      };
+      const isNA = value => /^(N\/?A|NA|NÃO APLICÁVEL|NAO APLICAVEL)$/i.test(String(value ?? "").trim());
+
       for (const f of files) {
         try {
           if (!window.XLSX) throw new Error("Biblioteca de leitura do Excel não carregada.");
           const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
           const sheetNames = wb.SheetNames || [];
-          const hasRelSheet = sheetNames.some(name => norm(name) === "RELATORIOS");
-          const hasResSheet = sheetNames.some(name => norm(name) === "RESPOSTAS DETALHADAS");
-          if (!hasRelSheet && !hasResSheet) {
-            throw new Error('abas não reconhecidas. Esperadas: "RELATÓRIOS" e/ou "RESPOSTAS DETALHADAS".');
+          const sheetName = key => sheetNames.find(name => norm(name) === norm(key));
+          const relName = sheetName("RELATÓRIOS") || sheetName("RELATORIOS");
+          const detailName = sheetName("RESPOSTAS DETALHADAS");
+          const matrixName = sheetName("NOTAS POR LINHA");
+
+          if (!relName && !detailName && !matrixName) {
+            throw new Error('nenhuma aba reconhecida. São aceitas: "RELATÓRIOS", "RESPOSTAS DETALHADAS" e/ou "NOTAS POR LINHA".');
           }
-          const sh = n => { const k = sheetNames.find(s => norm(s) === n); return k ? XLSX.utils.sheet_to_json(wb.Sheets[k], { defval: "", raw: true }) : []; };
-          const rel = sh("RELATORIOS").filter(r => String(r["Status"]) !== "Sem Ocorrências" && String(r["Ponto"]) !== "-").map(r => ({
-            ...r, Data: toISO(r["Data"]), Prazo: toISO(r["Prazo"]), "Data de Conclusão": toISO(r["Data de Conclusão"]),
-            Linha: String(r["Linha"]), Ponto: String(r["Ponto"]), Responsável: String(r["Responsável"] || "")
-          }));
-          const res = sh("RESPOSTAS DETALHADAS").map(r => ({
-            ...r, Data: toISO(r["Data"]), Linha: String(r["Linha"]), Ponto: String(r["Ponto"]),
-            NotaOriginal: r["Nota"],
-            Nota: (typeof r["Nota"] === "number" && r["Nota"] >= 1 && r["Nota"] <= 5) ? r["Nota"] : null
-          }));
-          if (!rel.length && !res.length) throw new Error("as abas esperadas foram encontradas, mas não possuem registros para importar.");
-          this.rel.push(...rel); this.res.push(...res); this.files.push(f.name); nr += rel.length; ns += res.length;
-        } catch (e) { App.showToast(`Erro ao ler ${f.name}: ${e.message}`, "error"); }
+
+          const readRows = name => name
+            ? XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: "", raw: true })
+            : [];
+          const hasAnyValue = row => Object.values(row || {}).some(present);
+
+          // A aba RELATÓRIOS é opcional. Se estiver vazia, as demais abas continuam sendo importadas.
+          const rel = readRows(relName)
+            .filter(hasAnyValue)
+            .filter(r => String(pick(r, "Status")) !== "Sem Ocorrências" && String(pick(r, "Ponto")) !== "-")
+            .map(r => ({
+              ...r,
+              Data: toISO(pick(r, "Data", "Datas")),
+              Prazo: toISO(pick(r, "Prazo")),
+              "Data de Conclusão": toISO(pick(r, "Data de Conclusão")),
+              "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
+              Área: String(pick(r, "Área", "Area") || ""),
+              Linha: String(pick(r, "Linha", "Linhas") || ""),
+              Ponto: String(pick(r, "Ponto") || ""),
+              Responsável: String(pick(r, "Responsável", "Responsavel") || "")
+            }));
+
+          // A aba RESPOSTAS DETALHADAS também é opcional.
+          const detailedRaw = readRows(detailName).filter(hasAnyValue);
+          const detailed = detailedRaw.map(r => {
+            const original = pick(r, "Nota");
+            return {
+              ...r,
+              Data: toISO(pick(r, "Data", "Datas")),
+              Turno: String(pick(r, "Turno") || ""),
+              "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
+              Auditor: String(pick(r, "Auditor") || ""),
+              Área: String(pick(r, "Área", "Area") || ""),
+              Linha: String(pick(r, "Linha", "Linhas") || ""),
+              Ponto: String(pick(r, "Ponto") || ""),
+              Grupo: String(pick(r, "Grupo") || ""),
+              Pergunta: String(pick(r, "Pergunta") || ""),
+              NotaOriginal: original,
+              Nota: parseScore(original),
+              Classificação: String(pick(r, "Classificação", "Classificacao") || ""),
+              "Critério / Observação": String(pick(r, "Critério / Observação", "Criterio / Observacao") || "")
+            };
+          }).filter(r => [
+            r.Data, r.Turno, r["Tipo de Auditoria"], r.Auditor, r["Área"],
+            r.Linha, r.Ponto, r.Pergunta, r.NotaOriginal, r.Classificação
+          ].some(present));
+
+          // A aba NOTAS POR LINHA é uma matriz: cada coluna 1.1–4.5 vira uma avaliação.
+          // Ela é usada como alternativa quando RESPOSTAS DETALHADAS está ausente ou vazia.
+          const matrixRaw = readRows(matrixName).filter(hasAnyValue);
+          const matrixRecords = [];
+          if (matrixRaw.length) {
+            const matrixHeaders = Object.keys(matrixRaw[0]);
+            const pointHeaders = matrixHeaders
+              .filter(h => /^[1-4]\.[1-5]$/.test(String(h).trim()))
+              .sort(cmp);
+            const hasMetadata = matrixHeaders.some(h =>
+              ["DATAS", "DATA", "ÁREA", "AREA", "TURNO", "LINHAS", "LINHA", "TIPO DE AUDITORIA"].includes(norm(h))
+            );
+            if (!pointHeaders.length || !hasMetadata) {
+              throw new Error('a aba "NOTAS POR LINHA" não possui cabeçalhos reconhecíveis. Esperados: DATAS, ÁREA, TURNO, LINHAS, pontos (1.1 a 4.5) e TIPO DE AUDITORIA.');
+            }
+
+            matrixRaw.forEach(row => {
+              const data = toISO(pick(row, "DATAS", "DATA"));
+              const area = String(pick(row, "ÁREA", "AREA") || "").trim();
+              const turno = String(pick(row, "TURNO") || "").trim();
+              const linha = String(pick(row, "LINHAS", "LINHA") || "").trim();
+              const auditType = String(pick(row, "TIPO DE AUDITORIA") || "").trim();
+
+              pointHeaders.forEach(point => {
+                const original = pick(row, point);
+                if (!present(original)) return;
+                const score = parseScore(original);
+                const na = isNA(original);
+                // Zero é tratado como ausência de avaliação, não como nota.
+                if (score === null && !na) return;
+                matrixRecords.push({
+                  Data: data,
+                  Turno: turno,
+                  "Tipo de Auditoria": auditType,
+                  Auditor: "",
+                  "Área": area,
+                  Linha: linha,
+                  Ponto: String(point),
+                  Grupo: String(point).split(".")[0],
+                  Pergunta: `Ponto ${point}`,
+                  NotaOriginal: original,
+                  Nota: score,
+                  Classificação: na ? "N/A" : "",
+                  "Critério / Observação": ""
+                });
+              });
+            });
+          }
+
+          // Evita contar duas vezes os mesmos resultados quando o arquivo contém
+          // tanto a matriz consolidada quanto as respostas detalhadas.
+          const res = detailed.length ? detailed : matrixRecords;
+          if (!rel.length && !res.length) {
+            throw new Error("as abas reconhecidas foram encontradas, mas estão vazias ou não possuem registros válidos para análise.");
+          }
+
+          this.rel.push(...rel);
+          this.res.push(...res);
+          this.files.push(f.name);
+          nr += rel.length;
+          ns += res.length;
+        } catch (e) {
+          console.error(`Erro ao importar ${f.name}:`, e);
+          App.showToast(`Erro ao ler ${f.name}: ${e.message}`, "error");
+        }
       }
-      if (nr + ns > 0) App.showToast(`Importado: ${nr} ocorrências e ${ns} avaliações.`, "success");
-      else if (this.files.length === 0) App.showToast("Nenhum dado válido foi importado. Confira as abas e os cabeçalhos da planilha.", "error");
-      this.buildOpts(); this.render();
+
+      if (nr + ns > 0) {
+        App.showToast(`Importado: ${nr} ocorrências e ${ns} avaliações.`, "success");
+      } else if (this.files.length === 0) {
+        App.showToast("Nenhum dado válido foi importado. Verifique se existe ao menos uma aba reconhecida com registros e cabeçalhos válidos.", "error");
+      }
+      this.buildOpts();
+      this.render();
     },
     clear() { this.rel = []; this.res = []; this.files = []; this.F = {}; this.selectedLines.clear(); this.dFrom = this.dTo = ""; this.buildOpts(); this.render(); },
 
@@ -3283,7 +3391,7 @@
         $("rg-tab-" + k).className = "flex-1 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap " + (this.tab === k ? "bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm" : "text-slate-600 dark:text-slate-300");
       });
       const body = $("rg-body");
-      if (!has) { body.innerHTML = `<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center"><p class="font-bold">Importe a planilha exportada pelo sistema</p><p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Abas RELATÓRIOS e RESPOSTAS DETALHADAS. Você pode importar vários meses de uma vez.</p></div>`; return; }
+      if (!has) { body.innerHTML = `<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center"><p class="font-bold">Importe a planilha exportada pelo sistema</p><p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Abas aceitas: RELATÓRIOS, RESPOSTAS DETALHADAS e NOTAS POR LINHA. As abas são opcionais; basta uma delas conter dados válidos. Você pode importar vários meses de uma vez.</p></div>`; return; }
       body.innerHTML = this.tab === "rel" ? this.dashRel() : this.dashNotas(this.tab);
     },
 
