@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full">
 <head>
@@ -65,45 +64,81 @@
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
     .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-    /* Report Generator Visual Enhancements & Print Media Queries */
-    .rg-card {
-      transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+    /* SomoGhiro Audit — identidade visual do Gerador de Relatórios */
+    #view-relatorios { --rg-blue:#2563eb; --rg-navy:#0f172a; --rg-line:#e2e8f0; }
+    #view-relatorios .rg-page-head { background:linear-gradient(125deg,#0f172a 0%,#172554 62%,#1d4ed8 100%); border:1px solid rgba(96,165,250,.22); color:#fff; box-shadow:0 14px 32px rgba(15,23,42,.16); }
+    #view-relatorios .rg-page-head p { color:#cbd5e1; }
+    #view-relatorios .rg-import-btn { background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.22); color:#fff; }
+    #view-relatorios .rg-import-btn:hover { background:rgba(255,255,255,.2); }
+    #view-relatorios .rg-toolbar-shell { border:1px solid #dbe3ef; border-radius:18px; padding:7px; background:rgba(248,250,252,.94); box-shadow:0 8px 22px rgba(15,23,42,.06); }
+    .dark #view-relatorios .rg-toolbar-shell { border-color:#334155; background:rgba(2,6,23,.94); }
+    #view-relatorios #rg-filter-toggle { width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:13px; }
+    #view-relatorios #rg-filter-toggle[aria-expanded="true"] { border-color:#60a5fa; color:#1d4ed8; background:#eff6ff; }
+    .dark #view-relatorios #rg-filter-toggle[aria-expanded="true"] { color:#bfdbfe; background:#172554; }
+    #view-relatorios .rg-filter-shell { border:1px solid #bfdbfe; border-radius:18px; background:linear-gradient(145deg,#fff 0%,#f8fbff 100%); padding:14px; box-shadow:0 10px 24px rgba(37,99,235,.07); }
+    .dark #view-relatorios .rg-filter-shell { border-color:#1e40af; background:linear-gradient(145deg,#0f172a 0%,#111c32 100%); }
+    #view-relatorios .rg-filter-section { min-width:0; border:1px solid #e2e8f0; border-radius:14px; padding:11px; background:rgba(255,255,255,.82); }
+    .dark #view-relatorios .rg-filter-section { border-color:#334155; background:rgba(15,23,42,.72); }
+    #view-relatorios .rg-filter-title { font-size:11px; text-transform:uppercase; letter-spacing:.075em; font-weight:800; color:#475569; margin-bottom:9px; }
+    .dark #view-relatorios .rg-filter-title { color:#cbd5e1; }
+    #view-relatorios .rg-filter-chip { border:1px solid #cbd5e1; border-radius:999px; padding:6px 10px; font-size:11px; line-height:1.2; font-weight:700; color:#475569; background:#f8fafc; transition:.16s ease; }
+    #view-relatorios .rg-filter-chip:hover { border-color:#93c5fd; background:#eff6ff; }
+    #view-relatorios .rg-filter-chip.is-active { color:#fff; border-color:#2563eb; background:#2563eb; box-shadow:0 3px 8px rgba(37,99,235,.2); }
+    .dark #view-relatorios .rg-filter-chip { color:#cbd5e1; border-color:#475569; background:#1e293b; }
+    .dark #view-relatorios .rg-filter-chip.is-active { color:#fff; border-color:#3b82f6; background:#2563eb; }
+    #view-relatorios .rg-dashboard { display:flex; flex-direction:column; gap:16px; }
+    #view-relatorios .rg-kpi { position:relative; overflow:hidden; min-width:0; padding:15px 16px 14px; border:1px solid #e2e8f0; border-radius:17px; background:linear-gradient(145deg,#fff 0%,#f8fafc 100%); box-shadow:0 5px 16px rgba(15,23,42,.045); }
+    #view-relatorios .rg-kpi:before { content:""; position:absolute; left:0; top:13px; bottom:13px; width:3px; border-radius:0 4px 4px 0; background:#3b82f6; }
+    #view-relatorios .rg-kpi-label { color:#64748b; font-size:10px; line-height:1.35; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    #view-relatorios .rg-kpi-value { font-size:clamp(22px,2.1vw,30px); line-height:1.15; letter-spacing:-.035em; font-weight:900; margin-top:5px; }
+    #view-relatorios .rg-kpi-sub { color:#64748b; font-size:11px; line-height:1.35; margin-top:5px; }
+    .dark #view-relatorios .rg-kpi { border-color:#334155; background:linear-gradient(145deg,#0f172a 0%,#111c32 100%); }
+    .dark #view-relatorios .rg-kpi-label,.dark #view-relatorios .rg-kpi-sub { color:#94a3b8; }
+    #view-relatorios .rg-card { min-width:0; border:1px solid #e2e8f0; border-radius:18px; padding:17px; background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.045); }
+    #view-relatorios .rg-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    #view-relatorios .rg-card-title { color:#0f172a; font-size:14px; line-height:1.35; font-weight:850; letter-spacing:-.01em; }
+    #view-relatorios .rg-card-sub { margin-top:4px; color:#64748b; font-size:11px; line-height:1.45; }
+    #view-relatorios .rg-card-icon { flex:0 0 auto; width:30px; height:30px; border-radius:10px; display:grid; place-items:center; color:#2563eb; background:#eff6ff; }
+    .dark #view-relatorios .rg-card { border-color:#334155; background:#0f172a; box-shadow:0 6px 18px rgba(0,0,0,.12); }
+    .dark #view-relatorios .rg-card-title { color:#f1f5f9; }
+    .dark #view-relatorios .rg-card-sub { color:#94a3b8; }
+    .dark #view-relatorios .rg-card-icon { color:#bfdbfe; background:#172554; }
+    #view-relatorios .rg-bars { display:flex; flex-direction:column; gap:13px; max-height:350px; overflow:auto; padding-right:4px; }
+    #view-relatorios .rg-bar-row { min-width:0; }
+    #view-relatorios .rg-bar-meta { display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:12px; line-height:1.35; }
+    #view-relatorios .rg-bar-label { min-width:0; color:#334155; font-weight:700; }
+    #view-relatorios .rg-bar-value { flex:0 0 auto; color:#0f172a; font-weight:850; font-variant-numeric:tabular-nums; }
+    #view-relatorios .rg-bar-track { height:8px; border-radius:999px; background:#edf2f7; overflow:hidden; margin-top:6px; }
+    #view-relatorios .rg-bar-fill { height:100%; border-radius:999px; min-width:2px; transition:width .3s ease; }
+    #view-relatorios .rg-bar-sub { margin-top:4px; color:#94a3b8; font-size:10px; line-height:1.35; }
+    .dark #view-relatorios .rg-bar-label { color:#cbd5e1; }
+    .dark #view-relatorios .rg-bar-value { color:#f8fafc; }
+    .dark #view-relatorios .rg-bar-track { background:#1e293b; }
+    #view-relatorios .rg-point-group { border:1px solid #e2e8f0; border-radius:15px; padding:11px; background:linear-gradient(145deg,#fff,#f8fafc); }
+    #view-relatorios .rg-point-group-title { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:850; letter-spacing:.07em; text-transform:uppercase; color:#475569; margin-bottom:10px; }
+    #view-relatorios .rg-point-group-title:before { content:""; width:7px; height:7px; border-radius:50%; background:#3b82f6; }
+    #view-relatorios .rg-point-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; }
+    #view-relatorios .rg-point-card { overflow:hidden; min-width:0; border:1px solid #dbe3ef; border-radius:11px; background:#fff; box-shadow:0 2px 5px rgba(15,23,42,.035); }
+    #view-relatorios .rg-point-code { padding:5px 3px; color:#fff; background:#1e3a8a; text-align:center; font-size:11px; font-weight:850; }
+    #view-relatorios .rg-point-score { padding:8px 3px 6px; background:#f8fafc; text-align:center; }
+    #view-relatorios .rg-point-score strong { display:block; font-size:17px; line-height:1.1; font-weight:900; font-variant-numeric:tabular-nums; }
+    #view-relatorios .rg-point-previous { margin-top:4px; color:#64748b; font-size:10px; font-weight:650; white-space:nowrap; }
+    .dark #view-relatorios .rg-point-group { border-color:#334155; background:#111c32; }
+    .dark #view-relatorios .rg-point-group-title { color:#cbd5e1; }
+    .dark #view-relatorios .rg-point-card { border-color:#475569; background:#0f172a; }
+    .dark #view-relatorios .rg-point-score { background:#1e293b; }
+    .dark #view-relatorios .rg-point-previous { color:#94a3b8; }
+    #view-relatorios .rg-line-picker { border:1px solid #dbe3ef; border-radius:16px; background:#fff; padding:12px; box-shadow:0 4px 14px rgba(15,23,42,.035); }
+    .dark #view-relatorios .rg-line-picker { border-color:#334155; background:#0f172a; }
+    #view-relatorios .rg-line-chip { min-height:28px; border-radius:8px; padding:4px 7px; font-size:11px; }
+    #view-relatorios .rg-section-grid { align-items:stretch; }
+    @media (max-width:640px) {
+      #view-relatorios .rg-point-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+      #view-relatorios .rg-kpi { padding:12px 12px 11px; }
+      #view-relatorios .rg-card { padding:13px; }
+      #view-relatorios .rg-card-title { font-size:13px; }
     }
-    .rg-card:hover {
-      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-    }
-    .rg-point-card {
-      transition: transform 0.16s ease, box-shadow 0.16s ease;
-    }
-    .rg-point-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px -6px rgba(37, 99, 235, 0.16);
-    }
-    @media print {
-      @page {
-        size: A4 portrait;
-        margin: 10mm;
-      }
-      body {
-        background: #ffffff !important;
-        color: #0f172a !important;
-        font-size: 10pt !important;
-      }
-      header, aside, #drawer-overlay, #session-bar, #rg-toolbar, #rg-filter-panel, #toast-container, #modal-backdrop {
-        display: none !important;
-      }
-      main {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-      }
-      .rg-card, .rg-point-card {
-        break-inside: avoid;
-        page-break-inside: avoid;
-        box-shadow: none !important;
-        border: 1px solid #cbd5e1 !important;
-      }
-    }
+
   </style>
 </head>
 <body class="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
@@ -501,7 +536,10 @@
   <!-- Toast -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0 safe-bottom"></div>
 
+
+  
   <script>
+
     const DEFAULT_CONFIG = {
       version: "2.1.0",
       macroareas: [
@@ -698,4 +736,900 @@
             { id: "MQ_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "Há teias, insetos ou sinais de pragas nas estruturas ou cantos?", ativa: true, criterios: { 1: "Múltiplos sinais claros de pragas", 2: "", 3: "", 4: "", 5: "Nenhum indício" } },
             { id: "MQ_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "Há pó ou sujeira acumulada no chão logo abaixo das juntas/saídas da máquina?", ativa: true, criterios: { 1: "Sujeira crítica / camadas grossas", 2: "Acúmulo pesado", 3: "Acúmulo moderado", 4: "", 5: "Zero acúmulo" } },
             { id: "MQ_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "O acoplamento evita que o pó caia fora durante a descarga (vazamento)?", ativa: true, criterios: { 1: "Vazamento relevante criando acúmulo", 2: "", 3: "Vazamento perceptível", 4: "Pequeno pó no entorno", 5: "Zero vazamento, vedação perfeita" } },
-            { id: "MQ_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "Internamente, os carrinhos estão limpos, secos e sem residuos de lotes anteriores? (olhar 5 carrinhos)", ativa: true, criterios: { 1: "Mais de 1 carrinho com resíduos", 2: "", 3: "1 carrinho com resíduos de lote anterior", 4: "1 carrinho com sujeira leve", 5: "To
+            { id: "MQ_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "Internamente, os carrinhos estão limpos, secos e sem residuos de lotes anteriores? (olhar 5 carrinhos)", ativa: true, criterios: { 1: "Mais de 1 carrinho com resíduos", 2: "", 3: "1 carrinho com resíduos de lote anterior", 4: "1 carrinho com sujeira leve", 5: "Todos 5 carrinhos limpos, secos e sem resíduos" } },
+            { id: "MQ_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "As conexões de descarga garantem a estanqueidade sem dispersão de pó para o ambiente", ativa: true, criterios: { 1: "Vazamento visível", 2: "", 3: "Pequena fissura, sem risco", 4: "", 5: "Sem vazamento" } },
+            { id: "MQ_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "A carcaça e tubos dos misturadores estão isentos de \"gambiarras\" (fitas/papelão) ou furos?", ativa: true, criterios: { 1: "Furos / peças improvisadas relevantes", 2: "Gambiarras simples (fita / cola)", 3: "", 4: "Sinal leve de improviso", 5: "Tudo íntegro" } },
+            { id: "MQ_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "As facas de abrir sacaria estão íntegras e presas por cabos de segurança (evitar cair na mistura)?", ativa: true, criterios: { 1: "Soltas / risco de cair na mistura", 2: "Cabo frouxo ou lâmina desgastada", 3: "", 4: "", 5: "Presas, limpas, íntegras, cabo firme" } },
+            { id: "MQ_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "Vassouras e rodos de uso interno estão íntegros e higienizados?", ativa: true, criterios: { 1: "Quebrados / contaminados", 2: "", 3: "Desgaste perceptível", 4: "", 5: "Limpos e íntegros" } },
+            { id: "MQ_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "Utensílios (baldes/conchas) estão íntegros e sem rachaduras?", ativa: true, criterios: { 1: "Rachadura ou resíduos", 2: "", 3: "", 4: "", 5: "Perfeitamente limpos e íntegros" } },
+            { id: "MQ_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Há ferramentas, parafusos ou objetos pessoais sobre o misturador?", ativa: true, criterios: { 1: "Múltiplos objetos", 2: "", 3: "", 4: "", 5: "Área totalmente limpa, zero objetos" } },
+            { id: "MQ_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "As escadas de acesso ao topo estão limpas e sem pó acumulado?", ativa: true, criterios: { 1: "Muita sujeira", 2: "Poeira acumulada", 3: "", 4: "Poeira discreta", 5: "Limpas" } },
+            { id: "MQ_4.1", codigo: "4.1", grupo: "Operador", pergunta: "O misturador indica claramente o status ‘Limpo’ ou ‘Em Uso’? Em caso de uso, é possível identificar de forma legível a identificação do produto?", ativa: true, criterios: { 1: "Nenhuma indicação de status; identificação ilegível, incorreta ou ausente", 2: "", 3: "Status presente, porém com falhas de visibilidade ou identificação", 4: "", 5: "Status visível e legível" } },
+            { id: "MQ_4.2", codigo: "4.2", grupo: "Operador", pergunta: "Todos os controles e monitoramentos previstos no caderno de apontamento foram registrados corretamente?", ativa: true, criterios: { 1: "Registros ausentes, incorretos ou sem padrão.", 2: "Registros completos e corretos, com pequenas falhas pontuais.", 3: "", 4: "", 5: "Todos os registros completos, corretos, padronizados e sem erros." } },
+            { id: "MQ_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Os sacos de ingredientes em uso estão bem fechados e protegidos?", ativa: true, criterios: { 1: "Multiplas sacarias rasgadas", 2: "Apenas 1 sacaria com risco de contaminação grave", 3: "", 4: "", 5: "Bem fechados, sem rasgos, sem exposição" } },
+            { id: "MQ_4.4", codigo: "4.4", grupo: "Operador", pergunta: "As lixeiras estão tampadas e sem transbordar?", ativa: true, criterios: { 1: "Sacaria para fora", 2: "Transbordando", 3: "", 4: "", 5: "Limpa, tampada, organizada" } },
+            { id: "MQ_4.5", codigo: "4.5", grupo: "Operador", pergunta: "Os operadores estão com toca/máscara corretas e sem adornos?", ativa: true, criterios: { 1: "Adornos / risco crítico de contaminação", 2: "Máscara ou capacete ausentes", 3: "", 4: "Ajuste imperfeito", 5: "Total conformidade (touca cobrindo 100% do cabelo, máscara correta)" } }
+          ]
+        },
+        "Mistura_5S": {
+          id: "Mistura_5S",
+          titulo: "Checklist de 5S — Mistura",
+          macroarea: "Mistura",
+          tipo: "5S",
+          limiteMediaConforme: 4.4,
+          regrasNotas: null,
+          questoes: [
+            { id: "M5S_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "Materiais de limpeza estão organizados em seus suportes ou espalhados?", ativa: true, criterios: { 1: "Total desorganização", 2: "", 3: "Mais de um item fora do suporte", 4: "", 5: "Organizados em seus suportes" } },
+            { id: "M5S_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "O setor está livre de sacaria vazia acumulada (descarte imediato)?", ativa: true, criterios: { 1: "Acúmulo perceptível", 2: "Pequeno agrupamento", 3: "", 4: "1 sacaria isolada", 5: "Nenhuma sacaria no setor" } },
+            { id: "M5S_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "Há itens obsoletos ou ferramentas quebradas (ocupando espaço desnecessário)?", ativa: true, criterios: { 1: "Acúmulo crítico", 2: "Alguns itens sem função clara", 3: "", 4: "", 5: "Zero itens desnecessários" } },
+            { id: "M5S_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "Os locais de utensílios móveis estão demarcados e estão em seus respectivos lugares?", ativa: true, criterios: { 1: "Itens ausentes ou sem local demarcado", 2: "Vários fora da marcação", 3: "Mais de 1 fora da marcação", 4: "1 item ligeiramente fora", 5: "Todos em seus locais" } },
+            { id: "M5S_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "Os cadernos de apontamento estão presentes e com fácil acesso?", ativa: true, criterios: { 1: "Caderno ausente", 2: "", 3: "Caderno distante", 4: "", 5: "Caderno próximo" } },
+            { id: "M5S_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "Os carrinhos estão estacionados dentro das demarcações de solo?", ativa: true, criterios: { 1: "Poucos na marcação", 2: "Vários desalinhados", 3: "", 4: "1 desalinhado", 5: "Todos na marcação" } },
+            { id: "M5S_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "O caderno está sendo preenchido corretamente?", ativa: true, criterios: { 1: "Caderno sem preenchimento", 2: "Caderno com atrasos", 3: "", 4: "", 5: "Caderno preenchido" } },
+            { id: "M5S_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "As mangueiras estão íntegras e enroladas em suporte próprio (não jogadas no chão)?", ativa: true, criterios: { 1: "Danificadas e mal guardadas", 2: "Jogadas no chão", 3: "Enroladas de maneira irregular", 4: "", 5: "Guardadas no suporte" } },
+            { id: "M5S_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "As ferramentas estão íntegras e limpas? (facas, escovas, conchas, instrumentos de limpeza)", ativa: true, criterios: { 1: "Ferramentas fora de condições", 2: "Ferramentas gastas", 3: "", 4: "", 5: "Ferramentas íntegras e limpas" } },
+            { id: "M5S_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "As escadas estão organizadas, com degraus limpos e sem objetos pendurados nos corrimãos?", ativa: true, criterios: { 1: "Totalmente desorganizadas", 2: "Objetos pendurados ou sujeira relevante", 3: "Pequenos itens sobre as escadas", 4: "Sujeira leve", 5: "Alinhadas, limpas, nada pendurado" } },
+            { id: "M5S_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "Equipamentos quebrados ou ferramentas fora de uso foram removidos da área?", ativa: true, criterios: { 1: "Equipamentos quebrados", 2: "", 3: "Equipamentos gastos ", 4: "", 5: "Equipamentos íntegros" } },
+            { id: "M5S_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "As proteções contra impacto de carrinhos estão fixas e bem conservadas?", ativa: true, criterios: { 1: "Soltas ou ausentes", 2: "Danos relevantes", 3: "", 4: "Pequeno amassado", 5: "Firmes e conservadas" } },
+            { id: "M5S_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "As paredes e estruturas estão limpas, sem marcas de batida ou infiltrações visíveis? (goteiras, vazamentos)", ativa: true, criterios: { 1: "Vazamentos / infiltração crítica", 2: "Infiltração leve ou batidas fortes", 3: "Marcas moderadas", 4: "Poucas manchas leves", 5: "Totalmente limpas, sem marcas" } },
+            { id: "M5S_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Não há objetos estranhos (celulares, garrafas, fitas) sobre as máquinas ou bancadas?", ativa: true, criterios: { 1: "Itens pessoais ou itens estranhos", 2: "", 3: "", 4: "", 5: "Sem itens pessoais ou estranhos" } },
+            { id: "M5S_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "O descarte de resíduos e sobras segue rigorosamente o manual de boas práticas?", ativa: true, criterios: { 1: "Sacaria pra fora", 2: "Sacaria trocada", 3: "", 4: "", 5: "Descarte adequado" } },
+            { id: "M5S_4.1", codigo: "4.1", grupo: "Operador", pergunta: "O piso da área de envase está livre de manchas ou sujeiras impregnadas?", ativa: true, criterios: { 1: "Piso crítico", 2: "Sujeira impregnada", 3: "Manchas moderadas", 4: "", 5: "Impecável" } },
+            { id: "M5S_4.2", codigo: "4.2", grupo: "Operador", pergunta: "Os escovões e materiais de lavagem de máquinas estão íntegros e guardados?", ativa: true, criterios: { 1: "Danificados e sujos", 2: "Mal armazenados", 3: "", 4: "Pequeno desgaste", 5: "Guardados, íntegros, limpos" } },
+            { id: "M5S_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Paredes e teto da lavagem estão isentos de mofo, lodo ou respingos secos?", ativa: true, criterios: { 1: "Mofo/lodo", 2: "", 3: "", 4: "", 5: "Zero mofo/zero respingos" } },
+            { id: "M5S_4.4", codigo: "4.4", grupo: "Operador", pergunta: "Os cantos e locais de difícil acesso apresentam acúmulo de sujeira?", ativa: true, criterios: { 1: "Acúmulo pesado", 2: "Acúmulo relevante", 3: "", 4: "Sujeira leve", 5: "Totalmente limpos" } },
+            { id: "M5S_4.5", codigo: "4.5", grupo: "Operador", pergunta: "As estruturas dos equipamentos e partes metálicas estão íntegras e limpas (sem pó encrustado, rachaduras)?", ativa: true, criterios: { 1: "Rachaduras, ferrugem, crostas", 2: "Sujeira forte ou danos visíveis", 3: "Poeira moderada ", 4: "Poeira leve", 5: "Íntegras e limpas" } }
+          ]
+        }
+      }
+    };
+
+    const safeStorageGet = (key, fallback = null) => {
+      try {
+        const value = window.localStorage.getItem(key);
+        return value === null ? fallback : value;
+      } catch (error) {
+        console.warn("Armazenamento local indisponível:", error);
+        return fallback;
+      }
+    };
+
+    const safeStorageSet = (key, value) => {
+      try {
+        window.localStorage.setItem(key, value);
+        return true;
+      } catch (error) {
+        console.warn("Não foi possível salvar no armazenamento local:", error);
+        return false;
+      }
+    };
+
+    const CONFIG_STORAGE_KEY = "somoghiroaudit-imported-config-v1";
+
+    function validateImportedConfig(config) {
+      const errors = [];
+      if (!config || typeof config !== "object" || Array.isArray(config)) {
+        return { valid: false, errors: ["O arquivo precisa conter um objeto JSON na raiz."] };
+      }
+      ["macroareas", "tiposAuditoria", "turnos", "areasOperacionais"].forEach(key => {
+        if (!Array.isArray(config[key]) || !config[key].length) errors.push(`O campo '${key}' deve ser uma lista não vazia.`);
+      });
+      if (!config.checklists || typeof config.checklists !== "object" || Array.isArray(config.checklists) || !Object.keys(config.checklists).length) {
+        errors.push("O campo 'checklists' precisa conter pelo menos um checklist.");
+      }
+      const macroIds = new Set((config.macroareas || []).map(x => x && x.id));
+      const tipoIds = new Set((config.tiposAuditoria || []).map(x => x && x.id));
+      (config.macroareas || []).forEach((item, i) => {
+        if (!item || !item.id || !item.nome) errors.push(`Macroárea ${i + 1}: informe id e nome.`);
+      });
+      (config.tiposAuditoria || []).forEach((item, i) => {
+        if (!item || !item.id || !item.nome) errors.push(`Tipo de auditoria ${i + 1}: informe id e nome.`);
+      });
+      (config.areasOperacionais || []).forEach((area, i) => {
+        if (!area || !area.id || !area.nome || !Array.isArray(area.linhas)) errors.push(`Área operacional ${i + 1}: informe id, nome e linhas.`);
+        else if (area.macroarea && !macroIds.has(area.macroarea)) errors.push(`Área '${area.nome}': macroárea '${area.macroarea}' não cadastrada.`);
+      });
+      let totalQuestions = 0;
+      Object.entries(config.checklists || {}).forEach(([key, checklist]) => {
+        if (!checklist || !checklist.id || !checklist.titulo || !checklist.macroarea || !checklist.tipo || !Array.isArray(checklist.questoes)) {
+          errors.push(`Checklist '${key}': estrutura incompleta (id, titulo, macroarea, tipo e questoes são obrigatórios).`);
+          return;
+        }
+        if (!macroIds.has(checklist.macroarea)) errors.push(`Checklist '${key}': macroárea '${checklist.macroarea}' não existe.`);
+        if (!tipoIds.has(checklist.tipo)) errors.push(`Checklist '${key}': tipo '${checklist.tipo}' não existe.`);
+        const questionIds = new Set();
+        checklist.questoes.forEach((q, i) => {
+          totalQuestions++;
+          if (!q || !q.id || !q.codigo || !q.grupo || !q.pergunta || typeof q.pergunta !== "string") {
+            errors.push(`Checklist '${key}', questão ${i + 1}: informe id, codigo, grupo e pergunta.`);
+          } else if (questionIds.has(q.id)) {
+            errors.push(`Checklist '${key}': ID de questão duplicado '${q.id}'.`);
+          } else questionIds.add(q.id);
+          if (q && (!q.criterios || typeof q.criterios !== "object" || Array.isArray(q.criterios))) {
+            errors.push(`Checklist '${key}', questão '${q.id || i + 1}': critérios devem ser um objeto.`);
+          }
+        });
+        if (!checklist.questoes.length) errors.push(`Checklist '${key}' não possui questões.`);
+      });
+      if (errors.length) return { valid: false, errors };
+
+      // Normaliza valores opcionais sem alterar o texto fornecido pelo usuário.
+      const normalized = JSON.parse(JSON.stringify(config));
+      normalized.version = String(normalized.version || "1.0.0");
+      normalized.regrasNotasPadrao = normalized.regrasNotasPadrao || JSON.parse(JSON.stringify(DEFAULT_CONFIG.regrasNotasPadrao));
+      normalized.regrasMedia = normalized.regrasMedia || { minimoMelhoria: 3 };
+      normalized.sugestoesBase = normalized.sugestoesBase || { responsaveis: [], observacoes: [] };
+      normalized.colunasRelatorio = Array.isArray(normalized.colunasRelatorio) ? normalized.colunasRelatorio : [];
+      Object.values(normalized.checklists).forEach(chk => {
+        chk.questoes.forEach(q => {
+          q.ativa = q.ativa !== false;
+          q.criterios = q.criterios || {};
+          [1, 2, 3, 4, 5].forEach(n => {
+            if (q.criterios[n] == null) q.criterios[n] = "";
+            else q.criterios[n] = String(q.criterios[n]);
+          });
+        });
+      });
+      return { valid: true, config: normalized, totalQuestions };
+    }
+
+    function loadSavedConfig() {
+      const saved = safeStorageGet(CONFIG_STORAGE_KEY);
+      if (!saved) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      try {
+        const parsed = JSON.parse(saved);
+        const result = validateImportedConfig(parsed);
+        return result.valid ? result.config : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      } catch (error) {
+        console.warn("Configuração importada anteriormente não pôde ser carregada:", error);
+        return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      }
+    }
+
+    const AppState = {
+      config: loadSavedConfig(),
+      audit: null,
+      theme: safeStorageGet("auditflow-theme", "light")
+    };
+
+    // Utilitário para descobrir a Área Operacional de uma linha específica
+    const LineDirectory = {
+      getAreaForLine(linha, macroarea) {
+        if (macroarea === "Mistura") {
+          const m = AppState.config.areasOperacionais.find(a => a.id === "mistura");
+          return m ? m.nome : "Mistura";
+        }
+        for (const area of AppState.config.areasOperacionais) {
+          if (area.macroarea === macroarea && area.linhas.includes(linha)) {
+            return area.nome;
+          }
+        }
+        return "Fábrica";
+      }
+    };
+
+    const ChecklistsModule = {
+      getChecklistKey(macroarea, tipo) { return `${macroarea}_${tipo}`; },
+      getChecklist(macroarea, tipo) {
+        const key = this.getChecklistKey(macroarea, tipo);
+        return AppState.config.checklists[key] || null;
+      },
+      getActiveQuestions(checklist) {
+        if (!checklist || !Array.isArray(checklist.questoes)) return [];
+        return checklist.questoes.filter(q => q.ativa !== false);
+      },
+      getRatingRules(checklist) {
+        return (checklist && checklist.regrasNotas) ? checklist.regrasNotas : AppState.config.regrasNotasPadrao;
+      },
+      getMacroareaName(id) {
+        const found = AppState.config.macroareas.find(m => m.id === id);
+        return found ? found.nome : id;
+      },
+      getTipoName(id) {
+        const found = AppState.config.tiposAuditoria.find(t => t.id === id);
+        return found ? found.nome : id;
+      }
+    };
+
+    const CalculosModule = {
+      calculateOccurrenceStatus(prazo, dataConclusao) {
+        if (dataConclusao && String(dataConclusao).trim() !== "") return "Concluído";
+        if (!prazo || String(prazo).trim() === "") return "Sem Prazo";
+        const todayStr = this.getTodayISO();
+        if (prazo < todayStr) return "Atrasado";
+        if (prazo === todayStr) return "Vence Hoje";
+        return "No Prazo";
+      },
+      getTodayISO() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      },
+      formatDateBR(isoStr) {
+        if (!isoStr) return "";
+        const parts = String(isoStr).split("-");
+        if (parts.length !== 3) return isoStr;
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      },
+      classifyAverage(avg, threshold) {
+        if (avg === null || isNaN(avg)) return { label: "Sem Avaliação", badgeClass: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" };
+        const minMelhoria = AppState.config.regrasMedia.minimoMelhoria || 3.0;
+        if (avg >= threshold) return { label: "Conforme", badgeClass: "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-700" };
+        if (avg >= minMelhoria) return { label: "Melhoria", badgeClass: "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-700" };
+        return { label: "Não Conforme", badgeClass: "bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 border-rose-200 dark:border-rose-700" };
+      },
+      computeAuditMetrics(audit) {
+        const checklist = audit.checklistSnapshot;
+        const questions = ChecklistsModule.getActiveQuestions(checklist);
+        const rules = ChecklistsModule.getRatingRules(checklist);
+        const threshold = Number(checklist.limiteMediaConforme) || 4.8;
+        let totalExpected = questions.length * audit.linhas.length;
+        let totalAnswered = 0, totalNA = 0, totalPending = 0;
+        let conformidades = 0, naoConformidades = 0, melhorias = 0;
+
+        const lineStats = audit.linhas.map(linha => {
+          const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea);
+          let sum = 0, countRated = 0, lineNA = 0, linePending = 0, lineConf = 0, lineNC = 0, lineMelh = 0;
+          questions.forEach(q => {
+            const resp = audit.responses?.[q.id]?.[linha];
+            if (!resp || resp.status === "pending") { linePending++; totalPending++; }
+            else if (resp.status === "na") { lineNA++; totalNA++; totalAnswered++; }
+            else if (resp.status === "rated" && resp.nota >= 1 && resp.nota <= 5) {
+              sum += Number(resp.nota); countRated++; totalAnswered++;
+              const rule = rules[resp.nota];
+              if (rule) {
+                if (rule.classificacao === "Conformidade") { conformidades++; lineConf++; }
+                else if (rule.classificacao === "Melhoria") { melhorias++; lineMelh++; }
+                else if (rule.classificacao === "Não conformidade") { naoConformidades++; lineNC++; }
+              }
+            }
+          });
+          const average = countRated > 0 ? Number((sum / countRated).toFixed(2)) : null;
+          return { linha, area: areaLinha, average, countRated, lineNA, linePending, lineConf, lineNC, lineMelh, classification: this.classifyAverage(average, threshold) };
+        });
+
+        const validLineAvgs = lineStats.filter(l => l.average !== null).map(l => l.average);
+        const generalAverage = validLineAvgs.length > 0 ? Number((validLineAvgs.reduce((a, b) => a + b, 0) / validLineAvgs.length).toFixed(2)) : null;
+
+        // Desempenho por Grupo (Materiais, Máquina, Ambiente, Operador)
+        const groupMap = {};
+        questions.forEach(q => {
+          if (!groupMap[q.grupo]) groupMap[q.grupo] = { grupo: q.grupo, sum: 0, count: 0 };
+          audit.linhas.forEach(linha => {
+            const resp = audit.responses?.[q.id]?.[linha];
+            if (resp && resp.status === "rated" && resp.nota >= 1 && resp.nota <= 5) {
+              groupMap[q.grupo].sum += Number(resp.nota);
+              groupMap[q.grupo].count++;
+            }
+          });
+        });
+        const groupStats = Object.values(groupMap).map(g => ({
+          grupo: g.grupo,
+          average: g.count > 0 ? Number((g.sum / g.count).toFixed(2)) : null,
+          count: g.count
+        }));
+
+        return { totalExpected, totalAnswered, totalNA, totalPending, conformidades, naoConformidades, melhorias, generalAverage, threshold, lineStats, groupStats };
+      }
+    };
+
+    const AnomaliasModule = {
+      syncOccurrences(audit) {
+        if (!audit) return [];
+        const checklist = audit.checklistSnapshot;
+        const questions = ChecklistsModule.getActiveQuestions(checklist);
+        const rules = ChecklistsModule.getRatingRules(checklist);
+        const existingMap = new Map();
+        (audit.occurrences || []).forEach(occ => existingMap.set(occ.internalKey, occ));
+        const updatedOccurrences = [];
+
+        audit.linhas.forEach(linha => {
+          const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea);
+          questions.forEach(q => {
+            const resp = audit.responses?.[q.id]?.[linha];
+            if (!resp || resp.status !== "rated" || !resp.nota) return;
+            const nota = Number(resp.nota);
+            const rule = rules[nota];
+            if (!rule || !rule.gerarRegistro) return;
+            const internalKey = `${q.id}__${linha}`;
+            const criterioTexto = (q.criterios && q.criterios[nota]) ? String(q.criterios[nota]).trim() : "";
+            const isCriterioAusente = criterioTexto === "";
+            const prev = existingMap.get(internalKey);
+            const descricaoFinal = isCriterioAusente
+              ? (resp.manualDescription || (prev ? prev.descricao : ""))
+              : (prev && prev.descricaoEditadaManualmente ? prev.descricao : criterioTexto);
+            const prazo = prev ? prev.prazo : "";
+            const dataConclusao = prev ? prev.dataConclusao : "";
+            updatedOccurrences.push({
+              internalKey, questionId: q.id, data: audit.data, turno: audit.turno,
+              tipoAuditoria: ChecklistsModule.getTipoName(audit.tipo), area: areaLinha, linha,
+              responsavel: prev ? prev.responsavel : "", prazo, status: CalculosModule.calculateOccurrenceStatus(prazo, dataConclusao),
+              dataConclusao, observacao: prev ? prev.observacao : "", ponto: q.codigo, grupo: q.grupo, pergunta: q.pergunta,
+              descricao: descricaoFinal,
+              tipoProblema: rule.tipoRegistro || (nota <= 2 ? "Anomalia" : "Melhoria"), nota, isCriterioAusente,
+              descricaoEditadaManualmente: prev ? Boolean(prev.descricaoEditadaManualmente) : false
+            });
+          });
+        });
+        audit.occurrences = updatedOccurrences;
+        this.updateNavBadge();
+        return updatedOccurrences;
+      },
+      updateOccurrenceField(internalKey, field, value) {
+        if (!AppState.audit) return;
+        const occ = AppState.audit.occurrences.find(o => o.internalKey === internalKey);
+        if (!occ) return;
+        occ[field] = value;
+        if (field === "descricao") {
+          occ.descricaoEditadaManualmente = true;
+          const resp = AppState.audit.responses?.[occ.questionId]?.[occ.linha];
+          if (resp && occ.isCriterioAusente) resp.manualDescription = value;
+        }
+        occ.status = CalculosModule.calculateOccurrenceStatus(occ.prazo, occ.dataConclusao);
+      },
+      updateNavBadge() {
+        const badge = document.getElementById("nav-badge-anomalias");
+        if (!badge) return;
+        const count = AppState.audit ? (AppState.audit.occurrences?.length || 0) : 0;
+        if (count > 0) { badge.textContent = count; badge.classList.remove("hidden"); }
+        else badge.classList.add("hidden");
+      }
+    };
+
+    const AuditoriaModule = {
+      selectedMacro: "Fabrica",
+      selectedTipo: "Seguranca",
+      selectedLinesSet: new Set(["11A"]), // Estado persistente das linhas selecionadas no setup
+      areaFilterTab: "ALL", // "ALL", "envase", "cha", "aroma"
+      currentQuestionIndex: 0,
+      evaluationMode: "question",
+      activeLineForLineMode: null,
+      autoAdvanceTimer: null,
+
+      cancelAutoAdvance() {
+        if (this.autoAdvanceTimer !== null) {
+          clearTimeout(this.autoAdvanceTimer);
+          this.autoAdvanceTimer = null;
+        }
+      },
+
+      initSetupForm() {
+        document.getElementById("setup-data").value = CalculosModule.getTodayISO();
+        const turnoSelect = document.getElementById("setup-turno");
+        turnoSelect.innerHTML = AppState.config.turnos.map(t => `<option value="${t}">${t}</option>`).join("");
+        this.renderMacroAndTipoButtons();
+        this.updateLineSelectorVisibility();
+        this.updateChecklistPreview();
+      },
+
+      renderMacroAndTipoButtons() {
+        const macroContainer = document.getElementById("setup-macroarea-group");
+        document.getElementById("setup-macroarea").value = this.selectedMacro;
+        macroContainer.innerHTML = AppState.config.macroareas.map(m => {
+          const active = m.id === this.selectedMacro;
+          return `<button type="button" onclick="AuditoriaModule.selectMacro('${m.id}')"
+            class="py-3.5 px-4 rounded-xl border text-base font-bold transition flex items-center justify-center gap-2 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"}">
+            <span>${m.nome}</span>
+          </button>`;
+        }).join("");
+
+        const tipoContainer = document.getElementById("setup-tipo-group");
+        document.getElementById("setup-tipo").value = this.selectedTipo;
+        tipoContainer.innerHTML = AppState.config.tiposAuditoria.map(t => {
+          const active = t.id === this.selectedTipo;
+          return `<button type="button" onclick="AuditoriaModule.selectTipo('${t.id}')"
+            class="py-3.5 px-2 rounded-xl border text-sm font-bold transition text-center ${active ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"}">
+            ${t.nome}
+          </button>`;
+        }).join("");
+      },
+
+      selectMacro(macroId) {
+        this.selectedMacro = macroId;
+        this.renderMacroAndTipoButtons();
+        this.updateLineSelectorVisibility();
+        this.updateChecklistPreview();
+      },
+
+      selectTipo(tipoId) {
+        this.selectedTipo = tipoId;
+        this.renderMacroAndTipoButtons();
+        this.updateChecklistPreview();
+      },
+
+      updateLineSelectorVisibility() {
+        const wrapper = document.getElementById("setup-linhas-wrapper");
+        if (this.selectedMacro === "Mistura") {
+          wrapper.classList.add("hidden");
+        } else {
+          wrapper.classList.remove("hidden");
+          this.renderAreaFilterTabs();
+          this.renderMultiAreaLines();
+        }
+      },
+
+      setAreaFilterTab(tabId) {
+        this.areaFilterTab = tabId;
+        this.renderAreaFilterTabs();
+        this.renderMultiAreaLines();
+      },
+
+      renderAreaFilterTabs() {
+        const container = document.getElementById("setup-area-filter-tabs");
+        const fabricaAreas = AppState.config.areasOperacionais.filter(a => a.macroarea === "Fabrica");
+        const tabs = [{ id: "ALL", nome: "Todas as Áreas" }, ...fabricaAreas.map(a => ({ id: a.id, nome: a.nome }))];
+
+        container.innerHTML = tabs.map(t => {
+          const active = t.id === this.areaFilterTab;
+          let countInArea = 0;
+          if (t.id === "ALL") {
+            countInArea = this.selectedLinesSet.size;
+          } else {
+            const areaObj = fabricaAreas.find(a => a.id === t.id);
+            if (areaObj) countInArea = areaObj.linhas.filter(l => this.selectedLinesSet.has(l)).length;
+          }
+          return `<button type="button" onclick="AuditoriaModule.setAreaFilterTab('${t.id}')"
+            class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${active ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
+            <span>${t.nome}</span>
+            ${countInArea > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[11px] ${active ? "bg-white/20 text-white" : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"}">${countInArea}</span>` : ""}
+          </button>`;
+        }).join("");
+      },
+
+      toggleSingleLine(linha) {
+        if (this.selectedLinesSet.has(linha)) {
+          this.selectedLinesSet.delete(linha);
+        } else {
+          this.selectedLinesSet.add(linha);
+        }
+        this.renderAreaFilterTabs();
+        this.renderMultiAreaLines();
+      },
+
+      toggleAreaLines(areaId, selectAll) {
+        const areaObj = AppState.config.areasOperacionais.find(a => a.id === areaId);
+        if (!areaObj) return;
+        areaObj.linhas.forEach(l => {
+          if (selectAll) this.selectedLinesSet.add(l);
+          else this.selectedLinesSet.delete(l);
+        });
+        this.renderAreaFilterTabs();
+        this.renderMultiAreaLines();
+      },
+
+      selectAllGlobalLines(selectAll) {
+        const fabricaAreas = AppState.config.areasOperacionais.filter(a => a.macroarea === "Fabrica");
+        fabricaAreas.forEach(area => {
+          area.linhas.forEach(l => {
+            if (selectAll) this.selectedLinesSet.add(l);
+            else this.selectedLinesSet.delete(l);
+          });
+        });
+        this.renderAreaFilterTabs();
+        this.renderMultiAreaLines();
+      },
+
+      renderMultiAreaLines() {
+        const container = document.getElementById("setup-linhas-grouped-container");
+        const counterBadge = document.getElementById("setup-selected-counter");
+        const searchTerm = (document.getElementById("setup-line-search")?.value || "").trim().toLowerCase();
+
+        counterBadge.textContent = `${this.selectedLinesSet.size} selecionada${this.selectedLinesSet.size === 1 ? "" : "s"}`;
+
+        const fabricaAreas = AppState.config.areasOperacionais.filter(a => a.macroarea === "Fabrica");
+        const visibleAreas = this.areaFilterTab === "ALL"
+          ? fabricaAreas
+          : fabricaAreas.filter(a => a.id === this.areaFilterTab);
+
+        container.innerHTML = visibleAreas.map(area => {
+          const filteredLines = area.linhas.filter(l => l.toLowerCase().includes(searchTerm));
+          if (filteredLines.length === 0) return "";
+
+          const selectedInArea = area.linhas.filter(l => this.selectedLinesSet.has(l)).length;
+          const allSelected = selectedInArea === area.linhas.length;
+
+          return `
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 space-y-2.5">
+              <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                  <span class="font-extrabold text-sm text-slate-800 dark:text-slate-100">${area.nome}</span>
+                  <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">(${selectedInArea}/${area.linhas.length})</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs">
+                  <button type="button" onclick="AuditoriaModule.toggleAreaLines('${area.id}', ${!allSelected})"
+                    class="font-bold ${allSelected ? "text-slate-500 hover:text-rose-600" : "text-blue-600 dark:text-blue-400 hover:underline"}">
+                    ${allSelected ? "Desmarcar área" : `Todas de ${area.nome}`}
+                  </button>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 gap-2">
+                ${filteredLines.map(linha => {
+                  const checked = this.selectedLinesSet.has(linha);
+                  return `
+                    <button type="button" onclick="AuditoriaModule.toggleSingleLine('${linha}')"
+                      class="py-2 px-2 rounded-lg border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 select-none ${checked ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
+                      <span>${linha}</span>
+                      ${checked ? `<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
+                    </button>`;
+                }).join("")}
+              </div>
+            </div>`;
+        }).join("") || `<p class="text-sm text-slate-500 text-center py-4">Nenhuma linha encontrada para "${searchTerm}".</p>`;
+      },
+
+      updateChecklistPreview() {
+        const checklist = ChecklistsModule.getChecklist(this.selectedMacro, this.selectedTipo);
+        const titleEl = document.getElementById("setup-checklist-title");
+        const metaEl = document.getElementById("setup-checklist-meta");
+        if (!checklist) { titleEl.textContent = "Checklist não encontrado"; metaEl.textContent = ""; return; }
+        const activeQs = ChecklistsModule.getActiveQuestions(checklist);
+        titleEl.textContent = checklist.titulo;
+        metaEl.textContent = `${activeQs.length} questões ativas • Meta: ≥ ${Number(checklist.limiteMediaConforme).toFixed(1).replace(".", ",")}`;
+      },
+
+      startAudit(event) {
+        event.preventDefault();
+        const macroarea = this.selectedMacro;
+        const tipo = this.selectedTipo;
+        const data = document.getElementById("setup-data").value;
+        const turno = document.getElementById("setup-turno").value;
+        const auditor = document.getElementById("setup-auditor").value.trim();
+
+        let selectedLinhas = [];
+        const lineAreaMap = {};
+        const areasEnvolvidasSet = new Set();
+
+        if (macroarea === "Mistura") {
+          const misturaObj = AppState.config.areasOperacionais.find(a => a.id === "mistura");
+          const linhaMistura = misturaObj?.linhas[0] || "Geral Mistura";
+          selectedLinhas = [linhaMistura];
+          lineAreaMap[linhaMistura] = "Mistura";
+          areasEnvolvidasSet.add("Mistura");
+        } else {
+          // Mantém ordenação lógica por área (Envase -> Chá -> Aroma)
+          const fabricaAreas = AppState.config.areasOperacionais.filter(a => a.macroarea === "Fabrica");
+          fabricaAreas.forEach(area => {
+            area.linhas.forEach(l => {
+              if (this.selectedLinesSet.has(l)) {
+                selectedLinhas.push(l);
+                lineAreaMap[l] = area.nome;
+                areasEnvolvidasSet.add(area.nome);
+              }
+            });
+          });
+
+          if (selectedLinhas.length === 0) {
+            App.showToast("Selecione pelo menos uma linha para auditar.", "error");
+            return;
+          }
+        }
+
+        const originalChecklist = ChecklistsModule.getChecklist(macroarea, tipo);
+        const activeQuestions = ChecklistsModule.getActiveQuestions(originalChecklist);
+        if (activeQuestions.length === 0) {
+          App.showToast("Este checklist ainda não possui questões. Cadastre na aba Checklists.", "error");
+          return;
+        }
+
+        const checklistSnapshot = JSON.parse(JSON.stringify(originalChecklist));
+        const responses = {};
+        activeQuestions.forEach(q => {
+          responses[q.id] = {};
+          selectedLinhas.forEach(linha => {
+            responses[q.id][linha] = { status: "pending", nota: null, manualDescription: "" };
+          });
+        });
+
+        const areaResumoNome = Array.from(areasEnvolvidasSet).join(" + ");
+
+        AppState.audit = {
+          id: "AUD-" + Date.now(),
+          configVersion: AppState.config.version,
+          macroarea,
+          tipo,
+          data,
+          turno,
+          auditor,
+          areaNome: areaResumoNome,
+          areasEnvolvidas: Array.from(areasEnvolvidasSet),
+          lineAreaMap,
+          linhas: selectedLinhas,
+          checklistSnapshot,
+          responses,
+          occurrences: []
+        };
+        this.currentQuestionIndex = 0;
+        this.activeLineForLineMode = selectedLinhas[0];
+        this.showExecutionUI();
+        App.showToast(`Auditoria iniciada (${selectedLinhas.length} linha${selectedLinhas.length > 1 ? "s" : ""})!`, "success");
+      },
+
+      showExecutionUI() {
+        if (!AppState.audit) {
+          document.getElementById("audit-setup-container").classList.remove("hidden");
+          document.getElementById("audit-execution-container").classList.add("hidden");
+          document.getElementById("session-bar").classList.add("hidden");
+          return;
+        }
+        document.getElementById("audit-setup-container").classList.add("hidden");
+        document.getElementById("audit-execution-container").classList.remove("hidden");
+        document.getElementById("session-bar").classList.remove("hidden");
+        const a = AppState.audit;
+        const manageBtn = document.getElementById("btn-manage-audit-lines");
+        if (manageBtn) {
+          if (a.macroarea === "Mistura") manageBtn.classList.add("hidden");
+          else manageBtn.classList.remove("hidden");
+        }
+        document.getElementById("session-bar-info").textContent =
+          `${ChecklistsModule.getTipoName(a.tipo)} • ${a.areaNome} (${a.linhas.length} linha${a.linhas.length > 1 ? "s" : ""}) • ${a.auditor}`;
+        this.renderExecution();
+      },
+
+      openManageLinesModal() {
+        const audit = AppState.audit;
+        if (!audit || audit.macroarea === "Mistura") return;
+
+        const fabricaAreas = AppState.config.areasOperacionais.filter(a => a.macroarea === "Fabrica");
+        const metrics = CalculosModule.computeAuditMetrics(audit);
+
+        const activeLinesHtml = audit.linhas.map(linha => {
+          const stat = metrics.lineStats.find(s => s.linha === linha);
+          const areaNome = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea);
+          const answeredCount = (stat?.countRated || 0) + (stat?.lineNA || 0);
+          const totalQ = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot).length;
+          const canRemove = audit.linhas.length > 1;
+
+          return `
+            <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">Linha ${linha}</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${areaNome}</span>
+                <span class="text-xs text-slate-400">(${answeredCount}/${totalQ})</span>
+              </div>
+              <button type="button" ${canRemove ? `onclick="AuditoriaModule.removeLineFromActiveAudit('${linha}')"` : "disabled"}
+                title="${canRemove ? "Remover linha da auditoria" : "A auditoria precisa ter pelo menos 1 linha"}"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${canRemove ? "bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800" : "opacity-35 cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-500"}">
+                Excluir
+              </button>
+            </div>`;
+        }).join("");
+
+        const availableAreasHtml = fabricaAreas.map(area => {
+          const availableLines = area.linhas.filter(l => !audit.linhas.includes(l));
+          if (availableLines.length === 0) return "";
+          return `
+            <div class="space-y-1.5">
+              <p class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">${area.nome}</p>
+              <div class="flex flex-wrap gap-1.5">
+                ${availableLines.map(l => `
+                  <button type="button" onclick="AuditoriaModule.addLineToActiveAudit('${l}', '${area.nome}')"
+                    class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition flex items-center gap-1">
+                    <span>+ ${l}</span>
+                  </button>`).join("")}
+              </div>
+            </div>`;
+        }).join("");
+
+        App.openModal(`
+          <div class="space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 class="text-lg font-extrabold">Gerenciar Linhas da Auditoria</h3>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Adicione ou remova linhas sem perder o progresso atual.</p>
+              </div>
+              <button type="button" onclick="App.closeModal()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div class="space-y-2">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Linhas em Auditoria (${audit.linhas.length})</p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                ${activeLinesHtml}
+              </div>
+            </div>
+
+            <div class="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <p class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Acrescentar Outra Linha</p>
+              <div class="space-y-3 max-h-52 overflow-y-auto pr-1">
+                ${availableAreasHtml || '<p class="text-sm text-slate-500 italic">Todas as linhas cadastradas já estão incluídas nesta auditoria.</p>'}
+              </div>
+              <form onsubmit="AuditoriaModule.addCustomLineFromModal(event)" class="flex items-center gap-2 pt-2">
+                <input type="text" id="modal-custom-line-name" placeholder="Ou digite uma linha personalizada (ex: 42)..."
+                  class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
+                <select id="modal-custom-line-area" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-bold">
+                  ${fabricaAreas.map(a => `<option value="${a.nome}">${a.nome}</option>`).join("")}
+                </select>
+                <button type="submit" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shrink-0">Adicionar</button>
+              </form>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button type="button" onclick="App.closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-700 text-white text-sm font-bold">Concluir</button>
+            </div>
+          </div>`);
+      },
+
+      syncAuditAreasMetadata() {
+        const audit = AppState.audit;
+        if (!audit) return;
+        const areasSet = new Set();
+        audit.linhas.forEach(l => {
+          const area = audit.lineAreaMap?.[l] || LineDirectory.getAreaForLine(l, audit.macroarea);
+          audit.lineAreaMap[l] = area;
+          areasSet.add(area);
+        });
+        audit.areasEnvolvidas = Array.from(areasSet);
+        audit.areaNome = audit.areasEnvolvidas.join(" + ");
+      },
+
+      addLineToActiveAudit(linha, areaNome) {
+        const audit = AppState.audit;
+        if (!audit) return;
+        const cleanLinha = String(linha ?? "").trim();
+        if (!cleanLinha) {
+          App.showToast("Informe o nome ou código da linha.", "error");
+          return;
+        }
+        const normalizedLine = cleanLinha.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleUpperCase("pt-BR");
+        const alreadyExists = audit.linhas.some(existing =>
+          String(existing).trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleUpperCase("pt-BR") === normalizedLine
+        );
+        if (alreadyExists) {
+          App.showToast(`A linha ${cleanLinha} já está na auditoria.`, "error");
+          return;
+        }
+
+        const resolvedArea = areaNome || LineDirectory.getAreaForLine(cleanLinha, audit.macroarea);
+        audit.linhas.push(cleanLinha);
+        audit.lineAreaMap[cleanLinha] = resolvedArea;
+
+        const questions = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot);
+        questions.forEach(q => {
+          if (!audit.responses[q.id]) audit.responses[q.id] = {};
+          audit.responses[q.id][cleanLinha] = { status: "pending", nota: null, manualDescription: "" };
+        });
+
+        this.syncAuditAreasMetadata();
+        this.refreshAllViewsAfterLineChange();
+        this.openManageLinesModal();
+        App.showToast(`Linha ${cleanLinha} (${resolvedArea}) adicionada!`, "success");
+      },
+
+      addCustomLineFromModal(event) {
+        event.preventDefault();
+        const input = document.getElementById("modal-custom-line-name");
+        const areaSelect = document.getElementById("modal-custom-line-area");
+        const val = (input?.value || "").trim();
+        if (!val) return;
+        this.addLineToActiveAudit(val, areaSelect?.value);
+      },
+
+      removeLineFromActiveAudit(linha) {
+        const audit = AppState.audit;
+        if (!audit) return;
+        if (audit.linhas.length <= 1) {
+          App.showToast("A auditoria precisa manter pelo menos uma linha.", "error");
+          return;
+        }
+
+        audit.linhas = audit.linhas.filter(l => l !== linha);
+        delete audit.lineAreaMap[linha];
+
+        Object.keys(audit.responses).forEach(qId => {
+          if (audit.responses[qId]) {
+            delete audit.responses[qId][linha];
+          }
+        });
+
+        if (this.activeLineForLineMode === linha) {
+          this.activeLineForLineMode = audit.linhas[0];
+        }
+
+        this.syncAuditAreasMetadata();
+        AnomaliasModule.syncOccurrences(audit);
+        this.refreshAllViewsAfterLineChange();
+        this.openManageLinesModal();
+        App.showToast(`Linha ${linha} removida da auditoria.`, "info");
+      },
+
+      refreshAllViewsAfterLineChange() {
+        const a = AppState.audit;
+        if (!a) return;
+        document.getElementById("session-bar-info").textContent =
+          `${ChecklistsModule.getTipoName(a.tipo)} • ${a.areaNome} (${a.linhas.length} linha${a.linhas.length > 1 ? "s" : ""}) • ${a.auditor}`;
+        if (App.currentView === "revisao") {
+          RevisaoModule.render();
+        } else {
+          this.renderExecution();
+        }
+      },
+
+      setEvaluationMode(mode) {
+        if (!AppState.audit || !["question", "line"].includes(mode)) return;
+        this.cancelAutoAdvance();
+        this.evaluationMode = mode;
+        const btnQ = document.getElementById("btn-mode-question");
+        const btnL = document.getElementById("btn-mode-line");
+        const lineSelector = document.getElementById("line-mode-selector");
+        if (mode === "question") {
+          btnQ.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm";
+          btnL.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+          lineSelector.classList.add("hidden");
+        } else {
+          btnL.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm";
+          btnQ.className = "px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold transition text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+          lineSelector.classList.remove("hidden");
+          if (!this.activeLineForLineMode || !AppState.audit.linhas.includes(this.activeLineForLineMode)) {
+            this.activeLineForLineMode = AppState.audit.linhas[0];
+          }
+        }
+        this.renderExecution();
+      },
+
+      selectLineForLineMode(linha) {
+        if (!AppState.audit || !AppState.audit.linhas.includes(linha)) return;
+        this.cancelAutoAdvance();
+        this.activeLineForLineMode = linha;
+        this.renderExecution();
+      },
+
+      renderExecution() {
+        const audit = AppState.audit;
+        if (!audit) return;
+        const questions = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot);
+        const metrics = CalculosModule.computeAuditMetrics(audit);
+        const pct = metrics.totalExpected > 0 ? Math.round((metrics.totalAnswered / metrics.totalExpected) * 100) : 0;
+        document.getElementById("progress-label").textContent = `${metrics.totalAnswered} de ${metrics.totalExpected} avaliações`;
+        document.getElementById("progress-percent").textContent = `${pct}%`;
+        document.getElementById("progress-bar").style.width = `${pct}%`;
+
+        if (this.evaluationMode === "line") {
+          const lineTabs = document.getElementById("line-mode-tabs");
+          lineTabs.innerHTML = audit.linhas.map(l => {
+            const stat = metrics.lineStats.find(s => s.linha === l);
+            const done = stat && stat.linePending === 0;
+            const active = l === this.activeLineForLineMode;
+            const areaTag = audit.areasEnvolvidas?.length > 1 ? ` (${audit.lineAreaMap?.[l] || ""})` : "";
+            return `<button type="button" onclick="AuditoriaModule.selectLineForLineMode('${l}')"
+              class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-1.5 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
+              <span>Linha ${l}${areaTag}</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[11px] ${done ? "bg-emerald-500 text-white" : (active ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200")}">${done ? "✓" : `${questions.length - (stat?.linePending || 0)}/${questions.length}`}</span>
+            </button>`;
+          }).join("");
+        }
+
+        // Navegação rápida sem status "Parcial": apenas Respondida (100% concluída) ou Pendente
+        const mapContainer = document.getElementById("question-map-pills");
+        mapContainer.innerHTML = questions.map((q, idx) => {
+          const targetLines = this.evaluationMode === "line" ? [this.activeLineForLineMode] : audit.linhas;
+          const allAnswered = targetLines.every(l => audit.responses[q.id]?.[l]?.status !== "pending");
+          let pillStyle = allAnswered
+            ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-700"
+            : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600";
+          const isCurrent = idx === this.currentQuestionIndex;
+          return `<button type="button" onclick="AuditoriaModule.goToQuestion(${idx})"
+            class="px-2 py-1 rounded-lg text-xs sm:text-sm font-bold border transition ${pillStyle} ${isCurrent ? "ring-2 ring-blue-600 scale-105" : ""}">${q.codigo}</button>`;
+        }).join("");
+
+        this.renderQuestionCard(questions);
+        document.getElementById("btn-prev-question").disabled = this.currentQuestionIndex === 0;
+        document.getElementById("question-step-counter").textContent = `Questão ${this.currentQuestionIndex + 1} de ${questions.length}`;
+        const nextBtn = document.getElementById("btn-next-question");
+        if (this.currentQuestionIndex === questions.length - 1) {
+          nextBtn.innerHTML = `Concluir e Revisar <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>`;
+          nextBtn.className = "px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm sm:text-base shadow-md transition flex items-center gap-1.5";
+        } else {
+          nextBtn.innerHTML = `Próxima <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>`;
+          nextBtn.className = "px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm sm:text-base shadow-md transition flex items-center gap-1.5";
+        }
+      },
+
+      renderQuestionCard(questions) {
+        const audit = AppState.audit;
+        const q = questions[this.currentQuestionIndex];
+        if (!q) return;
+        const rules = ChecklistsModule.getRatingRules(audit.checklistSnapshot);
+        const linesToRender = this.evaluationMode === "line" ? [this.activeLineForLineMode] : audit.linhas;
+        const card = document.getElementById("active-question-card");
+        const ratingColors = {
+          5: { base: "border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 bg-emerald-50/50 dark:bg-emer
