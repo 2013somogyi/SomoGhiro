@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="img/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
+    tailwind.config = {A
       darkMode: 'class',
       theme: {
         extend: {
@@ -2958,7 +2958,7 @@
   };
 
   const RG = {
-    rel: [], res: [], files: [], tab: "rel", F: {}, mFrom: "", mTo: "", dFrom: "", dTo: "", opts: [], open: new Set(), selectedLines: new Set(),
+    rel: [], res: [], files: [], tab: "rel", F: {}, monthFilter: "", filtersOpen: false, opts: [], open: new Set(), selectedLines: new Set(),
     COLS: ["Tipo de Auditoria", "Área", "Linha", "Turno", "Ponto", "Grupo", "Auditor", "Responsável", "Status", "Tipo de problema"],
 
     async load(files) {
@@ -3114,7 +3114,7 @@
       this.buildOpts();
       this.render();
     },
-    clear() { this.rel = []; this.res = []; this.files = []; this.F = {}; this.selectedLines.clear(); this.mFrom = this.mTo = this.dFrom = this.dTo = ""; this.buildOpts(); this.render(); },
+    clear() { this.rel = []; this.res = []; this.files = []; this.F = {}; this.selectedLines.clear(); this.monthFilter = ""; this.filtersOpen = false; this.open.clear(); this.buildOpts(); this.render(); },
 
     buildOpts() {
       const all = [...this.rel, ...this.res];
@@ -3123,7 +3123,8 @@
     monthLabel(key) {
       if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return String(key || "");
       const [year, month] = key.split("-").map(Number);
-      return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      const label = new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+      return label.charAt(0).toUpperCase() + label.slice(1);
     },
     monthOptions() {
       const keys = [...new Set([...this.rel, ...this.res]
@@ -3131,100 +3132,76 @@
         .filter(key => /^\d{4}-(0[1-9]|1[0-2])$/.test(key)))].sort(cmp);
       return keys.map(key => ({ key, label: this.monthLabel(key) }));
     },
-    normalizeMonth(value) {
-      const raw = String(value || "").trim();
-      if (!raw) return "";
-      let match = raw.match(/^(\d{4})-(0[1-9]|1[0-2])$/);
-      if (match) return `${match[1]}-${match[2]}`;
-      match = raw.match(/^(0?[1-9]|1[0-2])\/(\d{4})$/);
-      if (match) return `${match[2]}-${String(match[1]).padStart(2, "0")}`;
-      return null;
-    },
     pass(r, noDate) {
-      for (const c in this.F) if (this.F[c].size && c in r && !this.F[c].has(String(r[c]))) return false;
-      if (!noDate) {
-        const rowMonth = String(r.Data || "").slice(0, 7);
-        if (this.mFrom && (!rowMonth || rowMonth < this.mFrom)) return false;
-        if (this.mTo && (!rowMonth || rowMonth > this.mTo)) return false;
-        if (this.dFrom && r.Data < this.dFrom) return false;
-        if (this.dTo && r.Data > this.dTo) return false;
+      for (const c in this.F) {
+        if (this.F[c]?.size && c in r && !this.F[c].has(String(r[c]))) return false;
       }
+      if (!noDate && this.monthFilter && String(r.Data || "").slice(0, 7) !== this.monthFilter) return false;
       return true;
     },
     notasRows(mode, noDate) { return this.res.filter(r => ((r["Área"] === "Mistura") === (mode === "mistura")) && this.pass(r, noDate)); },
-    activeFilters() { return Object.values(this.F).filter(s => s.size).length + (this.mFrom || this.mTo || this.dFrom || this.dTo ? 1 : 0); },
+    activeFilters() { return Object.values(this.F).filter(s => s?.size).length + (this.monthFilter ? 1 : 0); },
 
-    // ---------- Filtros ----------
-    openF() { $("rg-sheet").classList.remove("hidden"); this.sheet(); },
-    closeF() { $("rg-sheet").classList.add("hidden"); },
-    tog(ci, vi) { const [c, vals] = this.opts[ci]; const s = this.F[c] || (this.F[c] = new Set()); const v = vals[vi]; s.has(v) ? s.delete(v) : s.add(v); this.sheet(); this.render(); },
-    setDate(k, v) {
-      if (!["dFrom", "dTo"].includes(k)) return;
-      const nextFrom = k === "dFrom" ? v : this.dFrom;
-      const nextTo = k === "dTo" ? v : this.dTo;
-      if (nextFrom && nextTo && nextFrom > nextTo) {
-        App.showToast("A data inicial não pode ser posterior à data final.", "error");
-        this.sheet();
-        return;
-      }
-      this[k] = v;
-      this.render();
-      this.sheet();
+    // ---------- Filtros em painel expansível abaixo das abas ----------
+    toggleFilters() {
+      this.filtersOpen = !this.filtersOpen;
+      this.renderFilterPanel();
     },
-    setMonth(k, value) {
-      if (!["mFrom", "mTo"].includes(k)) return;
-      const normalized = this.normalizeMonth(value);
-      if (normalized === null) {
-        App.showToast("Digite o mês no formato AAAA-MM ou MM/AAAA, ou escolha uma opção da lista.", "error");
-        this.sheet();
-        return;
-      }
-      const nextFrom = k === "mFrom" ? normalized : this.mFrom;
-      const nextTo = k === "mTo" ? normalized : this.mTo;
-      if (nextFrom && nextTo && nextFrom > nextTo) {
-        App.showToast("O mês inicial não pode ser posterior ao mês final.", "error");
-        this.sheet();
-        return;
-      }
-      this[k] = normalized;
+    tog(ci, vi) {
+      const [c, vals] = this.opts[ci];
+      const s = this.F[c] || (this.F[c] = new Set());
+      const v = vals[vi];
+      s.has(v) ? s.delete(v) : s.add(v);
+      if (!s.size) delete this.F[c];
       this.render();
-      this.sheet();
     },
-    op(ci, o) { o ? this.open.add(ci) : this.open.delete(ci); },
-    clearF() { this.F = {}; this.mFrom = this.mTo = this.dFrom = this.dTo = ""; this.sheet(); this.render(); },
-    sheet() {
-      const el = $("rg-sheet"), sc = el.querySelector(".rg-sc")?.scrollTop || 0;
-      el.innerHTML = `<div class="bg-white dark:bg-slate-900 w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl max-h-[88vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700">
-        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h3 class="text-lg font-extrabold">Filtros <span class="text-sm font-bold text-blue-600">${this.activeFilters() ? `(${this.activeFilters()})` : ""}</span></h3>
-          <button onclick="RG.closeF()" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Fechar"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
-        </div>
-        <div class="rg-sc flex-1 overflow-y-auto px-5 py-4 space-y-3">
-          <datalist id="rg-month-options">${this.monthOptions().map(m => `<option value="${m.key}" label="${esc(m.label)}"></option>`).join("")}</datalist>
-          <div class="rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/30 p-3 space-y-2.5">
-            <div><p class="text-xs font-extrabold uppercase tracking-wide text-blue-800 dark:text-blue-300">Filtro por mês</p><p class="text-[11px] text-slate-600 dark:text-slate-400 mt-0.5">Digite AAAA-MM ou MM/AAAA, ou selecione um mês sugerido. Para analisar somente um mês, escolha o mesmo mês nos dois campos.</p></div>
-            <div class="grid grid-cols-2 gap-3">
-              <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Mês inicial</label><input type="text" list="rg-month-options" inputmode="numeric" maxlength="7" placeholder="AAAA-MM" value="${this.mFrom}" onchange="RG.setMonth('mFrom',this.value)" class="w-full px-3 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none"/></div>
-              <div><label class="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Mês final</label><input type="text" list="rg-month-options" inputmode="numeric" maxlength="7" placeholder="AAAA-MM" value="${this.mTo}" onchange="RG.setMonth('mTo',this.value)" class="w-full px-3 py-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-sm font-semibold focus:ring-2 focus:ring-blue-500 outline-none"/></div>
-            </div>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400">Meses disponíveis: ${this.monthOptions().length ? this.monthOptions().map(m => esc(m.label)).join(" • ") : "nenhum mês identificado"}</p>
+    setMonth(value) {
+      this.monthFilter = String(value || "");
+      this.render();
+    },
+    op(ci, opened) { opened ? this.open.add(ci) : this.open.delete(ci); },
+    clearF() {
+      this.F = {};
+      this.monthFilter = "";
+      this.open.clear();
+      this.render();
+    },
+    filterPanel() {
+      const months = this.monthOptions();
+      return `<div class="rounded-2xl border border-blue-200 dark:border-blue-900 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+          <div class="flex-1 min-w-0">
+            <label for="rg-month-select" class="block text-xs font-extrabold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1.5">Mês de referência</label>
+            <select id="rg-month-select" onchange="RG.setMonth(this.value)" class="w-full sm:max-w-sm px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+              <option value="">Todos os meses</option>
+              ${months.map(m => `<option value="${m.key}" ${this.monthFilter === m.key ? "selected" : ""}>${esc(m.label)}</option>`).join("")}
+            </select>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Selecione um único mês ou mantenha “Todos os meses” para analisar todo o período.</p>
           </div>
-          <details class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-            <summary class="cursor-pointer text-sm font-bold select-none">Refinar por dia (opcional)</summary>
-            <div class="grid grid-cols-2 gap-3 mt-3">
-              <div><label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Data inicial</label><input type="date" value="${this.dFrom}" onchange="RG.setDate('dFrom',this.value)" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm"/></div>
-              <div><label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Data final</label><input type="date" value="${this.dTo}" onchange="RG.setDate('dTo',this.value)" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm"/></div>
-            </div>
-          </details>
-          ${this.opts.map(([c, vals], ci) => `<details ${this.open.has(ci) ? "open" : ""} ontoggle="RG.op(${ci},this.open)" class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
-            <summary class="cursor-pointer text-sm font-bold select-none flex justify-between">${c}<span class="text-xs text-blue-600">${this.F[c]?.size ? this.F[c].size + " sel." : ""}</span></summary>
-            <div class="flex flex-wrap gap-1.5 mt-3 max-h-44 overflow-y-auto">${vals.map((v, vi) => { const on = this.F[c]?.has(v); return `<button type="button" onclick="RG.tog(${ci},${vi})" class="px-2.5 py-1.5 rounded-lg border text-xs font-bold ${on ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-600"}">${esc(v)}</button>`; }).join("")}</div></details>`).join("")}
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">${this.activeFilters()} filtro(s) ativo(s)</span>
+            <button type="button" onclick="RG.clearF()" class="px-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold">Limpar filtros</button>
+          </div>
         </div>
-        <div class="flex gap-2 px-5 py-4 border-t border-slate-100 dark:border-slate-800 safe-bottom">
-          <button onclick="RG.clearF()" class="flex-1 px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold text-sm">Limpar</button>
-          <button onclick="RG.closeF()" class="flex-1 px-4 py-3 rounded-xl bg-blue-600 text-white font-bold text-sm">Ver resultados</button>
-        </div></div>`;
-      const n = el.querySelector(".rg-sc"); if (n) n.scrollTop = sc;
+        ${this.opts.length ? `<div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          ${this.opts.map(([c, vals], ci) => `<details ${this.open.has(ci) ? "open" : ""} ontoggle="RG.op(${ci},this.open)" class="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 min-w-0">
+            <summary class="cursor-pointer text-xs font-bold select-none flex items-center justify-between gap-2"><span class="truncate">${esc(c)}</span><span class="text-[11px] text-blue-600 dark:text-blue-400 shrink-0">${this.F[c]?.size ? this.F[c].size + " selecionado(s)" : "Todos"}</span></summary>
+            <div class="flex flex-wrap gap-1.5 mt-2 max-h-28 overflow-y-auto pr-1">${vals.map((v, vi) => { const on = this.F[c]?.has(v); return `<button type="button" onclick="RG.tog(${ci},${vi})" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold ${on ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200"}">${esc(v)}</button>`; }).join("")}</div>
+          </details>`).join("")}
+        </div>` : `<p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Não há outros campos disponíveis para refinar os dados importados.</p>`}
+      </div>`;
+    },
+    renderFilterPanel() {
+      const panel = $("rg-filter-panel");
+      const button = $("rg-filter-toggle");
+      if (!panel) return;
+      panel.innerHTML = this.filterPanel();
+      panel.classList.toggle("hidden", !this.filtersOpen || !(this.rel.length + this.res.length));
+      if (button) {
+        button.setAttribute("aria-expanded", this.filtersOpen ? "true" : "false");
+        button.classList.toggle("bg-blue-50", this.filtersOpen);
+        button.classList.toggle("dark:bg-blue-950/50", this.filtersOpen);
+      }
     },
 
     // ---------- Relatórios PDF individuais por linha ----------
@@ -3242,23 +3219,23 @@
     lineReportPanel() {
       const lines = this.visibleLineNames();
       const selectedVisible = lines.filter(line => this.selectedLines.has(line));
-      return `<div class="mb-4 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div><h3 class="font-extrabold text-base">Relatórios individuais por linha</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Cada linha será gerada em uma página exclusiva do PDF. A lista respeita os filtros ativos.</p></div>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="RG.selectVisibleLines(true)" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Selecionar todas</button>
-            <button type="button" onclick="RG.selectVisibleLines(false)" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold">Limpar seleção</button>
+      return `<div class="mb-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div class="min-w-0"><h3 class="font-extrabold text-sm">Relatórios individuais por linha</h3>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Cada linha será gerada em uma página do PDF. A lista respeita os filtros ativos.</p></div>
+          <div class="flex flex-wrap gap-1.5 shrink-0">
+            <button type="button" onclick="RG.selectVisibleLines(true)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold">Selecionar todas</button>
+            <button type="button" onclick="RG.selectVisibleLines(false)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold">Limpar seleção</button>
           </div>
         </div>
-        <div class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto pr-1">
-          ${lines.map(line => `<label class="flex items-center gap-2 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800"><input type="checkbox" class="w-4 h-4 accent-blue-600" ${this.selectedLines.has(line) ? "checked" : ""} onchange="RG.toggleLine(decodeURIComponent('${encodeURIComponent(line)}'),this.checked)"><span class="font-semibold">${esc(line)}</span></label>`).join("") || `<p class="text-sm text-slate-500">Nenhuma linha encontrada com os filtros atuais.</p>`}
+        <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 max-h-24 overflow-y-auto pr-1">
+          ${lines.map(line => `<label class="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 min-w-0"><input type="checkbox" class="w-3.5 h-3.5 shrink-0 accent-blue-600" ${this.selectedLines.has(line) ? "checked" : ""} onchange="RG.toggleLine(decodeURIComponent('${encodeURIComponent(line)}'),this.checked)"><span class="font-semibold truncate">${esc(line)}</span></label>`).join("") || `<p class="text-xs text-slate-500">Nenhuma linha encontrada com os filtros atuais.</p>`}
         </div>
-        <div class="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <p class="text-xs text-slate-500 dark:text-slate-400">${selectedVisible.length} de ${lines.length} linha(s) selecionada(s)</p>
-          <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="RG.generateIndividualPDF('selected')" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold">Gerar Relatórios Individuais</button>
-            <button type="button" onclick="RG.generateIndividualPDF('all')" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-extrabold">Gerar todas as linhas</button>
+        <div class="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">${selectedVisible.length} de ${lines.length} linha(s) selecionada(s)</p>
+          <div class="flex flex-wrap gap-1.5">
+            <button type="button" onclick="RG.generateIndividualPDF('selected')" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold">Gerar selecionadas</button>
+            <button type="button" onclick="RG.generateIndividualPDF('all')" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold">Gerar todas as linhas</button>
           </div>
         </div>
       </div>`;
@@ -3360,9 +3337,7 @@
         const clean = v => String(v ?? "—").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim() || "—";
         const short = (v, max = 80) => { const t = clean(v); return t.length > max ? t.slice(0, Math.max(1, max - 1)) + "…" : t; };
         const title = isRel ? "RELATÓRIO EXECUTIVO — OCORRÊNCIAS" : mode === "mistura" ? "RELATÓRIO EXECUTIVO — MISTURA" : "RELATÓRIO EXECUTIVO — NOTAS POR LINHA";
-        const filterText = this.mFrom || this.mTo
-          ? `${this.mFrom || "Início"} até ${this.mTo || "Atual"}`
-          : this.dFrom || this.dTo ? `${this.dFrom || "Início"} até ${this.dTo || "Atual"}` : "Todo o período importado";
+        const filterText = this.monthFilter ? this.monthLabel(this.monthFilter) : "Todo o período importado";
 
         const monthlyMap = new Map();
         source.forEach(r => {
@@ -3456,8 +3431,6 @@
             doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(...C.muted);
             doc.text(m.month.slice(5, 7), bx + barW / 2, baseY + 4, { align: "center" });
           });
-          doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(...C.muted);
-          doc.text("Mês (MM) • valores em percentual", chartX + 4, chartY + 27);
         }
         y = chartY + chartH + 6;
         doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...C.navy);
@@ -3526,7 +3499,7 @@
         const short = (v, max) => { const t = clean(v); return t.length > max ? t.slice(0, Math.max(1, max - 1)) + "…" : t; };
         const allFiltered = this.notasRows("linhas", true).filter(r => r.Nota != null && String(r.Linha || "").trim());
         const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-        const selectedYear = this.mFrom ? this.mFrom.slice(0, 4) : this.mTo ? this.mTo.slice(0, 4) : this.dFrom ? this.dFrom.slice(0, 4) : this.dTo ? this.dTo.slice(0, 4) : "";
+        const selectedYear = this.monthFilter ? this.monthFilter.slice(0, 4) : "";
 
         lines.forEach((line, idx) => {
           if (idx) doc.addPage("a4", "landscape");
@@ -3540,6 +3513,7 @@
           const avg = mean(data.map(r => Number(r.Nota)).filter(Number.isFinite));
           const pct = data.length ? conformes / data.length * 100 : 0;
           const areas = [...new Set(data.map(r => clean(r["Área"])).filter(v => v !== "—"))].join(", ") || "—";
+          const types = [...new Set(data.map(r => clean(r["Tipo de Auditoria"])).filter(v => v !== "—"))].join(", ") || "—";
           const audits = new Set(data.map(r => [r.Data, r.Turno, r["Tipo de Auditoria"]].join("|"))).size;
 
           const monthly = monthNames.map((name, i) => {
@@ -3547,9 +3521,10 @@
             const arr = data.filter(r => String(r.Data || "").slice(0, 7) === key);
             return { name, key, total: arr.length, ncs: arr.filter(r => Number(r.Nota) <= 2).length, pct: arr.length ? arr.filter(r => Number(r.Nota) >= 4).length / arr.length * 100 : null };
           });
-          const recurrentMonth = monthly.reduce((best, item, i) => item.ncs > (monthly[best]?.ncs || 0) ? i : best, -1);
+          const totalNcs = monthly.reduce((sum, item) => sum + item.ncs, 0);
+          const recurrentMonth = totalNcs ? monthly.reduce((best, item, i) => item.ncs > (monthly[best]?.ncs ?? -1) ? i : best, -1) : -1;
 
-          // Problemas são consolidados no ano inteiro a partir da aba RELATÓRIOS.
+          // Top 10 problemas são calculados sobre o ano inteiro, independentemente do mês selecionado.
           const occurrenceRows = this.rel.filter(r => this.pass(r, true)
             && String(r.Linha || "").trim() === line
             && String(r.Data || "").startsWith(year + "-")
@@ -3562,139 +3537,176 @@
           });
           const topProblems = [...problemMap.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value || cmp(a.label, b.label)).slice(0, 10);
 
-          // Cabeçalho executivo padronizado com o PDF de conclusão da auditoria.
-          doc.setFillColor(...C.navy); doc.rect(0, 0, W, 26, "F");
-          doc.setFillColor(...C.blue); doc.rect(0, 26, W, 1.3, "F");
+          // Consolida a listagem de questões por tipo, área e ponto.
+          const buckets = group(data, r => [r["Tipo de Auditoria"], r["Área"], r.Grupo, r.Ponto, r.Pergunta].map(clean).join("¦"));
+          const items = [...buckets.entries()].map(([key, arr]) => {
+            const parts = key.split("¦");
+            const numeric = arr.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
+            const itemConf = numeric.length ? numeric.filter(n => n >= 4).length / numeric.length * 100 : null;
+            return { tipo: parts[0], area: parts[1], grupo: parts[2], ponto: parts[3], pergunta: parts[4], media: mean(numeric), qtd: arr.length, conformidade: itemConf };
+          }).sort((a, b) => cmp(a.tipo, b.tipo) || cmp(a.area, b.area) || cmp(a.ponto, b.ponto));
+
+          // Cabeçalho executivo e indicadores em faixa horizontal.
+          doc.setFillColor(...C.navy); doc.rect(0, 0, W, 25, "F");
+          doc.setFillColor(...C.blue); doc.rect(0, 25, W, 1.3, "F");
           doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
           doc.text("RELATÓRIO INDIVIDUAL DE AUDITORIA", M, 10.5);
           doc.setFontSize(10); doc.text(`LINHA: ${short(line, 65)}`, M, 18);
           doc.setFont("helvetica", "normal"); doc.setFontSize(7.2); doc.setTextColor(203, 213, 225);
           doc.text(`ANO ANALISADO: ${year}  •  GERADO EM ${new Date().toLocaleDateString("pt-BR")}`, W - M, 18, { align: "right" });
 
-          let y = 31;
-          doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...C.slate);
-          doc.text(`Área(s): ${short(areas, 95)}   |   Auditorias no ano: ${audits}   |   Avaliações: ${data.length}`, M, y);
-          y += 3.5;
+          let y = 30;
+          doc.setFont("helvetica", "normal"); doc.setFontSize(6.8); doc.setTextColor(...C.slate);
+          doc.text(`Área(s): ${short(areas, 75)}  •  Auditorias: ${audits}  •  Avaliações: ${data.length}  •  Tipo(s): ${short(types, 65)}`, M, y);
+          y += 2.5;
           const kpis = [
-            ["MÉDIA GERAL", f2(avg), C.blue], ["CONFORMIDADE", `${f2(pct, 1)}%`, C.green],
+            ["MÉDIA GERAL", f2(avg, 2), C.blue], ["CONFORMIDADE", `${f2(pct, 1)}%`, C.green],
             ["CONFORMES (4–5)", String(conformes), C.green], ["MELHORIAS (3)", String(melhorias), C.amber],
             ["NÃO CONFORMES (1–2)", String(ncs), ncs ? C.red : C.muted]
           ];
-          const gap = 2.5, kw = (contentW - gap * (kpis.length - 1)) / kpis.length, kh = 13.5;
+          const gap = 2, kw = (contentW - gap * (kpis.length - 1)) / kpis.length, kh = 12.5;
           kpis.forEach((k, i) => {
             const x = M + i * (kw + gap);
-            doc.setFillColor(...C.light); doc.setDrawColor(...C.border); doc.roundedRect(x, y, kw, kh, 1.4, 1.4, "FD");
-            doc.setFillColor(...k[2]); doc.rect(x + 2, y, kw - 4, 0.9, "F");
-            doc.setFont("helvetica", "bold"); doc.setFontSize(5.7); doc.setTextColor(...C.muted); doc.text(k[0], x + 2, y + 4.8);
-            doc.setFontSize(10); doc.setTextColor(...k[2]); doc.text(k[1], x + 2, y + 11);
+            doc.setFillColor(...C.light); doc.setDrawColor(...C.border); doc.roundedRect(x, y, kw, kh, 1.2, 1.2, "FD");
+            doc.setFillColor(...k[2]); doc.rect(x + 1.5, y, kw - 3, 0.8, "F");
+            doc.setFont("helvetica", "bold"); doc.setFontSize(5.8); doc.setTextColor(...C.muted); doc.text(k[0], x + 2, y + 4.5);
+            doc.setFontSize(10); doc.setTextColor(...k[2]); doc.text(k[1], x + 2, y + 10.5);
           });
-          y += kh + 3;
 
-          // Dois gráficos compactos lado a lado para manter uma página por linha.
-          const chartY = y, chartH = 37, chartGap = 3, chartW = (contentW - chartGap) / 2;
-          const leftX = M, rightX = M + chartW + chartGap;
-          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border);
-          doc.roundedRect(leftX, chartY, chartW, chartH, 1.4, 1.4, "FD");
-          doc.roundedRect(rightX, chartY, chartW, chartH, 1.4, 1.4, "FD");
+          const contentTop = y + kh + 3;
+          const footerY = H - 7;
+          const contentBottom = footerY - 2;
+          const leftX = M, leftW = 183, panelGap = 4, rightX = leftX + leftW + panelGap, rightW = W - M - rightX;
+          const blockH = contentBottom - contentTop;
 
-          // Gráfico de conformidade mensal (jan–dez); mês com maior volume destacado em âmbar.
-          doc.setFont("helvetica", "bold"); doc.setFontSize(6.7); doc.setTextColor(...C.navy);
-          doc.text(`CONFORMIDADE MENSAL — ${year}`, leftX + 3, chartY + 4.5);
-          const plotX = leftX + 4, plotW = chartW - 8, baseY = chartY + 29, plotH = 18;
+          // ESQUERDA: listagem completa de questões em colunas adaptáveis, com fonte legível.
+          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(leftX, contentTop, leftW, blockH, 1.4, 1.4, "FD");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(7.4); doc.setTextColor(...C.navy);
+          doc.text(`QUESTÕES AVALIADAS — ${items.length} item(ns)`, leftX + 3, contentTop + 5);
+          const tableTop = contentTop + 8;
+          const tableBottom = contentBottom - 2;
+          const tableH = tableBottom - tableTop;
+          const columnCount = items.length > 64 ? 3 : items.length > 20 ? 2 : 1;
+          const colGap = 2;
+          const colW = (leftW - 6 - colGap * (columnCount - 1)) / columnCount;
+          const perColumn = Math.ceil(items.length / columnCount);
+          const headerH = 5.4;
+          const rowH = perColumn ? (tableH - headerH) / perColumn : 7;
+          const fontSize = columnCount === 1 ? 7.0 : columnCount === 2 ? 6.0 : 5.3;
+          const questionFont = Math.max(4.8, fontSize - 0.25);
+          const columnItems = Array.from({ length: columnCount }, (_, col) => items.slice(col * perColumn, (col + 1) * perColumn));
+
+          columnItems.forEach((list, col) => {
+            const x = leftX + 3 + col * (colW + colGap);
+            const widths = columnCount === 1
+              ? [18, colW - 18 - 13 - 8 - 20, 13, 8, 20]
+              : columnCount === 2
+                ? [14, colW - 14 - 11 - 6 - 14, 11, 6, 14]
+                : [11, colW - 11 - 8 - 5 - 10, 8, 5, 10];
+            const headers = ["PT/TIPO", "QUESTÃO", "MÉDIA", "N", "%" ];
+            let hx = x;
+            doc.setFillColor(...C.navy); doc.rect(x, tableTop, colW, headerH, "F");
+            doc.setFont("helvetica", "bold"); doc.setFontSize(columnCount === 3 ? 4.8 : 5.3); doc.setTextColor(255, 255, 255);
+            headers.forEach((h, i) => { doc.text(h, hx + 0.8, tableTop + 3.6); hx += widths[i]; });
+            list.forEach((it, ri) => {
+              const ry = tableTop + headerH + ri * rowH;
+              if (ry + rowH > tableBottom + 0.2) return;
+              if (ri % 2 === 0) { doc.setFillColor(...C.light); doc.rect(x, ry, colW, rowH, "F"); }
+              doc.setDrawColor(...C.border); doc.setLineWidth(0.1); doc.line(x, ry + rowH, x + colW, ry + rowH);
+              const pointLabel = columnCount === 1 ? `${it.ponto} · ${short(it.tipo, 14)}` : `${it.ponto} ${short(it.tipo, columnCount === 2 ? 6 : 3)}`;
+              let cx = x;
+              doc.setFont("helvetica", "bold"); doc.setFontSize(Math.max(4.6, fontSize - 0.2)); doc.setTextColor(...C.navy);
+              doc.text(short(pointLabel, 18), cx + 0.8, ry + Math.min(rowH * 0.55, 3.7)); cx += widths[0];
+              const qW = widths[1] - 1.5;
+              doc.setFont("helvetica", "normal"); doc.setFontSize(questionFont);
+              const allQuestionLines = doc.splitTextToSize(clean(it.pergunta), qW);
+              const maxQuestionLines = columnCount === 1 ? 3 : 2;
+              const lines = allQuestionLines.slice(0, maxQuestionLines);
+              if (allQuestionLines.length > maxQuestionLines && lines.length) {
+                let lastLine = lines[lines.length - 1];
+                while (lastLine.length > 2 && doc.getTextWidth(lastLine + "…") > qW) lastLine = lastLine.slice(0, -1);
+                lines[lines.length - 1] = lastLine + "…";
+              }
+              doc.setFont("helvetica", "normal"); doc.setFontSize(questionFont); doc.setTextColor(...C.slate);
+              const lineHeight = Math.min(2.2, Math.max(1.55, rowH / (lines.length + 0.7)));
+              const startTextY = ry + Math.max(1.9, (rowH - lines.length * lineHeight) / 2 + lineHeight * 0.72);
+              lines.forEach((lineText, li) => doc.text(lineText, cx + 0.7, startTextY + li * lineHeight));
+              cx += widths[1];
+              const values = [f2(it.media, 1), String(it.qtd), it.conformidade == null ? "—" : `${f2(it.conformidade, 0)}%`];
+              values.forEach((value, vi) => {
+                const cellW = widths[vi + 2];
+                doc.setFont("helvetica", vi === 0 || vi === 2 ? "bold" : "normal");
+                doc.setFontSize(Math.max(4.7, fontSize - 0.2));
+                if (vi === 0 || vi === 2) {
+                  const colorValue = vi === 0 ? (it.media == null ? null : it.media / 5 * 100) : it.conformidade;
+                  doc.setTextColor(...(colorValue == null ? C.muted : colorValue >= 80 ? C.green : colorValue >= 60 ? C.amber : C.red));
+                } else doc.setTextColor(...C.slate);
+                doc.text(short(value, 7), cx + cellW / 2, ry + Math.min(rowH * 0.55, 3.7), { align: "center" });
+                cx += cellW;
+              });
+            });
+          });
+          if (!items.length) {
+            doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...C.muted);
+            doc.text("Nenhuma questão encontrada para esta linha no ano analisado.", leftX + 4, tableTop + 10);
+          }
+
+          // DIREITA: gráficos empilhados e alinhados à tabela.
+          const chartX = rightX, chartW = rightW;
+          const monthlyH = 57, topY = contentTop;
+          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(chartX, topY, chartW, monthlyH, 1.4, 1.4, "FD");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(7.1); doc.setTextColor(...C.navy);
+          doc.text(`CONFORMIDADE MENSAL — ${year}`, chartX + 3, topY + 5);
+          const plotX = chartX + 5, plotW = chartW - 10, baseY = topY + 44, plotH = 29;
           doc.setDrawColor(...C.border); doc.line(plotX, baseY, plotX + plotW, baseY);
-          const slot = plotW / 12, barW = Math.min(6.2, slot * 0.56);
+          const slot = plotW / 12, barW = Math.min(4.0, slot * 0.56);
           monthly.forEach((m, i) => {
-            const h = m.pct == null ? 0 : Math.max(0.35, plotH * m.pct / 100);
+            const h = m.pct == null ? 0 : Math.max(0.5, plotH * m.pct / 100);
             const bx = plotX + i * slot + (slot - barW) / 2;
             if (h > 0) {
               doc.setFillColor(...(i === recurrentMonth ? C.amber : C.blue));
-              doc.roundedRect(bx, baseY - h, barW, h, 0.45, 0.45, "F");
+              doc.roundedRect(bx, baseY - h, barW, h, 0.35, 0.35, "F");
             }
             if (m.pct != null) {
-              doc.setFont("helvetica", "bold"); doc.setFontSize(4.2); doc.setTextColor(...C.slate);
-              doc.text(`${Math.round(m.pct)}%`, bx + barW / 2, Math.max(chartY + 9, baseY - h - 1), { align: "center" });
+              doc.setFont("helvetica", "bold"); doc.setFontSize(4.7); doc.setTextColor(...C.slate);
+              doc.text(`${Math.round(m.pct)}%`, bx + barW / 2, Math.max(topY + 10, baseY - h - 1), { align: "center" });
             }
-            doc.setFont("helvetica", "normal"); doc.setFontSize(4.5); doc.setTextColor(...C.muted);
-            doc.text(m.name, bx + barW / 2, baseY + 3.5, { align: "center" });
+            doc.setFont("helvetica", "normal"); doc.setFontSize(5.0); doc.setTextColor(...C.muted);
+            doc.text(m.name, bx + barW / 2, baseY + 4, { align: "center" });
           });
-          doc.setFont("helvetica", "normal"); doc.setFontSize(4.8); doc.setTextColor(...C.muted);
-          doc.text(recurrentMonth >= 0 ? `Coluna âmbar: mês recorrente (${monthly[recurrentMonth].name}, maior nº de não conformidades)` : "Sem não conformidades registradas no ano", leftX + 3, chartY + 35);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(5.0); doc.setTextColor(...C.muted);
+          doc.text(recurrentMonth >= 0 ? `Mês recorrente: ${monthly[recurrentMonth].name} (mais NC)` : "Sem não conformidades no ano", chartX + 3, topY + 53);
 
-          // Top 10 problemas por frequência anual.
-          doc.setFont("helvetica", "bold"); doc.setFontSize(6.7); doc.setTextColor(...C.navy);
-          doc.text(`TOP 10 PROBLEMAS — ${year}`, rightX + 3, chartY + 4.5);
+          const problemsY = topY + monthlyH + 3;
+          const problemsH = contentBottom - problemsY;
+          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(chartX, problemsY, chartW, problemsH, 1.4, 1.4, "FD");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(7.1); doc.setTextColor(...C.navy);
+          doc.text(`TOP 10 PROBLEMAS — ${year}`, chartX + 3, problemsY + 5);
           if (!topProblems.length) {
             doc.setFont("helvetica", "normal"); doc.setFontSize(6); doc.setTextColor(...C.muted);
-            doc.text("Nenhuma anomalia registrada para esta linha no ano.", rightX + 4, chartY + 18);
+            doc.text("Nenhuma anomalia registrada para esta linha no ano.", chartX + 4, problemsY + 14);
           } else {
-            const maxProblem = Math.max(...topProblems.map(p => p.value), 1);
-            const labelW = chartW * 0.57, barAreaW = chartW - labelW - 15, rowH = 2.55, startY = chartY + 8;
+            const maxProblem = Math.max(...topProblems.map(problem => problem.value), 1);
+            const startY = problemsY + 10, rowSpace = Math.min(7.0, (problemsH - 13) / 10);
+            const labelW = chartW * 0.50, barX = chartX + 3 + labelW, barW2 = chartW - labelW - 13;
             topProblems.forEach((problem, i) => {
-              const ry = startY + i * rowH;
-              doc.setFont("helvetica", "normal"); doc.setFontSize(4.45); doc.setTextColor(...C.slate);
-              doc.text(short(problem.label, 45), rightX + 3, ry + 1.8);
-              doc.setFillColor(241, 245, 249); doc.roundedRect(rightX + 3 + labelW, ry + 0.5, barAreaW, 1.4, 0.35, 0.35, "F");
-              doc.setFillColor(...C.red); doc.roundedRect(rightX + 3 + labelW, ry + 0.5, barAreaW * problem.value / maxProblem, 1.4, 0.35, 0.35, "F");
-              doc.setFont("helvetica", "bold"); doc.setFontSize(4.5); doc.setTextColor(...C.red);
-              doc.text(String(problem.value), rightX + chartW - 3, ry + 1.8, { align: "right" });
+              const ry = startY + i * rowSpace;
+              doc.setFont("helvetica", "normal"); doc.setFontSize(5.2); doc.setTextColor(...C.slate);
+              doc.text(short(problem.label, 37), chartX + 3, ry + 2.2);
+              doc.setFillColor(241, 245, 249); doc.roundedRect(barX, ry + 0.7, barW2, 1.7, 0.35, 0.35, "F");
+              doc.setFillColor(...C.red); doc.roundedRect(barX, ry + 0.7, barW2 * problem.value / maxProblem, 1.7, 0.35, 0.35, "F");
+              doc.setFont("helvetica", "bold"); doc.setFontSize(5.2); doc.setTextColor(...C.red);
+              doc.text(String(problem.value), chartX + chartW - 3, ry + 2.2, { align: "right" });
             });
           }
-          y = chartY + chartH + 3;
 
-          // Tabela consolidada com altura calculada para caber integralmente na mesma página.
-          doc.setFont("helvetica", "bold"); doc.setFontSize(7.4); doc.setTextColor(...C.navy);
-          doc.text(`RESULTADO POR PONTO AVALIADO (${data.length} avaliações)`, M, y + 1.5);
-          y += 4;
-          const buckets = group(data, r => [r["Tipo de Auditoria"], r["Área"], r.Grupo, r.Ponto, r.Pergunta].map(clean).join("¦"));
-          const items = [...buckets.entries()].map(([key, arr]) => {
-            const parts = key.split("¦");
-            const numeric = arr.map(r => Number(r.Nota)).filter(Number.isFinite);
-            const itemConf = numeric.length ? numeric.filter(n => n >= 4).length / numeric.length * 100 : null;
-            return { tipo: parts[0], area: parts[1], grupo: parts[2], ponto: parts[3], pergunta: parts[4], media: mean(numeric), qtd: arr.length, conformidade: itemConf };
-          }).sort((a, b) => cmp(a.area, b.area) || cmp(a.tipo, b.tipo) || cmp(a.ponto, b.ponto));
-
-          const tableTop = y, tableBottom = H - 8, headerH = 4.6, available = Math.max(2, tableBottom - tableTop - headerH);
-          const rowH = items.length ? Math.min(4.2, available / items.length) : 5;
-          const font = Math.max(1.8, Math.min(5.1, rowH * 0.9));
-          const widths = [21, 22, 13, 14, 135, 19, 12, 45];
-          const headers = ["ÁREA", "TIPO", "GRUPO", "PONTO", "PERGUNTA / CRITÉRIO", "MÉDIA", "N", "CONFORMIDADE"];
-          let x = M;
-          doc.setFillColor(...C.navy); doc.rect(M, tableTop, contentW, headerH, "F");
-          doc.setFont("helvetica", "bold"); doc.setFontSize(4.9); doc.setTextColor(255, 255, 255);
-          headers.forEach((h, i) => { doc.text(h, x + 1, tableTop + 3.1); x += widths[i]; });
-          let rowY = tableTop + headerH;
-          if (!items.length) {
-            doc.setFont("helvetica", "normal"); doc.setFontSize(6); doc.setTextColor(...C.muted);
-            doc.text("Nenhuma avaliação encontrada para esta linha no ano analisado.", M + 2, rowY + 4);
-          } else {
-            items.forEach((it, ri) => {
-              const h = rowH;
-              if (ri % 2 === 0) { doc.setFillColor(...C.light); doc.rect(M, rowY, contentW, h, "F"); }
-              doc.setDrawColor(...C.border); doc.setLineWidth(0.1); doc.line(M, rowY + h, W - M, rowY + h);
-              const vals = [short(it.area, 22), short(it.tipo, 24), short(it.grupo, 14), short(it.ponto, 15), short(it.pergunta, 145), f2(it.media), String(it.qtd), it.conformidade == null ? "—" : `${f2(it.conformidade, 0)}%`];
-              x = M;
-              vals.forEach((v, i) => {
-                doc.setFont("helvetica", i === 5 || i === 7 ? "bold" : "normal"); doc.setFontSize(font);
-                if (i === 5 || i === 7) {
-                  const pctVal = i === 7 ? it.conformidade : (it.media == null ? null : it.media / 5 * 100);
-                  doc.setTextColor(...(pctVal == null ? C.muted : pctVal >= 80 ? C.green : pctVal >= 60 ? C.amber : C.red));
-                } else doc.setTextColor(...C.slate);
-                const maxW = widths[i] - 2;
-                let value = String(v);
-                while (value.length > 2 && doc.getTextWidth(value) > maxW) value = value.slice(0, -2) + "…";
-                doc.text(value, x + 1, rowY + Math.max(h * 0.68, 0.9));
-                x += widths[i];
-              });
-              rowY += h;
-            });
-          }
-          doc.setDrawColor(...C.border); doc.line(M, H - 5.5, W - M, H - 5.5);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(5.4); doc.setTextColor(...C.muted);
+          doc.setDrawColor(...C.border); doc.line(M, footerY, W - M, footerY);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(...C.muted);
           doc.text(`SomoGhiro Audit • Linha ${short(line, 45)} • Ano ${year} • Página ${idx + 1} de ${lines.length}`, M, H - 2.5);
         });
         const stamp = new Date().toISOString().slice(0, 10);
         doc.save(`SomoGhiro_Relatorios_Individuais_${stamp}.pdf`);
-        App.showToast(`${lines.length} relatório(s) individual(is) gerado(s), cada um em uma única página.`, "success");
+        App.showToast(`${lines.length} relatório(s) individual(is) gerado(s), com tabela à esquerda e gráficos à direita, um por página.`, "success");
       } catch (e) {
         console.error("Erro ao gerar relatórios individuais:", e);
         App.showToast("Erro ao gerar PDF individual: " + e.message, "error");
@@ -3711,6 +3723,7 @@
       $("rg-pdf").classList.toggle("hidden", !has);
       $("rg-toolbar").classList.toggle("hidden", !has);
       const n = this.activeFilters(), b = $("rg-fbadge"); b.textContent = n; b.classList.toggle("hidden", !n);
+      this.renderFilterPanel();
       [["rel", "Relatórios"], ["linhas", "Notas por Linha"], ["mistura", "Mistura"]].forEach(([k]) => {
         $("rg-tab-" + k).className = "flex-1 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap " + (this.tab === k ? "bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm" : "text-slate-600 dark:text-slate-300");
       });
@@ -3768,7 +3781,6 @@
         ${card("Por responsável", resp, "Volume e médias de prazo")}
         ${card("Por área", cnt(r => r["Área"]))}
         ${card("Por linha (top 15)", cnt(r => r.Linha, { n: 15, cls: "bg-rose-500" }))}
-        ${card("Por turno", cnt(r => r.Turno))}
         ${card("Evolução mensal (%)", mes, "% de cada mês sobre o total de ocorrências filtradas")}
       </div>`;
     },
@@ -3781,46 +3793,57 @@
       const conf = rows.filter(r => r.Nota >= 4).length, pct = conf / rows.length * 100;
       const nc = rows.filter(r => r.Nota <= 2).length, mel = rows.filter(r => r.Nota === 3).length;
       const avg = mean(rows.map(r => r.Nota));
-      const months = [...new Set(rows.map(r => r.Data.slice(0, 7)).filter(Boolean))].sort();
-      const cur = months[months.length - 1] || "";
-      let prev = ""; if (cur) { const [y, m] = cur.split("-").map(Number), d = new Date(y, m - 2, 1); prev = `${d.getFullYear()}-${p2(d.getMonth() + 1)}`; }
-      const curR = rows.filter(r => r.Data.startsWith(cur)), prevR = prev ? all.filter(r => r.Data.startsWith(prev)) : [];
+      const months = [...new Set(rows.map(r => String(r.Data || "").slice(0, 7)).filter(v => /^\d{4}-\d{2}$/.test(v)))].sort();
+      const cur = this.monthFilter || months[months.length - 1] || "";
+      let prev = "";
+      if (cur) { const [y, m] = cur.split("-").map(Number), d = new Date(y, m - 2, 1); prev = `${d.getFullYear()}-${p2(d.getMonth() + 1)}`; }
+      const curR = rows.filter(r => String(r.Data || "").startsWith(cur));
+      const prevR = prev ? all.filter(r => String(r.Data || "").startsWith(prev)) : [];
       const conformityPct = arr => arr.length ? arr.filter(r => r.Nota >= 4).length / arr.length * 100 : null;
+      const averageScore = arr => arr.length ? mean(arr.map(r => Number(r.Nota)).filter(Number.isFinite)) : null;
       const pAvg = conformityPct(prevR), cAvg = conformityPct(curR);
       const delta = (pAvg != null && cAvg != null) ? cAvg - pAvg : null;
-      const auditorias = new Set(rows.map(r => [r.Data, r.Turno, r["Tipo de Auditoria"]].join("|"))).size;
-      const lines = new Set(rows.map(r => r.Linha)).size;
-
-      const tipos = [...new Set(curR.map(r => r["Tipo de Auditoria"]))].sort();
+      const auditorias = new Set(rows.map(r => [r.Data, r.Turno, r["Tipo de Auditoria"]].join("|")).filter(Boolean)).size;
+      const lines = new Set(rows.map(r => r.Linha).filter(Boolean)).size;
+      const tipos = [...new Set(curR.map(r => r["Tipo de Auditoria"]).filter(Boolean))].sort(cmp);
       const grid = tipos.map(t => {
         const a = curR.filter(r => r["Tipo de Auditoria"] === t), b = prevR.filter(r => r["Tipo de Auditoria"] === t);
-        const pts = [...new Set(a.map(r => r.Ponto))].sort(cmp);
+        const pts = [...new Set([...a, ...b].map(r => r.Ponto).filter(Boolean))].sort(cmp);
         return `<div class="${tipos.length > 1 ? "mb-4" : ""}">${tipos.length > 1 ? `<p class="text-xs font-extrabold uppercase text-slate-500 dark:text-slate-400 mb-2">${esc(t)}</p>` : ""}
-          <div class="grid grid-cols-5 gap-1.5">${pts.map(pt => {
+          <div class="grid grid-cols-5 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">${pts.map(pt => {
             const xRows = a.filter(r => r.Ponto === pt), yRows = b.filter(r => r.Ponto === pt);
-            const x = conformityPct(xRows), y = conformityPct(yRows);
+            const x = averageScore(xRows), y = averageScore(yRows);
             const ar = (x != null && y != null) ? (x > y + 0.005 ? "▲" : x < y - 0.005 ? "▼" : "") : "";
-            return `<div class="rounded-lg overflow-hidden border border-slate-700"><div class="bg-black text-white text-center text-xs font-bold py-0.5">${esc(pt)}</div>
-              <div class="bg-slate-800 py-1.5 text-center"><p class="text-base sm:text-xl font-black leading-tight ${txtCls((x ?? 0) / 20)}">${x == null ? "—" : f2(x, 0) + "%"}</p><p class="text-[10px] sm:text-xs font-semibold ${txtCls((y ?? 0) / 20)}">${y == null ? "—" : f2(y, 0) + "%"} ${ar}</p></div></div>`;
+            return `<div class="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700"><div class="bg-slate-800 text-white text-center text-xs font-bold py-1">${esc(pt)}</div>
+              <div class="bg-slate-100 dark:bg-slate-800 py-1.5 text-center"><p class="text-base sm:text-lg font-black leading-tight ${txtCls(x)}">${x == null ? "—" : f2(x, 1)}</p><p class="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">ant. ${y == null ? "—" : f2(y, 1)} ${ar}</p></div></div>`;
           }).join("")}</div></div>`;
       }).join("");
-      const mFmt = m => m ? m.split("-").reverse().join("/") : "—";
-
-      const avgBars = (fn, o = {}) => bars([...group(rows, fn)].map(([k, a]) => {
-        const v = mean(a.map(r => r.Nota)); return { label: k, value: v, cls: bgCls(v), sub: `${a.length} avaliações • ${a.filter(r => r.Nota <= 2).length} NC • ${f2(a.filter(r => r.Nota >= 4).length / a.length * 100, 0)}% conf.` };
-      }).sort((a, b) => o.desc ? b.value - a.value : a.value - b.value), { max: 5, fmt: v => f2(v), scroll: true });
-
-      const crit = bars([...group(rows, r => r["Tipo de Auditoria"] + "|" + r.Ponto)].map(([k, a]) => {
-        const v = mean(a.map(r => r.Nota)); return { label: `${k.split("|")[1]} · ${k.split("|")[0]}`, value: v, cls: bgCls(v), sub: a[0].Pergunta };
-      }).sort((a, b) => a.value - b.value).slice(0, 5), { max: 5, fmt: v => f2(v) });
+      const mFmt = m => m ? this.monthLabel(m) : "—";
+      const pctColor = v => v == null ? "bg-slate-400" : v >= 80 ? "bg-emerald-500" : v >= 60 ? "bg-amber-500" : "bg-rose-500";
+      const percentBars = (fn, options = {}) => {
+        const items = [...group(rows, fn)].map(([key, arr]) => {
+          const valid = arr.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
+          const value = valid.length ? valid.filter(n => n >= 4).length / valid.length * 100 : 0;
+          return { label: key || "Não atribuído", value, cls: pctColor(value), sub: `${valid.length} avaliações • média ${f2(mean(valid), 1)}/5 • ${arr.filter(r => r.Nota <= 2).length} NC` };
+        }).sort((a, b) => a.value - b.value || cmp(a.label, b.label));
+        return bars(items.slice(0, options.n || 99), { max: 100, fmt: v => f2(v, 1) + "%", scroll: true });
+      };
+      const crit = bars([...group(rows, r => `${r["Tipo de Auditoria"] || ""}|${r.Ponto || ""}`)].map(([key, arr]) => {
+        const [type, point] = key.split("|");
+        const valid = arr.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
+        const value = valid.length ? valid.filter(n => n >= 4).length / valid.length * 100 : 0;
+        return { label: `${point} · ${type}`, value, cls: pctColor(value), sub: `${shortText(arr[0].Pergunta, 76)} • ${valid.length} avaliação(ões)` };
+      }).sort((a, b) => a.value - b.value).slice(0, 5), { max: 100, fmt: v => f2(v, 1) + "%" });
       const evo = bars([...group(rows.filter(r => mode === "mistura" ? !!r.Data : /^\d{4}-\d{2}/.test(String(r.Data || ""))), r => mode === "mistura" ? r.Data : r.Data.slice(0, 7))]
-        .sort((a, b) => cmp(a[0], b[0])).slice(-12).map(([k, a]) => {
-          const total = a.length;
-          const conformesPct = total ? a.filter(r => r.Nota >= 4).length / total * 100 : 0;
-          const melhoriasPct = total ? a.filter(r => r.Nota === 3).length / total * 100 : 0;
-          const ncPct = total ? a.filter(r => r.Nota <= 2).length / total * 100 : 0;
-          return { label: mode === "mistura" ? brDate(k) : mFmt(k), value: conformesPct, cls: "bg-emerald-500", sub: `${f2(conformesPct, 1)}% conformes • ${f2(melhoriasPct, 1)}% melhorias • ${f2(ncPct, 1)}% NC (${total})` };
+        .sort((a, b) => cmp(a[0], b[0])).slice(-12).map(([key, arr]) => {
+          const total = arr.length;
+          const conformesPct = total ? arr.filter(r => r.Nota >= 4).length / total * 100 : 0;
+          const melhoriasPct = total ? arr.filter(r => r.Nota === 3).length / total * 100 : 0;
+          const ncPct = total ? arr.filter(r => r.Nota <= 2).length / total * 100 : 0;
+          return { label: mode === "mistura" ? brDate(key) : mFmt(key), value: conformesPct, cls: "bg-emerald-500", sub: `${f2(conformesPct, 1)}% conformes • ${f2(melhoriasPct, 1)}% melhorias • ${f2(ncPct, 1)}% NC (${total})` };
         }), { max: 100, fmt: v => f2(v, 1) + "%" });
+      // Evita depender de helpers externos ao escopo do gerador.
+      function shortText(value, max) { const t = String(value ?? ""); return t.length > max ? t.slice(0, max - 1) + "…" : t; }
 
       return `${mode === "linhas" ? this.lineReportPanel() : ""}<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
         ${kpi("Média de conformidade", f2(pct, 1) + "%", txtCls(pct / 20), delta == null ? "Notas ≥ 4" : `${f2(cAvg, 1)}% em ${mFmt(cur)} • ${delta >= 0 ? "▲" : "▼"} ${f2(Math.abs(delta), 1)} p.p. vs ${mFmt(prev)}`)}
@@ -3828,17 +3851,15 @@
         ${kpi("Média geral", f2(avg), txtCls(avg), "Escala de notas de 1 a 5")}
         ${kpi("Avaliações", rows.length, "", mode === "linhas" ? `${auditorias} auditoria(s)` : "")}
         ${kpi("Não conformidades", nc, nc ? "text-rose-500" : "", "Notas 1 e 2")}${kpi("Melhorias", mel, mel ? "text-amber-500" : "", "Nota 3")}
-        ${kpi("Conformes", conf, "text-emerald-500", "Notas 4 e 5")}${kpi("Mês de referência", mFmt(cur), "text-slate-700 dark:text-slate-200", "comparado a " + mFmt(prev))}
+        ${kpi("Conformes", conf, "text-emerald-500", "Notas 4 e 5")}${kpi("Mês de referência", mFmt(cur), "text-slate-700 dark:text-slate-200", "Mês filtrado ou mais recente")}
       </div>
-      <div class="mt-4">${card("Conformidade ponto a ponto", grid || EMPTY, `Percentual de notas ≥ 4: mês ${mFmt(cur)} (grande) × mês anterior ${mFmt(prev)} (pequena)` )}</div>
+      <div class="mt-4">${card("Conformidade ponto a ponto", grid || EMPTY, `Média das notas (escala 1 a 5): ${mFmt(cur)} (valor principal) × mês anterior ${mFmt(prev)} (valor secundário)` )}</div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        ${card("Pontos mais críticos", crit, "5 menores médias")}
+        ${card("Pontos mais críticos", crit, "Conformidade em percentual • menores percentuais primeiro")}
         ${card(mode === "mistura" ? "Evolução por data (%)" : "Evolução mensal (%)", evo, "Conformes, melhorias e não conformidades em percentual por período")}
-        ${mode === "linhas" ? card("Ranking por linha", avgBars(r => r.Linha), "Piores primeiro") : ""}
-        ${mode === "linhas" ? card("Por área", avgBars(r => r["Área"])) : ""}
-        ${card("Por grupo", avgBars(r => r.Grupo))}
-        ${card("Por turno", avgBars(r => r.Turno))}
-        ${card("Por tipo de auditoria", avgBars(r => r["Tipo de Auditoria"]))}
+        ${mode === "linhas" ? card("Ranking por linha", percentBars(r => r.Linha), "Conformidade por linha • menores percentuais primeiro") : ""}
+        ${mode === "linhas" ? card("Por área", percentBars(r => r["Área"]), "Conformidade por área") : ""}
+        ${card("Por tipo de auditoria", percentBars(r => r["Tipo de Auditoria"]), "Conformidade por tipo de auditoria")}
       </div>`;
     }
   };
@@ -3870,14 +3891,14 @@
           <button id="rg-tab-linhas" onclick="RG.setTab('linhas')">Notas por Linha</button>
           <button id="rg-tab-mistura" onclick="RG.setTab('mistura')">Mistura</button>
         </div>
-        <button onclick="RG.openF()" class="relative p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm" aria-label="Filtros">
+        <button id="rg-filter-toggle" onclick="RG.toggleFilters()" class="relative p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm transition" aria-label="Mostrar filtros" aria-expanded="false">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
           <span id="rg-fbadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-blue-600 text-white text-[11px] font-extrabold flex items-center justify-center"></span>
         </button>
       </div>
+      <div id="rg-filter-panel" class="hidden mb-3"></div>
       <div id="rg-body"></div>
-    </section>
-    <div id="rg-sheet" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" onclick="if(event.target===this)RG.closeF()"></div>`);
+    </section>`);
 
   // ---------- Integração com a navegação existente ----------
   const origNav = App.navigate.bind(App);
