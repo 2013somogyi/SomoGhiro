@@ -37,7 +37,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: 'Inter', system-ui, sans-serif;
@@ -63,6 +63,7 @@
     .drawer-overlay { transition: opacity 0.25s ease; }
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
     .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+    .tabular-nums { font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body class="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
@@ -87,18 +88,18 @@
       <button onclick="App.navigate('auditoria'); App.closeDrawer()" data-nav="auditoria"
         class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-        Nova Auditoria
+        <span>Nova Auditoria</span>
       </button>
       <button onclick="App.navigate('revisao'); App.closeDrawer()" data-nav="revisao"
         class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        Revisão e Exportação
+        <span>Revisão e Exportação</span>
         <span id="nav-badge-anomalias" class="hidden ml-auto px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-slate-950">0</span>
       </button>
       <button onclick="App.navigate('configuracoes'); App.closeDrawer()" data-nav="configuracoes"
         class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        Checklists
+        <span>Checklists</span>
       </button>
     </nav>
 
@@ -460,7 +461,10 @@
   <!-- Toast -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0 safe-bottom"></div>
 
+
+  
   <script>
+
     const DEFAULT_CONFIG = {
       version: "2.1.0",
       macroareas: [
@@ -710,6 +714,7 @@
         const value = window.localStorage.getItem(key);
         return value === null ? fallback : value;
       } catch (error) {
+        console.warn("Armazenamento local indisponível:", error);
         return fallback;
       }
     };
@@ -719,6 +724,7 @@
         window.localStorage.setItem(key, value);
         return true;
       } catch (error) {
+        console.warn("Não foi possível salvar no armazenamento local:", error);
         return false;
       }
     };
@@ -751,7 +757,7 @@
       let totalQuestions = 0;
       Object.entries(config.checklists || {}).forEach(([key, checklist]) => {
         if (!checklist || !checklist.id || !checklist.titulo || !checklist.macroarea || !checklist.tipo || !Array.isArray(checklist.questoes)) {
-          errors.push(`Checklist '${key}': estrutura incompleta.`);
+          errors.push(`Checklist '${key}': estrutura incompleta (id, titulo, macroarea, tipo e questoes são obrigatórios).`);
           return;
         }
         if (!macroIds.has(checklist.macroarea)) errors.push(`Checklist '${key}': macroárea '${checklist.macroarea}' não existe.`);
@@ -799,6 +805,7 @@
         const result = validateImportedConfig(parsed);
         return result.valid ? result.config : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       } catch (error) {
+        console.warn("Configuração importada anteriormente não pôde ser carregada:", error);
         return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       }
     }
@@ -1023,7 +1030,7 @@
           const active = m.id === this.selectedMacro;
           return `<button type="button" onclick="AuditoriaModule.selectMacro('${m.id}')"
             class="py-3.5 px-4 rounded-xl border text-base font-bold transition flex items-center justify-center gap-2 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"}">
-            ${m.nome}
+            <span>${m.nome}</span>
           </button>`;
         }).join("");
 
@@ -1084,7 +1091,7 @@
           }
           return `<button type="button" onclick="AuditoriaModule.setAreaFilterTab('${t.id}')"
             class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${active ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
-            ${t.nome}
+            <span>${t.nome}</span>
             ${countInArea > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[11px] ${active ? "bg-white/20 text-white" : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"}">${countInArea}</span>` : ""}
           </button>`;
         }).join("");
@@ -1162,7 +1169,7 @@
                   return `
                     <button type="button" onclick="AuditoriaModule.toggleSingleLine('${linha}')"
                       class="py-2 px-2 rounded-lg border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 select-none ${checked ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
-                      ${linha}
+                      <span>${linha}</span>
                       ${checked ? `<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
                     </button>`;
                 }).join("")}
@@ -1317,7 +1324,7 @@
                 ${availableLines.map(l => `
                   <button type="button" onclick="AuditoriaModule.addLineToActiveAudit('${l}', '${area.nome}')"
                     class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition flex items-center gap-1">
-                    + ${l}
+                    <span>+ ${l}</span>
                   </button>`).join("")}
               </div>
             </div>`;
@@ -1506,7 +1513,7 @@
             const areaTag = audit.areasEnvolvidas?.length > 1 ? ` (${audit.lineAreaMap?.[l] || ""})` : "";
             return `<button type="button" onclick="AuditoriaModule.selectLineForLineMode('${l}')"
               class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-1.5 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
-              Linha ${l}${areaTag}
+              <span>Linha ${l}${areaTag}</span>
               <span class="px-1.5 py-0.5 rounded-full text-[11px] ${done ? "bg-emerald-500 text-white" : (active ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200")}">${done ? "✓" : `${questions.length - (stat?.linePending || 0)}/${questions.length}`}</span>
             </button>`;
           }).join("");
@@ -1629,11 +1636,15 @@
         const audit = AppState.audit;
         if (!audit) return;
         const resp = audit.responses?.[questionId]?.[linha];
-        if (!resp) return;
+        if (!resp) {
+          App.showToast("Não foi possível localizar a resposta desta linha.", "error");
+          return;
+        }
         resp.status = "rated";
         resp.nota = Number(nota);
         AnomaliasModule.syncOccurrences(audit);
         this.renderExecution();
+
         this.handleAutoAdvance();
       },
 
@@ -1641,7 +1652,10 @@
         const audit = AppState.audit;
         if (!audit) return;
         const resp = audit.responses?.[questionId]?.[linha];
-        if (!resp) return;
+        if (!resp) {
+          App.showToast("Não foi possível localizar a resposta desta linha.", "error");
+          return;
+        }
         if (resp.status === "na") {
           resp.status = "pending";
           resp.nota = null;
@@ -1652,7 +1666,10 @@
         }
         AnomaliasModule.syncOccurrences(audit);
         this.renderExecution();
-        if (resp.status === "na") this.handleAutoAdvance();
+
+        if (resp.status === "na") {
+          this.handleAutoAdvance();
+        }
       },
 
       handleAutoAdvance() {
@@ -1708,7 +1725,9 @@
 
       handleKeyboardShortcut(event) {
         const tag = event.target?.tagName?.toUpperCase();
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target?.isContentEditable) return;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target?.isContentEditable) {
+          return;
+        }
         if (event.ctrlKey || event.altKey || event.metaKey) return;
 
         const modalBackdrop = document.getElementById("modal-backdrop");
@@ -1725,10 +1744,14 @@
           if (!q) return;
 
           if (this.evaluationMode === "line") {
-            if (this.activeLineForLineMode) this.selectRating(q.id, this.activeLineForLineMode, nota);
+            if (this.activeLineForLineMode) {
+              this.selectRating(q.id, this.activeLineForLineMode, nota);
+            }
           } else {
             const targetLine = audit.linhas.find(l => audit.responses[q.id]?.[l]?.status === "pending") || audit.linhas[0];
-            if (targetLine) this.selectRating(q.id, targetLine, nota);
+            if (targetLine) {
+              this.selectRating(q.id, targetLine, nota);
+            }
           }
           return;
         }
@@ -2532,7 +2555,7 @@
                 <span class="font-black text-base">Nota ${nota}</span>
                 <label class="inline-flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
                   <input type="checkbox" ${r.gerarRegistro ? "checked" : ""} onchange="ConfiguracoesModule.updateRule(${nota}, 'gerarRegistro', this.checked)" class="rounded text-blue-600 w-4 h-4" />
-                  Gera Ocorrência
+                  <span>Gera Ocorrência</span>
                 </label>
               </div>
               <select onchange="ConfiguracoesModule.updateRule(${nota}, 'classificacao', this.value)"
@@ -2693,7 +2716,7 @@
 
       restoreDefaults() {
         AppState.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        try { window.localStorage.removeItem(CONFIG_STORAGE_KEY); } catch (error) {}
+        try { window.localStorage.removeItem(CONFIG_STORAGE_KEY); } catch (error) { console.warn("Não foi possível limpar a configuração salva:", error); }
         App.closeModal();
         this.render();
         AuditoriaModule.initSetupForm();
@@ -2713,6 +2736,7 @@
           const result = validateImportedConfig(parsed);
           if (!result.valid) {
             App.showToast("Arquivo inválido: " + result.errors.slice(0, 2).join(" "), "error");
+            if (result.errors.length > 2) console.error("Erros na configuração importada:", result.errors);
             return;
           }
           const checklistCount = Object.keys(result.config.checklists).length;
@@ -2720,24 +2744,31 @@
           App.openModal(`
             <div class="space-y-4">
               <h3 class="text-lg font-extrabold">Importar configuração ${result.config.version}?</h3>
-              <p class="text-sm text-slate-600 dark:text-slate-300">${checklistCount} checklist(s) e ${questionCount} questão(ões). Isso substituirá os critérios de novas auditorias.</p>
+              <p class="text-sm text-slate-600 dark:text-slate-300">Foram encontrados <strong>${checklistCount} checklist(s)</strong> e <strong>${questionCount} questão(ões)</strong>.</p>
+              <p class="text-sm text-slate-600 dark:text-slate-300">Isso substituirá os critérios e questões usados em <strong>novas auditorias</strong>. Auditorias já iniciadas mantêm seu checklist original.</p>
               <div class="flex justify-end gap-2 pt-2">
-                <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Cancelar</button>
-                <button id="btn-confirm-cfg-import" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold">Importar</button>
+                <button type="button" onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Cancelar</button>
+                <button type="button" id="btn-confirm-config-import" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold">Confirmar Importação</button>
               </div>
             </div>`);
-          document.getElementById("btn-confirm-cfg-import").onclick = () => {
+          document.getElementById("btn-confirm-config-import").onclick = () => {
+            App.closeModal();
             AppState.config = result.config;
             const saved = safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
-            ConfiguracoesModule.selectedChecklistId = Object.keys(result.config.checklists)[0];
+            ConfiguracoesModule.selectedChecklistId = Object.keys(result.config.checklists)[0] || null;
             ConfiguracoesModule.render();
             if (!AppState.audit) AuditoriaModule.initSetupForm();
             else AuditoriaModule.updateChecklistPreview();
-            App.closeModal();
-            App.showToast(saved ? `Configuração ${result.config.version} importada.` : "Configuração importada na sessão.", "success");
+            App.showToast(
+              saved
+                ? `Configuração ${result.config.version} importada e salva neste navegador.`
+                : "Configuração importada, mas o navegador não permitiu salvá-la permanentemente.",
+              saved ? "success" : "info"
+            );
           };
         } catch (error) {
-          App.showToast("Arquivo JSON inválido.", "error");
+          console.error("Falha ao importar critérios e questões:", error);
+          App.showToast("Não foi possível ler o arquivo. Verifique se ele contém JSON válido.", "error");
         } finally {
           if (input) input.value = "";
         }
@@ -2871,7 +2902,7 @@
     });
   </script>
 
-  <!-- ===== GERADOR DE RELATÓRIOS — REESTILIZADO UX/UI + PDF EXECUTIVO ===== -->
+  <!-- ==================== GERADOR DE RELATÓRIOS — REESTILIZADO COM FOCO EM UI/UX ==================== -->
   <script>
   (function () {
     const $ = id => document.getElementById(id);
@@ -2893,41 +2924,63 @@
     };
     const brDate = s => s ? s.split("-").reverse().join("/") : "—";
     const txtCls = v => v == null ? "text-slate-400" : v >= 4.5 ? "text-emerald-600 dark:text-emerald-400" : v >= 3 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400";
-    const EMPTY = `<div class="py-10 text-center text-sm font-medium text-slate-400">Nenhum dado encontrado</div>`;
 
-    // Componentes enxutos sem spans desnecessários
-    const kpi = (label, val, cls = "", sub = "", accent = "border-slate-200 dark:border-slate-800") => `
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border ${accent} p-4 shadow-sm flex flex-col justify-between">
-        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${label}</p>
-        <p class="text-2xl sm:text-3xl font-black tracking-tight mt-1 ${cls}">${val}</p>
-        ${sub ? `<p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">${sub}</p>` : ""}
+    const EMPTY = `
+      <div class="flex flex-col items-center justify-center py-10 px-4 text-center rounded-xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
+        <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-2.5">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+        </div>
+        <p class="text-sm font-bold text-slate-700 dark:text-slate-300">Nenhum dado encontrado</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Tente remover alguns filtros ou importar outra planilha.</p>
       </div>`;
 
-    const card = (title, body, badge = "") => `
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm flex flex-col">
-        <div class="flex items-center justify-between gap-2 mb-3.5">
-          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">${title}</h3>
-          ${badge ? `<p class="text-xs font-bold text-slate-400">${badge}</p>` : ""}
+    // Componentes de UI refinados (KPI Cards, Analytic Cards, Horizontal Progress Bars)
+    const kpi = (l, v, c = "text-slate-900 dark:text-white", s = "", accent = "bg-blue-500", iconSvg = "") => `
+      <div class="group relative overflow-hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200">
+        <div class="absolute inset-x-0 top-0 h-1 ${accent} opacity-90"></div>
+        <div class="flex items-start justify-between gap-2">
+          <p class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">${l}</p>
+          ${iconSvg ? `<span class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">${iconSvg}</span>` : ""}
+        </div>
+        <p class="text-2xl sm:text-3xl font-black tracking-tight tabular-nums mt-2 ${c}">${v}</p>
+        ${s ? `<p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5 truncate">${s}</p>` : ""}
+      </div>`;
+
+    const card = (t, body, sub = "", badgeHtml = "") => `
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 sm:p-6 shadow-sm flex flex-col justify-between transition-colors">
+        <div class="flex flex-wrap items-start justify-between gap-2 pb-3.5 mb-4 border-b border-slate-100 dark:border-slate-800/80">
+          <div>
+            <h3 class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">${t}</h3>
+            ${sub ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${sub}</p>` : ""}
+          </div>
+          ${badgeHtml}
         </div>
         <div class="flex-1">${body}</div>
       </div>`;
 
-    const bars = (items, o = {}) => {
-      if (!items.length) return EMPTY;
-      const mx = o.max ?? Math.max(...items.map(i => i.value), 1);
-      return `<div class="space-y-3 ${o.scroll ? "max-h-72 overflow-y-auto pr-1.5" : ""}">
-        ${items.map(i => `
-          <div>
-            <div class="flex items-baseline justify-between gap-3 text-xs sm:text-sm">
-              <p class="font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(i.label)}</p>
-              <p class="font-black text-slate-900 dark:text-white shrink-0 tabular-nums">${o.fmt ? o.fmt(i.value) : i.value}</p>
-            </div>
-            <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-1.5">
-              <div class="h-full rounded-full transition-all duration-300 ${i.cls || o.cls || "bg-blue-600"}" style="width:${Math.max(2, (i.value / mx) * 100)}%"></div>
-            </div>
-            ${i.sub ? `<p class="text-[11px] font-medium text-slate-400 mt-1 truncate">${esc(i.sub)}</p>` : ""}
-          </div>`).join("")}
-      </div>`;
+    const bars = (it, o = {}) => {
+      if (!it.length) return EMPTY;
+      const mx = o.max ?? Math.max(...it.map(i => i.value), 1);
+      return `
+        <div class="space-y-3 ${o.scroll ? "max-h-[340px] overflow-y-auto pr-1.5" : ""}">
+          ${it.map((i, idx) => {
+            const pctWidth = Math.max(2.5, Math.min(100, (i.value / mx) * 100));
+            return `
+              <div class="group p-2.5 -mx-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div class="flex items-center justify-between gap-3 text-xs sm:text-sm">
+                  <div class="flex items-center gap-2 min-w-0">
+                    ${o.ranked ? `<span class="w-5 h-5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-extrabold flex items-center justify-center shrink-0 tabular-nums">${idx + 1}</span>` : ""}
+                    <span class="font-bold text-slate-800 dark:text-slate-100 truncate" title="${esc(i.label)}">${esc(i.label)}</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-extrabold text-slate-900 dark:text-white tabular-nums shrink-0">${o.fmt ? o.fmt(i.value) : i.value}</span>
+                </div>
+                <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-2">
+                  <div class="h-full rounded-full transition-all duration-500 ${i.cls || o.cls || "bg-blue-600"}" style="width:${pctWidth}%"></div>
+                </div>
+                ${i.sub ? `<p class="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-1.5 truncate">${esc(i.sub)}</p>` : ""}
+              </div>`;
+          }).join("")}
+        </div>`;
     };
 
     const RG = {
@@ -2954,7 +3007,7 @@
 
         for (const f of files) {
           try {
-            if (!window.XLSX) throw new Error("Biblioteca Excel indisponível.");
+            if (!window.XLSX) throw new Error("Biblioteca de leitura do Excel não carregada.");
             const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
             const sheetNames = wb.SheetNames || [];
             const sheetName = key => sheetNames.find(name => norm(name) === norm(key));
@@ -2963,10 +3016,12 @@
             const matrixName = sheetName("NOTAS POR LINHA");
 
             if (!relName && !detailName && !matrixName) {
-              throw new Error('Nenhuma aba compatível encontrada.');
+              throw new Error('nenhuma aba reconhecida. São aceitas: "RELATÓRIOS", "RESPOSTAS DETALHADAS" e/ou "NOTAS POR LINHA".');
             }
 
-            const readRows = name => name ? XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: "", raw: true }) : [];
+            const readRows = name => name
+              ? XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: "", raw: true })
+              : [];
             const hasAnyValue = row => Object.values(row || {}).some(present);
 
             const rel = readRows(relName)
@@ -3003,16 +3058,23 @@
                 Classificação: String(pick(r, "Classificação", "Classificacao") || ""),
                 "Critério / Observação": String(pick(r, "Critério / Observação", "Criterio / Observacao") || "")
               };
-            }).filter(r => [r.Data, r.Turno, r["Tipo de Auditoria"], r.Auditor, r["Área"], r.Linha, r.Ponto, r.Pergunta, r.NotaOriginal, r.Classificação].some(present));
+            }).filter(r => [
+              r.Data, r.Turno, r["Tipo de Auditoria"], r.Auditor, r["Área"],
+              r.Linha, r.Ponto, r.Pergunta, r.NotaOriginal, r.Classificação
+            ].some(present));
 
             const matrixRaw = readRows(matrixName).filter(hasAnyValue);
             const matrixRecords = [];
             if (matrixRaw.length) {
               const matrixHeaders = Object.keys(matrixRaw[0]);
-              const pointHeaders = matrixHeaders.filter(h => /^[1-4]\.[1-5]$/.test(String(h).trim())).sort(cmp);
-              const hasMetadata = matrixHeaders.some(h => ["DATAS", "DATA", "ÁREA", "AREA", "TURNO", "LINHAS", "LINHA", "TIPO DE AUDITORIA"].includes(norm(h)));
+              const pointHeaders = matrixHeaders
+                .filter(h => /^[1-4]\.[1-5]$/.test(String(h).trim()))
+                .sort(cmp);
+              const hasMetadata = matrixHeaders.some(h =>
+                ["DATAS", "DATA", "ÁREA", "AREA", "TURNO", "LINHAS", "LINHA", "TIPO DE AUDITORIA"].includes(norm(h))
+              );
               if (!pointHeaders.length || !hasMetadata) {
-                throw new Error('Cabeçalhos inválidos na aba "NOTAS POR LINHA".');
+                throw new Error('a aba "NOTAS POR LINHA" não possui cabeçalhos reconhecíveis. Esperados: DATAS, ÁREA, TURNO, LINHAS, pontos (1.1 a 4.5) e TIPO DE AUDITORIA.');
               }
 
               matrixRaw.forEach(row => {
@@ -3048,7 +3110,9 @@
             }
 
             const res = detailed.length ? detailed : matrixRecords;
-            if (!rel.length && !res.length) throw new Error("Planilha sem registros válidos.");
+            if (!rel.length && !res.length) {
+              throw new Error("as abas reconhecidas foram encontradas, mas estão vazias ou não possuem registros válidos para análise.");
+            }
 
             this.rel.push(...rel);
             this.res.push(...res);
@@ -3056,865 +3120,643 @@
             nr += rel.length;
             ns += res.length;
           } catch (e) {
-            App.showToast(`${f.name}: ${e.message}`, "error");
+            console.error(`Erro ao importar ${f.name}:`, e);
+            App.showToast(`Erro ao ler ${f.name}: ${e.message}`, "error");
           }
         }
-
-        if (nr + ns > 0) App.showToast(`${nr} ocorrências • ${ns} avaliações carregadas`, "success");
-        this.buildOpts();
-        this.render();
+        if (nr + ns) { this.open.clear(); this.render(); App.showToast(`${nr} ocorrências e ${ns} avaliações carregadas.`, "success"); }
       },
 
-      clear() {
-        this.rel = []; this.res = []; this.files = []; this.F = {};
-        this.selectedLines.clear(); this.monthFilter = ""; this.filtersOpen = false; this.open.clear();
-        this.buildOpts(); this.render();
+      clear() { this.rel = []; this.res = []; this.files = []; this.F = {}; this.monthFilter = ""; this.filtersOpen = false; this.open.clear(); this.selectedLines.clear(); this.render(); },
+      setTab(t) { this.tab = t; this.render(); },
+      setFilter(c, v) { v ? this.F[c] = v : delete this.F[c]; this.render(); },
+      setMonthFilter(m) { this.monthFilter = this.monthFilter === m ? "" : m; this.render(); },
+      toggleFilters() { this.filtersOpen = !this.filtersOpen; this.render(); },
+      toggleLine(l) { const s = String(l); this.selectedLines.has(s) ? this.selectedLines.delete(s) : this.selectedLines.add(s); this.render(); },
+      clearSelectedLines() { this.selectedLines.clear(); this.render(); },
+      clearFilters() { this.F = {}; this.monthFilter = ""; this.selectedLines.clear(); this.render(); },
+      toggle(i) { this.open.has(i) ? this.open.delete(i) : this.open.add(i); this.render(); },
+      pass(r) { return (!this.monthFilter || String(r.Data || "").startsWith(this.monthFilter)) && (!this.selectedLines.size || this.selectedLines.has(String(r.Linha || ""))) && Object.entries(this.F).every(([k, v]) => !v || String(r[k] || "") === v); },
+
+      metrics() {
+        const rel = this.rel.filter(r => this.pass(r));
+        const res = this.res.filter(r => this.pass(r));
+        const rated = res.filter(r => r.Nota != null);
+        const hoje = CalculosModule.getTodayISO();
+        const late = r => r.Prazo && !r["Data de Conclusão"] && r.Prazo < hoje;
+        const avg = mean(rated.map(r => r.Nota));
+        const conf = rated.filter(r => r.Nota >= 4).length;
+
+        const lines = [...group(rated, r => `${r.Área}|${r.Linha}`).entries()].map(([k, a]) => {
+          const [area, linha] = k.split("|"); const m = mean(a.map(x => x.Nota));
+          const c = rel.filter(x => x.Área === area && x.Linha === linha).length;
+          return { label: `Linha ${linha} · ${area}`, value: m, sub: `${a.length} aval. · ${c} ocorr.`, cls: m >= 4.5 ? "bg-emerald-500" : m >= 3 ? "bg-amber-500" : "bg-rose-500" };
+        }).sort((a, b) => a.value - b.value);
+
+        const pts = [...group(rated, r => r.Ponto).entries()].map(([p, a]) => {
+          const m = mean(a.map(x => x.Nota));
+          return { label: `Ponto ${p} — ${a[0].Pergunta}`, value: m, sub: `Média ${f2(m)} · ${a.length} aval.`, cls: m >= 4.5 ? "bg-emerald-500" : m >= 3 ? "bg-amber-500" : "bg-rose-500" };
+        }).sort((a, b) => a.value - b.value);
+
+        const rec = [...group(rel, r => `${r.Ponto}|${r.Descrição}`).entries()].map(([k, a]) => {
+          const [p, d] = k.split("|"); const ls = [...new Set(a.map(x => x.Linha))].sort(cmp);
+          return { label: `Ponto ${p} — ${d}`, value: a.length, sub: `${ls.length} linha(s): ${ls.join(", ")}` };
+        }).sort((a, b) => b.value - a.value);
+
+        const months = [...group([...rel, ...res].filter(r => r.Data), r => r.Data.slice(0, 7)).keys()].sort();
+        const series = months.map(m => {
+          const mr = rated.filter(r => r.Data.startsWith(m));
+          return { m, avg: mean(mr.map(x => x.Nota)), cnt: rel.filter(r => r.Data.startsWith(m)).length };
+        });
+
+        const byType = [...group(rel, r => r["Tipo de Auditoria"] || "Sem tipo").entries()].map(([t, a]) => {
+          const cls = t === "Segurança" ? "bg-rose-500" : t === "Qualidade" ? "bg-blue-600" : "bg-amber-500";
+          return { label: t, value: a.length, sub: `${a.filter(x => x["Data de Conclusão"]).length} concluídas · ${a.filter(late).length} atrasadas`, cls };
+        }).sort((a, b) => b.value - a.value);
+
+        const resp = [...group(rel, r => r.Responsável || "Não atribuído").entries()].map(([k, a]) => {
+          const ab = a.filter(x => !x["Data de Conclusão"]).length;
+          return { label: k, value: a.length, sub: `${ab} em aberto · ${a.filter(late).length} atrasadas`, cls: ab ? "bg-blue-600" : "bg-emerald-500" };
+        }).sort((a, b) => b.value - a.value);
+
+        const dates = [...rel, ...res].map(r => r.Data).filter(Boolean).sort();
+        const lead = rel.map(r => days(r.Data, r["Data de Conclusão"])).filter(d => d != null && d >= 0);
+        return {
+          rel, res, rated, avg, pctConf: rated.length ? Math.round(conf / rated.length * 100) : null,
+          abertas: rel.filter(r => !r["Data de Conclusão"]).length,
+          atrasadas: rel.filter(late).length,
+          anom: rel.filter(r => r["Tipo de problema"] === "Anomalia").length,
+          melh: rel.filter(r => r["Tipo de problema"] === "Melhoria").length,
+          lead: mean(lead), lines, pts, rec, series, byType, resp,
+          period: dates.length ? `${brDate(dates[0])} a ${brDate(dates[dates.length - 1])}` : "Sem datas"
+        };
       },
 
-      buildOpts() {
-        const all = [...this.rel, ...this.res];
-        this.opts = this.COLS.map(c => [c, [...new Set(all.filter(r => c in r).map(r => String(r[c])).filter(v => v !== ""))].sort(cmp)]).filter(o => o[1].length);
-      },
-
-      monthLabel(key) {
-        if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return String(key || "");
-        const [year, month] = key.split("-").map(Number);
-        const label = new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).replace(".", "");
-        return label.charAt(0).toUpperCase() + label.slice(1);
-      },
-
-      monthOptions() {
-        const keys = [...new Set([...this.rel, ...this.res]
-          .map(r => String(r.Data || "").slice(0, 7))
-          .filter(key => /^\d{4}-(0[1-9]|1[0-2])$/.test(key)))].sort(cmp);
-        return keys.map(key => ({ key, label: this.monthLabel(key) }));
-      },
-
-      pass(r, noDate) {
-        for (const c in this.F) {
-          if (this.F[c]?.size && c in r && !this.F[c].has(String(r[c]))) return false;
-        }
-        if (!noDate && this.monthFilter && String(r.Data || "").slice(0, 7) !== this.monthFilter) return false;
-        return true;
-      },
-
-      notasRows(mode, noDate) {
-        return this.res.filter(r => ((r["Área"] === "Mistura") === (mode === "mistura")) && this.pass(r, noDate));
-      },
-
-      activeFilters() {
-        return Object.values(this.F).filter(s => s?.size).length + (this.monthFilter ? 1 : 0);
-      },
-
-      toggleFilters() {
-        this.filtersOpen = !this.filtersOpen;
-        this.renderFilterPanel();
-      },
-
-      tog(ci, vi) {
-        const [c, vals] = this.opts[ci];
-        const s = this.F[c] || (this.F[c] = new Set());
-        const v = vals[vi];
-        s.has(v) ? s.delete(v) : s.add(v);
-        if (!s.size) delete this.F[c];
-        this.render();
-      },
-
-      setMonth(value) {
-        this.monthFilter = String(value || "");
-        this.render();
-      },
-
-      op(ci, opened) { opened ? this.open.add(ci) : this.open.delete(ci); },
-
-      clearF() {
-        this.F = {};
-        this.monthFilter = "";
-        this.open.clear();
-        this.render();
-      },
-
-      filterPanel() {
-        const months = this.monthOptions();
+      svgTrend(s) {
+        if (!s.length) return EMPTY;
+        const W = 540, H = 195, px = 38, py = 24, iw = W - px * 2, ih = H - py * 2;
+        const maxC = Math.max(...s.map(x => x.cnt), 1), bw = Math.min(28, (iw / s.length) * .48);
+        const xs = i => s.length === 1 ? W / 2 : px + (i / (s.length - 1)) * iw;
+        const yA = v => py + ih - ((v - 1) / 4) * ih;
+        const pts = s.map((d, i) => d.avg != null ? `${xs(i)},${yA(d.avg)}` : null).filter(Boolean).join(" ");
         return `
-          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="flex flex-wrap items-center gap-2.5">
-                <select id="rg-month-select" onchange="RG.setMonth(this.value)" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="">Todos os meses</option>
-                  ${months.map(m => `<option value="${m.key}" ${this.monthFilter === m.key ? "selected" : ""}>${esc(m.label)}</option>`).join("")}
-                </select>
-                ${this.activeFilters() > 0 ? `<button type="button" onclick="RG.clearF()" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-100 transition">Limpar (${this.activeFilters()})</button>` : ""}
+          <div class="space-y-3">
+            <svg viewBox="0 0 ${W} ${H}" class="w-full h-48 overflow-visible">
+              <defs>
+                <linearGradient id="rgBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.32" />
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.06" />
+                </linearGradient>
+              </defs>
+              ${[1, 2, 3, 4, 5].map(v => `
+                <line x1="${px}" y1="${yA(v)}" x2="${W - px}" y2="${yA(v)}" stroke="currentColor" class="text-slate-200 dark:text-slate-800" stroke-dasharray="3 3" />
+                <text x="${px - 8}" y="${yA(v) + 3.5}" text-anchor="end" font-size="10" font-weight="600" fill="currentColor" class="text-slate-400">${v}</text>
+              `).join("")}
+              ${s.map((d, i) => {
+                const bh = (d.cnt / maxC) * (ih * .75);
+                return `<rect x="${xs(i) - bw / 2}" y="${py + ih - bh}" width="${bw}" height="${bh}" rx="5" fill="url(#rgBarGrad)" stroke="#3b82f6" stroke-opacity="0.25" />`;
+              }).join("")}
+              ${pts ? `<polyline fill="none" stroke="#2563eb" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" points="${pts}" />` : ""}
+              ${s.map((d, i) => `
+                ${d.avg != null ? `
+                  <circle cx="${xs(i)}" cy="${yA(d.avg)}" r="5" fill="#ffffff" stroke="#2563eb" stroke-width="2.8" />
+                  <text x="${xs(i)}" y="${yA(d.avg) - 10}" text-anchor="middle" font-size="10.5" font-weight="800" fill="currentColor" class="text-slate-800 dark:text-slate-100">${f2(d.avg, 1)}</text>
+                ` : ""}
+                <text x="${xs(i)}" y="${H - 4}" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor" class="text-slate-500 dark:text-slate-400">${d.m.slice(5)}/${d.m.slice(2, 4)}</text>
+              `).join("")}
+            </svg>
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-slate-500 dark:text-slate-400">
+              <div class="flex items-center gap-4">
+                <span class="inline-flex items-center gap-1.5">
+                  <span class="w-3.5 h-1 rounded-full bg-blue-600"></span>
+                  Média de Avaliação (Escala 1–5)
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                  <span class="w-3 h-3 rounded bg-blue-500/25 border border-blue-500/40"></span>
+                  Volume de Ocorrências
+                </span>
               </div>
-              <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtros Avançados</p>
+              <span class="text-[11px] text-slate-400">Evolução cronológica</span>
             </div>
-            ${this.opts.length ? `
-              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                ${this.opts.map(([c, vals], ci) => `
-                  <details ${this.open.has(ci) ? "open" : ""} ontoggle="RG.op(${ci},this.open)" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 px-3 py-2">
-                    <summary class="cursor-pointer text-xs font-extrabold text-slate-700 dark:text-slate-200 select-none flex items-center justify-between">
-                      ${esc(c)}
-                      ${this.F[c]?.size ? `<b class="px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[10px]">${this.F[c].size}</b>` : ""}
-                    </summary>
-                    <div class="mt-2.5 max-h-40 overflow-y-auto space-y-1.5 pr-1">
-                      ${vals.map((v, vi) => `
-                        <label class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white">
-                          <input type="checkbox" ${this.F[c]?.has(v) ? "checked" : ""} onchange="RG.tog(${ci},${vi})" class="rounded text-blue-600 w-3.5 h-3.5" />
-                          <b class="font-medium truncate">${esc(v)}</b>
-                        </label>`).join("")}
-                    </div>
-                  </details>`).join("")}
-              </div>` : ""}
           </div>`;
       },
 
-      renderFilterPanel() {
-        const panel = $("rg-filter-panel");
-        const count = this.activeFilters();
-        if ($("rg-filter-toggle")) {
-          $("rg-filter-toggle").className = `px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-2 ${this.filtersOpen || count > 0 ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"}`;
-          $("rg-filter-toggle").innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg> Filtros${count > 0 ? ` (${count})` : ""}`;
-        }
-        if (!panel) return;
-        panel.classList.toggle("hidden", !this.filtersOpen);
-        panel.innerHTML = this.filtersOpen ? this.filterPanel() : "";
+      svgNotes(rated) {
+        if (!rated.length) return EMPTY;
+        const c = [1, 2, 3, 4, 5].map(n => ({ n, v: rated.filter(r => r.Nota === n).length }));
+        const mx = Math.max(...c.map(x => x.v), 1);
+        const col = {
+          1: { bar: "#e11d48", badge: "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300", label: "Crítico" },
+          2: { bar: "#f97316", badge: "bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300", label: "NC" },
+          3: { bar: "#f59e0b", badge: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300", label: "Melhoria" },
+          4: { bar: "#0d9488", badge: "bg-teal-100 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300", label: "Conforme" },
+          5: { bar: "#059669", badge: "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300", label: "Excelente" }
+        };
+        return `
+          <div class="space-y-4">
+            <svg viewBox="0 0 360 155" class="w-full h-40">
+              ${c.map((d, i) => {
+                const x = 26 + i * 66, h = (d.v / mx) * 98, y = 122 - h, pct = Math.round(d.v / rated.length * 100);
+                return `
+                  <rect x="${x}" y="24" width="44" height="98" rx="8" fill="currentColor" class="text-slate-100 dark:text-slate-800/70" />
+                  <rect x="${x}" y="${y}" width="44" height="${h}" rx="8" fill="${col[d.n].bar}" />
+                  <text x="${x + 22}" y="${Math.max(15, y - 6)}" text-anchor="middle" font-size="10.5" font-weight="800" fill="currentColor" class="text-slate-800 dark:text-slate-100">${d.v} (${pct}%)</text>
+                  <text x="${x + 22}" y="143" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" class="text-slate-700 dark:text-slate-300">Nota ${d.n}</text>`;
+              }).join("")}
+            </svg>
+            <div class="grid grid-cols-5 gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 text-center">
+              ${c.map(d => `
+                <div class="px-1 py-1 rounded-lg ${col[d.n].badge} text-[10px] font-extrabold uppercase tracking-tight">
+                  ${col[d.n].label}
+                </div>`).join("")}
+            </div>
+          </div>`;
       },
 
       render() {
-        const has = this.rel.length + this.res.length > 0;
-        $("rg-empty").classList.toggle("hidden", has);
-        $("rg-body").classList.toggle("hidden", !has);
-        if (!has) return;
+        const host = $("view-relatorios");
+        if (!host) return;
 
-        $("rg-files").innerHTML = this.files.map(f => `
-          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-200">
-            <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            ${esc(f)}
-          </div>`).join("");
-
-        this.renderFilterPanel();
-
-        const tabs = [
-          ["rel", "Plano de Ação", this.rel.filter(r => this.pass(r)).length],
-          ["fab", "Fábrica", this.notasRows("fabrica").length],
-          ["mis", "Mistura", this.notasRows("mistura").length]
-        ];
-        $("rg-tabs").innerHTML = tabs.map(([id, lbl, count]) => `
-          <button onclick="RG.tab='${id}';RG.render()"
-            class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-2 ${this.tab === id ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"}">
-            ${lbl}
-            <b class="px-1.5 py-0.5 rounded-md text-[11px] font-black ${this.tab === id ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"}">${count}</b>
-          </button>`).join("");
-
-        const v = $("rg-view");
-        if (this.tab === "rel") v.innerHTML = this.viewRel();
-        else if (this.tab === "fab") v.innerHTML = this.viewNotas("fabrica");
-        else v.innerHTML = this.viewNotas("mistura");
-      },
-
-      viewRel() {
-        const rows = this.rel.filter(r => this.pass(r));
-        const all = this.rel.filter(r => this.pass(r, true));
-        if (!rows.length) return EMPTY;
-
-        const ok = rows.filter(r => r.Status === "Concluído").length;
-        const atr = rows.filter(r => r.Status === "Atrasado").length;
-        const anom = rows.filter(r => r["Tipo de problema"] === "Anomalia").length;
-        const lt = mean(rows.map(r => days(r.Data, r["Data de Conclusão"])).filter(x => x != null && x >= 0));
-        const cnt = c => [...group(rows, r => r[c] || "—")].map(([label, a]) => ({ label, value: a.length })).sort((a, b) => b.value - a.value);
-
-        const meses = [...group(all, r => (r.Data || "Sem data").slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0]))
-          .map(([m, a]) => ({ label: m === "Sem data" ? m : this.monthLabel(m), value: a.length, sub: `${a.filter(x => x.Status === "Concluído").length} concluídas` }));
-
-        const top = rows.filter(r => r.Status !== "Concluído").sort((a, b) => (a.Prazo || "9").localeCompare(b.Prazo || "9")).slice(0, 12);
-
-        const stBadge = s => s === "Concluído" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300" : s === "Atrasado" ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300";
-
-        return `
-          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            ${kpi("Total", rows.length, "text-slate-900 dark:text-white")}
-            ${kpi("Concluídas", `${Math.round((ok / rows.length) * 100)}%`, "text-emerald-600 dark:text-emerald-400", `${ok} de ${rows.length}`)}
-            ${kpi("Atrasadas", atr, atr ? "text-rose-600 dark:text-rose-400" : "text-slate-400")}
-            ${kpi("Anomalias", anom, "text-rose-600 dark:text-rose-400", `${rows.length - anom} melhorias`)}
-            ${kpi("Lead Time", lt == null ? "—" : `${f2(lt, 1)}d`, "text-blue-600 dark:text-blue-400")}
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${card("Status", bars(cnt("Status").map(i => ({ ...i, cls: i.label === "Concluído" ? "bg-emerald-500" : i.label === "Atrasado" ? "bg-rose-500" : "bg-amber-500" }))))}
-            ${card("Por Área", bars(cnt("Área")))}
-            ${card("Por Tipo", bars(cnt("Tipo de Auditoria"), { cls: "bg-indigo-600" }))}
-            ${card("Top Linhas", bars(cnt("Linha").slice(0, 8), { cls: "bg-rose-500" }))}
-            ${card("Responsáveis", bars(cnt("Responsável").slice(0, 8), { cls: "bg-teal-600" }))}
-            ${card("Evolução Mensal", bars(meses))}
-          </div>
-
-          ${card("Pendências Prioritárias", top.length ? `
-            <div class="overflow-x-auto -mx-2 px-2">
-              <table class="w-full text-left border-collapse text-xs sm:text-sm">
-                <thead>
-                  <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    <th class="py-2.5 pr-3">Status</th>
-                    <th class="py-2.5 pr-3">Prazo</th>
-                    <th class="py-2.5 pr-3">Linha</th>
-                    <th class="py-2.5 pr-3">Item</th>
-                    <th class="py-2.5 pr-3">Responsável</th>
-                    <th class="py-2.5">Descrição</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-                  ${top.map(r => `
-                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
-                      <td class="py-2.5 pr-3 whitespace-nowrap"><b class="px-2 py-0.5 rounded-md text-xs font-bold ${stBadge(r.Status)}">${esc(r.Status)}</b></td>
-                      <td class="py-2.5 pr-3 whitespace-nowrap font-bold tabular-nums">${brDate(r.Prazo)}</td>
-                      <td class="py-2.5 pr-3 whitespace-nowrap font-extrabold">${esc(r.Linha)}</td>
-                      <td class="py-2.5 pr-3 whitespace-nowrap font-semibold text-slate-500">${esc(r.Ponto)}</td>
-                      <td class="py-2.5 pr-3 whitespace-nowrap font-medium">${esc(r["Responsável"] || "—")}</td>
-                      <td class="py-2.5 text-slate-700 dark:text-slate-200 max-w-md truncate">${esc(r["Descrição"])}</td>
-                    </tr>`).join("")}
-                </tbody>
-              </table>
-            </div>` : EMPTY, `${top.length}`)}`;
-      },
-
-      toggleLine(line) {
-        this.selectedLines.has(line) ? this.selectedLines.delete(line) : this.selectedLines.add(line);
-        this.render();
-      },
-
-      selectAllLines(mode, select) {
-        if (!select) { this.selectedLines.clear(); this.render(); return; }
-        const rows = this.notasRows(mode);
-        rows.forEach(r => this.selectedLines.add(r.Linha));
-        this.render();
-      },
-
-      viewNotas(mode) {
-        const rows = this.notasRows(mode);
-        const all = this.notasRows(mode, true);
-        if (!rows.length) return EMPTY;
-
-        const valid = rows.filter(r => r.Nota != null);
-        const avg = mean(valid.map(r => r.Nota));
-        const ok = valid.filter(r => r.Nota >= 4).length;
-        const nc = valid.filter(r => r.Nota <= 2).length;
-        const na = rows.length - valid.length;
-        const scoreBar = i => ({ ...i, cls: i.value >= 4.5 ? "bg-emerald-500" : i.value >= 3 ? "bg-amber-500" : "bg-rose-500" });
-
-        const rank = [...group(valid, r => r.Linha)].map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)), sub: `${a.length} itens` })).sort((a, b) => a.value - b.value);
-        const pontos = [...group(valid, r => `${r.Ponto} — ${r.Pergunta}`)].map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)) })).sort((a, b) => a.value - b.value);
-        const grupos = [...group(valid, r => r.Grupo || "—")].map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)) })).sort((a, b) => a.value - b.value);
-        const dist = [5, 4, 3, 2, 1].map(n => ({ label: `Nota ${n}`, value: valid.filter(r => r.Nota === n).length, cls: n >= 4 ? "bg-emerald-500" : n === 3 ? "bg-amber-500" : "bg-rose-500" }));
-        const meses = [...group(all.filter(r => r.Nota != null), r => (r.Data || "Sem data").slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0]))
-          .map(([m, a]) => scoreBar({ label: m === "Sem data" ? m : this.monthLabel(m), value: mean(a.map(x => x.Nota)) }));
-
-        const lines = [...new Set(rows.map(r => r.Linha))].sort(cmp);
-        const selectedCount = lines.filter(l => this.selectedLines.has(l)).length;
-
-        const linesGridHtml = lines.length ? `
-          <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-            ${lines.map(l => {
-              const sel = this.selectedLines.has(l);
-              const lRows = valid.filter(r => r.Linha === l);
-              const lAvg = mean(lRows.map(x => x.Nota));
-              return `
-                <button type="button" onclick="RG.toggleLine('${esc(l)}')"
-                  class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${sel ? "bg-blue-600 border-blue-600 text-white shadow-sm" : "bg-slate-50/80 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
-                  <div class="flex items-center justify-between gap-1">
-                    <b class="text-xs sm:text-sm font-extrabold truncate">${esc(l)}</b>
-                    <div class="w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${sel ? "bg-white text-blue-600 border-white" : "border-slate-300 dark:border-slate-600"}">
-                      ${sel ? `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
-                    </div>
+        // Estado vazio inicial: Onboarding visual de alta clareza e drag-and-drop intuitivo
+        if (!this.rel.length && !this.res.length) {
+          host.innerHTML = `
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 sm:p-10 shadow-sm max-w-4xl mx-auto">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-3.5">
+                  <div class="w-12 h-12 rounded-2xl bg-blue-600/10 dark:bg-blue-500/15 border border-blue-600/20 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                   </div>
-                  <p class="text-base font-black mt-1.5 tabular-nums ${sel ? "text-white" : txtCls(lAvg)}">${f2(lAvg)}</p>
-                </button>`;
-            }).join("")}
-          </div>` : EMPTY;
-
-        return `
-          <!-- Barra de Exportação PDF Individual (1 Página por Linha) -->
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-3.5">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5">
-                <h3 class="text-sm sm:text-base font-extrabold">Relatório PDF Individual por Linha</h3>
-                <b class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">${selectedCount} selecionada${selectedCount === 1 ? "" : "s"}</b>
+                  <div>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                      <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                      Analytics & Inteligência
+                    </span>
+                    <h2 class="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-white mt-0.5">Gerador de Relatórios Consolidados</h2>
+                  </div>
+                </div>
               </div>
-              <div class="flex flex-wrap items-center gap-2">
-                <button type="button" onclick="RG.selectAllLines('${mode}', true)" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition">Todas</button>
-                <button type="button" onclick="RG.selectAllLines('${mode}', false)" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition">Limpar</button>
-                <button type="button" onclick="RG.exportSelectedLinesPDF('${mode}')"
-                  class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-1.5">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                  Gerar PDF (${selectedCount})
-                </button>
+
+              <label id="rg-dropzone" class="group relative mt-6 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50/70 dark:bg-slate-800/30 hover:bg-blue-50/40 dark:hover:bg-blue-950/20 px-6 py-12 text-center cursor-pointer transition-all duration-200">
+                <input id="rg-file-input" type="file" accept=".xlsx,.xls" multiple class="hidden" />
+                <div class="w-16 h-16 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 group-hover:scale-105 group-hover:border-blue-400 flex items-center justify-center text-blue-600 dark:text-blue-400 transition-transform duration-200 mb-4">
+                  <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                </div>
+                <p class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">Clique para selecionar ou arraste suas planilhas (.xlsx)</p>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 max-w-md">
+                  Combine múltiplos arquivos de auditoria para gerar dashboards comparativos, rankings de linhas e planos de ação consolidados.
+                </p>
+                <span class="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 group-hover:bg-blue-700 text-white text-sm font-bold shadow-sm transition">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4"/></svg>
+                  Selecionar Arquivos Excel
+                </span>
+              </label>
+
+              <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left">
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+                  <span class="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs flex items-center justify-center shrink-0">1</span>
+                  <div>
+                    <p class="text-xs font-extrabold text-slate-800 dark:text-slate-200">Múltiplos Arquivos</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Consolida turnos, semanas ou meses em uma única visão.</p>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+                  <span class="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-extrabold text-xs flex items-center justify-center shrink-0">2</span>
+                  <div>
+                    <p class="text-xs font-extrabold text-slate-800 dark:text-slate-200">Filtros Dinâmicos</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Segmente por linha, área, mês, responsável ou status.</p>
+                  </div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex items-start gap-2.5">
+                  <span class="w-6 h-6 rounded-lg bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 font-extrabold text-xs flex items-center justify-center shrink-0">3</span>
+                  <div>
+                    <p class="text-xs font-extrabold text-slate-800 dark:text-slate-200">Exportação Executiva</p>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Gere PDFs gerenciais prontos para apresentação.</p>
+                  </div>
+                </div>
+              </div>
+            </div>`;
+          this.bindUpload();
+          return;
+        }
+
+        const m = this.metrics();
+        const both = [...this.rel, ...this.res];
+        const u = col => [...new Set(both.map(r => String(r[col] || "")).filter(Boolean))].sort(cmp);
+        const allMonths = [...new Set(both.map(r => String(r.Data || "").slice(0, 7)).filter(Boolean))].sort();
+        const allLines = [...new Set(both.map(r => String(r.Linha || "")).filter(Boolean))].sort(cmp);
+        const activeFilterCount = Object.keys(this.F).length + (this.monthFilter ? 1 : 0) + this.selectedLines.size;
+        const PT = ["", "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        const fmtM = ym => { const [y, mm] = ym.split("-"); return `${PT[Number(mm)] || mm}/${y.slice(2)}`; };
+
+        const statusBadge = st => {
+          const s = norm(st);
+          if (s.includes("CONCLUID")) return "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800";
+          if (s.includes("ATRAS")) return "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800";
+          if (s.includes("VENCE")) return "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800";
+          if (s.includes("PRAZO")) return "bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800";
+          return "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700";
+        };
+
+        const viewTabs = [
+          ["rel", "Visão Geral", `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>`],
+          ["lines", "Por Linha", `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>`],
+          ["pts", "Pontos Críticos", `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`],
+          ["list", `Ocorrências`, `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>`, m.rel.length]
+        ];
+
+        const view = {
+          rel: `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              ${card(
+                "Evolução Mensal",
+                this.svgTrend(m.series),
+                "Nota média e volume de ocorrências ao longo do período",
+                `<span class="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-xs font-extrabold tabular-nums">${m.series.length} mês(es)</span>`
+              )}
+              ${card(
+                "Distribuição das Notas",
+                this.svgNotes(m.rated),
+                "Proporção de notas atribuídas nas questões avaliadas",
+                `<span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-extrabold tabular-nums">${m.rated.length} avaliadas</span>`
+              )}
+              ${card(
+                "Ocorrências por Tipo",
+                bars(m.byType, { fmt: v => `${v} reg.` }),
+                "Detalhamento por categoria de auditoria"
+              )}
+              ${card(
+                "Carga por Responsável",
+                bars(m.resp, { scroll: true, fmt: v => `${v} reg.` }),
+                "Distribuição das ações e pendências atribuídas"
+              )}
+            </div>`,
+
+          lines: `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              ${card(
+                "Ranking de Médias por Linha",
+                bars(m.lines, { max: 5, fmt: v => f2(v), scroll: true, ranked: true }),
+                "Ordenado da menor para a maior média (prioridade de atenção)",
+                `<span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-extrabold tabular-nums">${m.lines.length} linhas</span>`
+              )}
+              ${card(
+                "Volume de Ocorrências por Linha",
+                bars(
+                  [...m.lines].map(l => ({ ...l, value: Number((l.sub.match(/(\d+) ocorr/) || [0, 0])[1]), cls: "bg-amber-500" }))
+                    .filter(x => x.value > 0)
+                    .sort((a, b) => b.value - a.value),
+                  { scroll: true, ranked: true, fmt: v => `${v} ocorr.` }
+                ),
+                "Linhas com maior concentração de anomalias e melhorias"
+              )}
+            </div>`,
+
+          pts: `
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              ${card(
+                "Pontos com Pior Desempenho",
+                bars(m.pts.slice(0, 12), { max: 5, fmt: v => f2(v), scroll: true, ranked: true }),
+                "Questões do checklist com menor nota média"
+              )}
+              ${card(
+                "Ocorrências Mais Recorrentes",
+                bars(m.rec.slice(0, 12), { cls: "bg-rose-600", scroll: true, ranked: true, fmt: v => `${v}x` }),
+                "Problemas que se repetem com maior frequência"
+              )}
+            </div>`,
+
+          list: card(
+            "Lista Detalhada de Ocorrências",
+            m.rel.length ? `
+              <div class="overflow-x-auto -mx-2 px-2">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b-2 border-slate-200 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      <th class="py-3 px-3">Data</th>
+                      <th class="py-3 px-3">Local</th>
+                      <th class="py-3 px-3">Ponto / Tipo</th>
+                      <th class="py-3 px-3">Descrição</th>
+                      <th class="py-3 px-3">Responsável</th>
+                      <th class="py-3 px-3">Prazo</th>
+                      <th class="py-3 px-3 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs sm:text-sm">
+                    ${m.rel.slice(0, 150).map(r => {
+                      const isAnom = r["Tipo de problema"] === "Anomalia";
+                      return `
+                        <tr class="hover:bg-slate-50/90 dark:hover:bg-slate-800/40 transition-colors">
+                          <td class="py-3 px-3 whitespace-nowrap font-semibold text-slate-600 dark:text-slate-300 tabular-nums">${brDate(r.Data)}</td>
+                          <td class="py-3 px-3 whitespace-nowrap">
+                            <span class="font-extrabold text-slate-900 dark:text-white">Linha ${esc(r.Linha)}</span>
+                            <span class="block text-[11px] font-medium text-slate-500 dark:text-slate-400">${esc(r.Área)}</span>
+                          </td>
+                          <td class="py-3 px-3 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                              <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-xs font-extrabold">${esc(r.Ponto)}</span>
+                              <span class="px-2 py-0.5 rounded-md text-[11px] font-extrabold ${isAnom ? "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300" : "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"}">${esc(r["Tipo de problema"] || "—")}</span>
+                            </span>
+                          </td>
+                          <td class="py-3 px-3 max-w-md text-slate-700 dark:text-slate-200 font-medium leading-snug">${esc(r.Descrição)}</td>
+                          <td class="py-3 px-3 whitespace-nowrap font-semibold text-slate-700 dark:text-slate-300">${esc(r.Responsável || "—")}</td>
+                          <td class="py-3 px-3 whitespace-nowrap font-semibold text-slate-600 dark:text-slate-400 tabular-nums">${brDate(r.Prazo)}</td>
+                          <td class="py-3 px-3 whitespace-nowrap text-right">
+                            <span class="inline-flex px-2.5 py-1 rounded-lg text-xs font-extrabold border ${statusBadge(r.Status)}">${esc(r.Status || "—")}</span>
+                          </td>
+                        </tr>`;
+                    }).join("")}
+                  </tbody>
+                </table>
+              </div>
+              ${m.rel.length > 150 ? `<p class="text-xs font-medium text-slate-400 mt-3 text-right">Exibindo os primeiros 150 de ${m.rel.length} registros.</p>` : ""}` : EMPTY,
+            "Acompanhamento individual de prazos, responsáveis e status",
+            `<span class="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 text-xs font-extrabold tabular-nums">${m.rel.length} registro(s)</span>`
+          )
+        }[this.tab];
+
+        this.opts = [];
+        const sel = (col, label, placeholder) => {
+          const vals = u(col); const idx = this.opts.push(vals) - 1;
+          const activeVal = this.F[col] || "";
+          return `
+            <div>
+              <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">${label}</label>
+              <select data-rg-col="${col}" data-rg-idx="${idx}"
+                class="w-full px-3 py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition outline-none focus:ring-2 focus:ring-blue-500 ${activeVal ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300" : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"}">
+                <option value="">${placeholder}</option>
+                ${vals.map((v, i) => `<option value="${i}" ${activeVal === v ? "selected" : ""}>${esc(v)}</option>`).join("")}
+              </select>
+            </div>`;
+        };
+
+        host.innerHTML = `
+          <div class="space-y-5 animate-fade-in">
+            <!-- 1. HERO HEADER EXECUTIVO -->
+            <div class="relative overflow-hidden bg-slate-900 dark:bg-slate-900 text-white rounded-3xl p-5 sm:p-7 shadow-lg border border-slate-800">
+              <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-blue-600/15 blur-3xl pointer-events-none"></div>
+              <div class="relative flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+                <div class="space-y-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                      Analytics Consolidado
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200">
+                      <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                      ${m.period}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-slate-200" title="${esc(this.files.join(", "))}">
+                      <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                      ${this.files.length} planilha(s)
+                    </span>
+                  </div>
+                  <h2 class="text-2xl sm:text-3xl font-black tracking-tight">Gerador de Relatórios</h2>
+                  <p class="text-xs sm:text-sm text-slate-300 max-w-2xl">
+                    Análise consolidada de indicadores, desempenho por linha e planos de ação a partir das planilhas importadas.
+                  </p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                  <label class="cursor-pointer px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-extrabold shadow-md transition flex items-center gap-2">
+                    <input id="rg-file-input" type="file" accept=".xlsx,.xls" multiple class="hidden" />
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M12 4v16m8-8H4"/></svg>
+                    Importar Planilhas
+                  </label>
+                  <button type="button" onclick="RG.pdf()" class="px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-md transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Exportar PDF
+                  </button>
+                  <button type="button" onclick="RG.clear()" class="px-3.5 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-slate-200 border border-white/15 text-xs sm:text-sm font-bold transition flex items-center gap-1.5" title="Limpar dados carregados">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Limpar
+                  </button>
+                </div>
               </div>
             </div>
-            ${linesGridHtml}
-          </div>
 
-          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
-            ${kpi("Média Geral", f2(avg), txtCls(avg))}
-            ${kpi("Conformidade", `${valid.length ? Math.round((ok / valid.length) * 100) : 0}%`, "text-emerald-600 dark:text-emerald-400", `${ok} de ${valid.length}`)}
-            ${kpi("Não Conformes", nc, nc ? "text-rose-600 dark:text-rose-400" : "text-slate-400")}
-            ${kpi("Avaliações", valid.length, "text-slate-900 dark:text-white", `${na} N/A`)}
-            ${kpi("Linhas", rank.length, "text-blue-600 dark:text-blue-400")}
-          </div>
+            <!-- 2. BARRA DE FILTROS INTERATIVA & SEGMENTAÇÃO -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                  <span class="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-200">Filtros de Análise</span>
+                  ${activeFilterCount ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-blue-600 text-white tabular-nums">${activeFilterCount} ativo(s)</span>` : ""}
+                </div>
+                <div class="flex items-center gap-2">
+                  ${activeFilterCount ? `
+                    <button type="button" onclick="RG.clearFilters()" class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold transition">
+                      Limpar Filtros
+                    </button>` : ""}
+                  <button type="button" onclick="RG.toggleFilters()"
+                    class="px-3.5 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 ${this.filtersOpen ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"}">
+                    <span>${this.filtersOpen ? "Ocultar Avançados" : "Filtros Avançados"}</span>
+                    <svg class="w-3.5 h-3.5 transition-transform ${this.filtersOpen ? "rotate-180" : ""}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                  </button>
+                </div>
+              </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            ${card("Ranking por Linha", bars(rank.map(scoreBar), { max: 5, fmt: v => f2(v), scroll: true }))}
-            ${card("Pilares", bars(grupos.map(scoreBar), { max: 5, fmt: v => f2(v) }))}
-            ${card("Distribuição de Notas", bars(dist))}
-            ${card("Pontos Críticos", bars(pontos.slice(0, 10).map(scoreBar), { max: 5, fmt: v => f2(v), scroll: true }))}
-            ${card("Por Tipo", bars([...group(valid, r => r["Tipo de Auditoria"] || "—")].map(([label, a]) => scoreBar({ label, value: mean(a.map(x => x.Nota)) })), { max: 5, fmt: v => f2(v) }))}
-            ${card("Evolução Mensal", bars(meses, { max: 5, fmt: v => f2(v) }))}
+              <!-- Pills de Período Mensal -->
+              ${allMonths.length ? `
+                <div class="flex items-center gap-2 overflow-x-auto pb-1">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0">Período:</span>
+                  <button type="button" onclick="RG.setMonthFilter('')"
+                    class="px-3 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 ${!this.monthFilter ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"}">
+                    Todos (${allMonths.length})
+                  </button>
+                  ${allMonths.map(ym => `
+                    <button type="button" onclick="RG.setMonthFilter('${ym}')"
+                      class="px-3 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 tabular-nums ${this.monthFilter === ym ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"}">
+                      ${fmtM(ym)}
+                    </button>`).join("")}
+                </div>` : ""}
+
+              <!-- Pills de Seleção Rápida de Linhas -->
+              ${allLines.length ? `
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                  <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 shrink-0 mr-1">Linhas:</span>
+                  <button type="button" onclick="RG.clearSelectedLines()"
+                    class="px-3 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 ${!this.selectedLines.size ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700"}">
+                    Todas
+                  </button>
+                  ${allLines.map(l => {
+                    const active = this.selectedLines.has(l);
+                    return `
+                      <button type="button" data-rg-line="${esc(l)}"
+                        class="px-2.5 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 tabular-nums ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
+                        ${esc(l)}
+                      </button>`;
+                  }).join("")}
+                </div>` : ""}
+
+              <!-- Filtros Principais -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                ${sel("Tipo de Auditoria", "Tipo de Auditoria", "Todos os tipos")}
+                ${sel("Área", "Área Operacional", "Todas as áreas")}
+                ${sel("Status", "Status do Plano", "Todos os status")}
+                ${sel("Responsável", "Responsável", "Todos os responsáveis")}
+              </div>
+
+              <!-- Filtros Avançados Expansíveis -->
+              ${this.filtersOpen ? `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fade-in">
+                  ${sel("Turno", "Turno", "Todos os turnos")}
+                  ${sel("Tipo de problema", "Classificação", "Anomalia / Melhoria")}
+                  ${sel("Ponto", "Ponto do Checklist", "Todos os pontos")}
+                  ${sel("Grupo", "Pilar / Grupo", "Todos os grupos")}
+                  ${sel("Auditor", "Auditor", "Todos os auditores")}
+                </div>` : ""}
+            </div>
+
+            <!-- 3. GRADE DE KPIs GERENCIAIS (6 CARDS) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+              ${kpi(
+                "Nota Média",
+                f2(m.avg),
+                txtCls(m.avg),
+                `${m.rated.length} questões avaliadas`,
+                m.avg >= 4.5 ? "bg-emerald-500" : m.avg >= 3 ? "bg-amber-500" : "bg-rose-500",
+                `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>`
+              )}
+              ${kpi(
+                "Conformidade",
+                m.pctConf != null ? `${m.pctConf}%` : "—",
+                "text-emerald-600 dark:text-emerald-400",
+                "Notas 4 e 5 registradas",
+                "bg-emerald-500",
+                `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+              )}
+              ${kpi(
+                "Ocorrências",
+                m.rel.length,
+                "text-slate-900 dark:text-white",
+                `${m.anom} anom. · ${m.melh} melh.`,
+                "bg-blue-600",
+                `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>`
+              )}
+              ${kpi(
+                "Em Aberto",
+                m.abertas,
+                m.abertas ? "text-amber-600 dark:text-amber-400" : "text-slate-400",
+                "Aguardando conclusão",
+                "bg-amber-500",
+                `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
+              )}
+              ${kpi(
+                "Atrasadas",
+                m.atrasadas,
+                m.atrasadas ? "text-rose-600 dark:text-rose-400" : "text-slate-400",
+                "Prazo vencido",
+                "bg-rose-600",
+                `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>`
+              )}
+              ${kpi(
+                "Tempo Médio",
+                m.lead != null ? `${Math.round(m.lead)}d` : "—",
+                "text-blue-700 dark:text-blue-400",
+                "Lead time de resolução",
+                "bg-indigo-500",
+                `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`
+              )}
+            </div>
+
+            <!-- 4. NAVEGAÇÃO SEGMENTADA DE SUB-ABAS -->
+            <div class="bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-wrap gap-1.5">
+              ${viewTabs.map(([id, lb, ic, count]) => {
+                const active = this.tab === id;
+                return `
+                  <button type="button" onclick="RG.setTab('${id}')"
+                    class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition-all flex items-center justify-center gap-2 ${active ? "bg-slate-900 dark:bg-blue-600 text-white shadow-sm" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"}">
+                    ${ic}
+                    <span>${lb}</span>
+                    ${count !== undefined ? `<span class="px-1.5 py-0.2 rounded-full text-[11px] tabular-nums ${active ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200"}">${count}</span>` : ""}
+                  </button>`;
+              }).join("")}
+            </div>
+
+            <!-- 5. CONTEÚDO ANALÍTICO DA ABA SELECIONADA -->
+            ${view}
           </div>`;
+
+        this.bindUpload();
+        host.querySelectorAll("select[data-rg-col]").forEach(s => { s.onchange = () => this.setFilter(s.dataset.rgCol, s.value === "" ? "" : this.opts[s.dataset.rgIdx][Number(s.value)]); });
+        host.querySelectorAll("[data-rg-line]").forEach(b => { b.onclick = () => this.toggleLine(b.dataset.rgLine); });
       },
 
-      // ==================== EXPORTAÇÃO PDF EXECUTIVO CONSOLIDADO (1 PÁGINA EXECUTIVA) ====================
-      exportPDF() {
-        try {
-          if (!window.jspdf?.jsPDF) { App.showToast("Biblioteca PDF indisponível.", "error"); return; }
-          const rel = this.rel.filter(r => this.pass(r));
-          const res = this.res.filter(r => this.pass(r));
-          if (!rel.length && !res.length) { App.showToast("Nenhum dado filtrado para exportar.", "error"); return; }
-
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-          const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 12, CW = W - M * 2;
-          const C = {
-            navy: [15, 23, 42], blue: [37, 99, 235], dark: [30, 41, 59], muted: [100, 116, 139],
-            bg: [248, 250, 252], border: [226, 232, 240],
-            green: [5, 150, 105], greenBg: [236, 253, 245],
-            amber: [217, 119, 6], amberBg: [255, 251, 235],
-            rose: [225, 29, 72], roseBg: [255, 241, 242]
+      bindUpload() {
+        const inp = $("rg-file-input"), dz = $("rg-dropzone");
+        if (inp) inp.onchange = e => { if (e.target.files.length) this.load(e.target.files); inp.value = ""; };
+        if (dz) {
+          dz.ondragover = e => {
+            e.preventDefault();
+            dz.classList.add("border-blue-500", "bg-blue-50/70", "dark:bg-blue-950/30");
           };
-
-          // Header Executivo Compacto
-          doc.setFillColor(...C.navy); doc.rect(0, 0, W, 24, "F");
-          doc.setFillColor(...C.blue); doc.rect(0, 24, W, 1.2, "F");
-          doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-          doc.text("RELATÓRIO EXECUTIVO DE AUDITORIAS", M, 10.5);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
-          const periodText = this.monthFilter ? `Período: ${this.monthLabel(this.monthFilter)}` : "Período: Consolidado Geral";
-          doc.text(`${periodText}  •  Gerado em ${new Date().toLocaleDateString("pt-BR")}`, M, 17.5);
-
-          let y = 30;
-          const valid = res.filter(r => r.Nota != null);
-          const avg = mean(valid.map(r => r.Nota));
-          const okPct = valid.length ? Math.round((valid.filter(r => r.Nota >= 4).length / valid.length) * 100) : 0;
-          const relOk = rel.filter(r => r.Status === "Concluído").length;
-          const relAtr = rel.filter(r => r.Status === "Atrasado").length;
-
-          // 4 KPI Cards
-          const gap = 3, cw = (CW - gap * 3) / 4, ch = 18;
-          const cards = [
-            { t: "MÉDIA GERAL", v: f2(avg), s: `${valid.length} avaliações`, c: avg >= 4.5 ? C.green : avg >= 3 ? C.amber : C.rose },
-            { t: "CONFORMIDADE", v: `${okPct}%`, s: "Notas 4 e 5", c: C.green },
-            { t: "PLANO DE AÇÃO", v: `${rel.length ? Math.round((relOk / rel.length) * 100) : 0}%`, s: `${relOk}/${rel.length} concluídas`, c: C.blue },
-            { t: "ATRASADAS", v: String(relAtr), s: "Ação imediata", c: relAtr > 0 ? C.rose : C.muted }
-          ];
-          cards.forEach((k, i) => {
-            const x = M + i * (cw + gap);
-            doc.setFillColor(...C.bg); doc.setDrawColor(...C.border);
-            doc.roundedRect(x, y, cw, ch, 2, 2, "FD");
-            doc.setFillColor(...k.c); doc.rect(x + 2, y, cw - 4, 1, "F");
-            doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.setTextColor(...C.muted);
-            doc.text(k.t, x + 3, y + 5.2);
-            doc.setFontSize(12); doc.setTextColor(...k.c);
-            doc.text(k.v, x + 3, y + 11.8);
-            doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...C.dark);
-            doc.text(k.s, x + 3, y + 15.8);
-          });
-          y += ch + 6;
-
-          // Tabela Ranking de Linhas
-          if (valid.length) {
-            doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...C.navy);
-            doc.text("DESEMPENHO POR LINHA", M, y); y += 2;
-            const rankBody = [...group(valid, r => `${r["Área"]}||${r.Linha}`)].map(([k, a]) => {
-              const [area, linha] = k.split("||");
-              const m = mean(a.map(x => x.Nota));
-              const nc = a.filter(x => x.Nota <= 2).length;
-              const mel = a.filter(x => x.Nota === 3).length;
-              return [area, linha, f2(m), m >= 4.5 ? "Conforme" : m >= 3 ? "Melhoria" : "Não Conforme", String(mel), String(nc)];
-            }).sort((a, b) => Number(a[2].replace(",", ".")) - Number(b[2].replace(",", ".")));
-
-            doc.autoTable({
-              startY: y, margin: { left: M, right: M },
-              head: [["Área", "Linha", "Média", "Classificação", "Melhorias", "NC"]],
-              body: rankBody, theme: "grid",
-              styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.8, textColor: C.dark, lineColor: C.border, lineWidth: 0.15 },
-              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
-              columnStyles: {
-                0: { cellWidth: 32 }, 1: { cellWidth: 28, fontStyle: "bold" },
-                2: { cellWidth: 22, halign: "center", fontStyle: "bold" },
-                3: { cellWidth: 38, halign: "center", fontStyle: "bold" },
-                4: { cellWidth: 33, halign: "center" }, 5: { cellWidth: 33, halign: "center", fontStyle: "bold" }
-              },
-              didParseCell(d) {
-                if (d.section === "body" && d.column.index === 3) {
-                  const v = d.cell.raw;
-                  if (v === "Conforme") { d.cell.styles.textColor = C.green; d.cell.styles.fillColor = C.greenBg; }
-                  else if (v === "Melhoria") { d.cell.styles.textColor = C.amber; d.cell.styles.fillColor = C.amberBg; }
-                  else { d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg; }
-                }
-              }
-            });
-            y = doc.lastAutoTable.finalY + 6;
-          }
-
-          // Pendências Prioritárias
-          const pend = rel.filter(r => r.Status !== "Concluído").sort((a, b) => (a.Prazo || "9").localeCompare(b.Prazo || "9"));
-          if (pend.length) {
-            if (y > H - 40) { doc.addPage(); y = 14; }
-            doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...C.navy);
-            doc.text(`PENDÊNCIAS DO PLANO DE AÇÃO (${pend.length})`, M, y); y += 2;
-            doc.autoTable({
-              startY: y, margin: { left: M, right: M },
-              head: [["Status", "Prazo", "Linha", "Ponto", "Responsável", "Descrição"]],
-              body: pend.map(r => [r.Status, brDate(r.Prazo), r.Linha, r.Ponto, r["Responsável"] || "—", r["Descrição"]]),
-              theme: "grid",
-              styles: { font: "helvetica", fontSize: 7.2, cellPadding: 1.8, textColor: C.dark, lineColor: C.border, lineWidth: 0.15 },
-              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold" },
-              columnStyles: { 0: { cellWidth: 22, fontStyle: "bold" }, 1: { cellWidth: 20 }, 2: { cellWidth: 18, fontStyle: "bold" }, 3: { cellWidth: 14 }, 4: { cellWidth: 32 }, 5: { cellWidth: 80 } },
-              didParseCell(d) {
-                if (d.section === "body" && d.column.index === 0 && d.cell.raw === "Atrasado") {
-                  d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg;
-                }
-              }
-            });
-          }
-
-          const pages = doc.internal.getNumberOfPages();
-          for (let p = 1; p <= pages; p++) {
-            doc.setPage(p);
-            doc.setFontSize(7); doc.setTextColor(...C.muted);
-            doc.text("SomoGhiro Audit • Relatório Consolidado", M, H - 6);
-            doc.text(`Página ${p} de ${pages}`, W - M, H - 6, { align: "right" });
-          }
-          doc.save(`Relatorio_Consolidado_${new Date().toISOString().slice(0, 10)}.pdf`);
-          App.showToast("PDF consolidado gerado com sucesso!", "success");
-        } catch (e) { App.showToast("Erro ao gerar PDF: " + e.message, "error"); }
-      },
-
-      // ==================== RELATÓRIOS INDIVIDUAIS POR LINHA — EXATAMENTE 1 PÁGINA POR LINHA ====================
-      exportSelectedLinesPDF(mode) {
-        try {
-          if (!window.jspdf?.jsPDF) { App.showToast("Biblioteca PDF indisponível.", "error"); return; }
-          const rows = this.notasRows(mode);
-          const allUnfiltered = this.notasRows(mode, true);
-          const availableLines = [...new Set(rows.map(r => r.Linha))].sort(cmp);
-          const targetLines = availableLines.filter(l => this.selectedLines.has(l));
-
-          if (!targetLines.length) {
-            App.showToast("Selecione pelo menos uma linha.", "error");
-            return;
-          }
-
-          const { jsPDF } = window.jspdf;
-          // Formato A4 Paisagem (297mm x 210mm) para garantir 1 página por linha sem quebra
-          const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-          const W = doc.internal.pageSize.getWidth();  // 297mm
-          const H = doc.internal.pageSize.getHeight(); // 210mm
-          const M = 10;
-          const CW = W - M * 2; // 277mm
-
-          const C = {
-            navy: [15, 23, 42],
-            blue: [37, 99, 235],
-            dark: [30, 41, 59],
-            muted: [100, 116, 139],
-            bg: [248, 250, 252],
-            border: [226, 232, 240],
-            green: [5, 150, 105],
-            greenBg: [236, 253, 245],
-            amber: [217, 119, 6],
-            amberBg: [255, 251, 235],
-            rose: [225, 29, 72],
-            roseBg: [255, 241, 242]
+          dz.ondragleave = () => dz.classList.remove("border-blue-500", "bg-blue-50/70", "dark:bg-blue-950/30");
+          dz.ondrop = e => {
+            e.preventDefault();
+            dz.classList.remove("border-blue-500", "bg-blue-50/70", "dark:bg-blue-950/30");
+            if (e.dataTransfer.files.length) this.load(e.dataTransfer.files);
           };
-
-          const drawMiniBarChart = (title, items, bx, by, bw, bh, maxVal = 5, isScore = true) => {
-            doc.setFillColor(255, 255, 255);
-            doc.setDrawColor(...C.border);
-            doc.roundedRect(bx, by, bw, bh, 2, 2, "FD");
-
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(7.5);
-            doc.setTextColor(...C.navy);
-            doc.text(title, bx + 3, by + 5);
-
-            if (!items.length) {
-              doc.setFont("helvetica", "normal");
-              doc.setFontSize(7);
-              doc.setTextColor(...C.muted);
-              doc.text("Sem dados", bx + 3, by + 12);
-              return;
-            }
-
-            const startY = by + 8.5;
-            const availH = bh - 10.5;
-            const stepY = Math.min(8.2, availH / items.length);
-            const barH = Math.min(2.6, stepY * 0.42);
-            const barMaxW = bw - 6;
-
-            items.forEach((it, idx) => {
-              const iy = startY + idx * stepY;
-              doc.setFont("helvetica", "bold");
-              doc.setFontSize(6.6);
-              doc.setTextColor(...C.dark);
-              const lbl = it.label.length > 26 ? it.label.slice(0, 25) + "…" : it.label;
-              doc.text(lbl, bx + 3, iy + 2.2);
-
-              const valStr = isScore ? f2(it.value) : String(it.value);
-              const valColor = isScore
-                ? (it.value >= 4.5 ? C.green : it.value >= 3 ? C.amber : C.rose)
-                : (it.color || C.blue);
-              doc.setTextColor(...valColor);
-              doc.text(valStr, bx + bw - 3, iy + 2.2, { align: "right" });
-
-              // Track
-              doc.setFillColor(...C.border);
-              doc.roundedRect(bx + 3, iy + 3.2, barMaxW, barH, 0.8, 0.8, "F");
-
-              // Fill
-              const ratio = Math.max(0.02, Math.min(1, it.value / (maxVal || 1)));
-              doc.setFillColor(...valColor);
-              doc.roundedRect(bx + 3, iy + 3.2, barMaxW * ratio, barH, 0.8, 0.8, "F");
-            });
-          };
-
-          targetLines.forEach((line, pageIdx) => {
-            if (pageIdx > 0) doc.addPage();
-
-            const lRows = rows.filter(r => r.Linha === line);
-            const lValid = lRows.filter(r => r.Nota != null);
-            const lAllValid = allUnfiltered.filter(r => r.Linha === line && r.Nota != null);
-            const lRel = this.rel.filter(r => r.Linha === line && this.pass(r));
-
-            const areaName = lRows[0]?.["Área"] || (mode === "mistura" ? "Mistura" : "Fábrica");
-            const avg = mean(lValid.map(r => r.Nota));
-            const ok = lValid.filter(r => r.Nota >= 4).length;
-            const nc = lValid.filter(r => r.Nota <= 2).length;
-            const mel = lValid.filter(r => r.Nota === 3).length;
-            const na = lRows.length - lValid.length;
-            const okPct = lValid.length ? Math.round((ok / lValid.length) * 100) : 0;
-            const relOpen = lRel.filter(r => r.Status !== "Concluído").length;
-
-            // 1. HEADER COMPACTO (y: 0 -> 19mm)
-            doc.setFillColor(...C.navy);
-            doc.rect(0, 0, W, 18, "F");
-            doc.setFillColor(...C.blue);
-            doc.rect(0, 18, W, 1, "F");
-
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(13);
-            doc.text(`FICHA EXECUTIVA — LINHA ${String(line).toUpperCase()}`, M, 8.5);
-
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
-            doc.setTextColor(148, 163, 184);
-            const periodTxt = this.monthFilter ? `Período: ${this.monthLabel(this.monthFilter)}` : "Período: Consolidado";
-            doc.text(`Área: ${areaName}  •  ${periodTxt}  •  Emissão: ${new Date().toLocaleDateString("pt-BR")}`, M, 14.2);
-
-            // Badge de Status Geral no canto direito do Header
-            const statusLabel = avg == null ? "SEM DADOS" : avg >= 4.5 ? "CONFORME" : avg >= 3 ? "EM MELHORIA" : "NÃO CONFORME";
-            const statusBg = avg == null ? C.muted : avg >= 4.5 ? C.green : avg >= 3 ? C.amber : C.rose;
-            doc.setFillColor(...statusBg);
-            doc.roundedRect(W - M - 38, 4.5, 38, 9, 2, 2, "F");
-            doc.setTextColor(255, 255, 255);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-            doc.text(statusLabel, W - M - 19, 10.2, { align: "center" });
-
-            // 2. FAIXA DE 5 KPIs COMPACTOS (y: 22 -> 38mm)
-            let y = 22;
-            const gap = 3;
-            const kW = (CW - gap * 4) / 5;
-            const kH = 16;
-
-            const kpiList = [
-              { t: "MÉDIA DA LINHA", v: f2(avg), s: `${lValid.length} itens avaliados (${na} N/A)`, c: avg >= 4.5 ? C.green : avg >= 3 ? C.amber : C.rose },
-              { t: "CONFORMIDADE", v: `${okPct}%`, s: `${ok} itens notas 4 e 5`, c: C.green },
-              { t: "MELHORIAS (NOTA 3)", v: String(mel), s: "Pontos de atenção", c: mel > 0 ? C.amber : C.muted },
-              { t: "NÃO CONFORMIDADES", v: String(nc), s: "Notas 1 e 2", c: nc > 0 ? C.rose : C.muted },
-              { t: "PENDÊNCIAS PLANO", v: String(relOpen), s: `De ${lRel.length} registradas`, c: relOpen > 0 ? C.rose : C.blue }
-            ];
-
-            kpiList.forEach((k, idx) => {
-              const x = M + idx * (kW + gap);
-              doc.setFillColor(...C.bg);
-              doc.setDrawColor(...C.border);
-              doc.roundedRect(x, y, kW, kH, 1.8, 1.8, "FD");
-              doc.setFillColor(...k.c);
-              doc.rect(x + 2, y, kW - 4, 1, "F");
-
-              doc.setFont("helvetica", "bold");
-              doc.setFontSize(6.2);
-              doc.setTextColor(...C.muted);
-              doc.text(k.t, x + 2.8, y + 4.8);
-
-              doc.setFontSize(11.5);
-              doc.setTextColor(...k.c);
-              doc.text(k.v, x + 2.8, y + 10.6);
-
-              doc.setFont("helvetica", "normal");
-              doc.setFontSize(6);
-              doc.setTextColor(...C.dark);
-              doc.text(k.s, x + 2.8, y + 14.3);
-            });
-
-            y += kH + 4;
-
-            // 3. BLOCO VISUAL DE 3 GRÁFICOS LADO A LADO (y: 42 -> 86mm)
-            const cW = (CW - gap * 2) / 3;
-            const cH = 43;
-
-            const pilares = [...group(lValid, r => r.Grupo || "Geral")]
-              .map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)) }))
-              .sort((a, b) => a.value - b.value)
-              .slice(0, 4);
-
-            const distNotas = [5, 4, 3, 2, 1].map(n => ({
-              label: `Nota ${n}`,
-              value: lValid.filter(r => r.Nota === n).length,
-              color: n >= 4 ? C.green : n === 3 ? C.amber : C.rose
-            }));
-            const maxDist = Math.max(...distNotas.map(d => d.value), 1);
-
-            const evolucao = [...group(lAllValid, r => (r.Data || "").slice(0, 7))]
-              .filter(([k]) => k)
-              .sort((a, b) => a[0].localeCompare(b[0]))
-              .slice(-4)
-              .map(([m, a]) => ({ label: this.monthLabel(m), value: mean(a.map(x => x.Nota)) }));
-
-            drawMiniBarChart("DESEMPENHO POR PILAR", pilares, M, y, cW, cH, 5, true);
-            drawMiniBarChart("DISTRIBUIÇÃO DE NOTAS", distNotas, M + cW + gap, y, cW, cH, maxDist, false);
-            drawMiniBarChart("EVOLUÇÃO MENSAL (MÉDIA)", evolucao, M + (cW + gap) * 2, y, cW, cH, 5, true);
-
-            y += cH + 4.5;
-
-            // 4. DUAS COLUNAS INFERIORES AJUSTADAS AO RESTANTE DA PÁGINA (y: 89.5 -> 198mm)
-            // Esquerda: Matriz de Pontos da Linha | Direita: Ocorrências e Plano de Ação da Linha
-            const leftW = CW * 0.44;
-            const rightW = CW - leftW - gap;
-            const maxBottomY = H - 10;
-            const availTableH = maxBottomY - y - 5;
-
-            // Coluna Esquerda: Resumo por Ponto Avaliado
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-            doc.setTextColor(...C.navy);
-            doc.text("MÉDIA POR PONTO AVALIADO", M, y + 3);
-
-            const pointRows = [...group(lRows, r => r.Ponto)]
-              .sort((a, b) => cmp(a[0], b[0]))
-              .map(([pt, a]) => {
-                const v = a.filter(x => x.Nota != null);
-                const m = mean(v.map(x => x.Nota));
-                const qText = a[0]?.Pergunta || `Ponto ${pt}`;
-                return [pt, qText, v.length ? f2(m) : "N/A"];
-              });
-
-            const ptPad = pointRows.length > 16 ? 1.05 : 1.4;
-            const ptFont = pointRows.length > 16 ? 6.2 : 6.8;
-
-            doc.autoTable({
-              startY: y + 4.5,
-              margin: { left: M, right: W - (M + leftW) },
-              head: [["Pt", "Questão / Critério", "Média"]],
-              body: pointRows.length ? pointRows : [["—", "Sem pontos avaliados", "—"]],
-              theme: "grid",
-              styles: {
-                font: "helvetica",
-                fontSize: ptFont,
-                cellPadding: ptPad,
-                textColor: C.dark,
-                lineColor: C.border,
-                lineWidth: 0.15,
-                overflow: "ellipsize"
-              },
-              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.8 },
-              columnStyles: {
-                0: { cellWidth: 11, fontStyle: "bold", halign: "center" },
-                1: { cellWidth: leftW - 25 },
-                2: { cellWidth: 14, halign: "center", fontStyle: "bold" }
-              },
-              didParseCell(d) {
-                if (d.section === "body" && d.column.index === 2 && d.cell.raw !== "N/A" && d.cell.raw !== "—") {
-                  const val = Number(String(d.cell.raw).replace(",", "."));
-                  if (val >= 4.5) { d.cell.styles.textColor = C.green; d.cell.styles.fillColor = C.greenBg; }
-                  else if (val >= 3) { d.cell.styles.textColor = C.amber; d.cell.styles.fillColor = C.amberBg; }
-                  else { d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg; }
-                }
-              }
-            });
-
-            // Coluna Direita: Ocorrências / Plano de Ação da Linha
-            const rightX = M + leftW + gap;
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(8);
-            doc.setTextColor(...C.navy);
-            doc.text(`OCORRÊNCIAS E PLANO DE AÇÃO (${lRel.length})`, rightX, y + 3);
-
-            // Limita linhas visíveis na direita para jamais estourar 1 página
-            const maxOccRows = Math.floor(availTableH / 6.2);
-            const sortedOccs = [...lRel].sort((a, b) => {
-              const sA = a.Status === "Concluído" ? 1 : 0;
-              const sB = b.Status === "Concluído" ? 1 : 0;
-              if (sA !== sB) return sA - sB;
-              return (a.Prazo || "9").localeCompare(b.Prazo || "9");
-            });
-
-            const visibleOccs = sortedOccs.slice(0, Math.max(1, maxOccRows));
-            const occBody = visibleOccs.map(r => [
-              r.Ponto || "—",
-              r["Tipo de problema"] || "—",
-              r["Descrição"] || "—",
-              r["Responsável"] || "—",
-              brDate(r.Prazo),
-              r.Status || "—"
-            ]);
-
-            if (sortedOccs.length > visibleOccs.length) {
-              occBody.push(["+", "Info", `... e mais ${sortedOccs.length - visibleOccs.length} ocorrência(s) no Excel.`, "—", "—", "—"]);
-            }
-
-            doc.autoTable({
-              startY: y + 4.5,
-              margin: { left: rightX, right: M },
-              head: [["Pt", "Tipo", "Descrição", "Responsável", "Prazo", "Status"]],
-              body: occBody.length ? occBody : [["—", "OK", "Nenhuma anomalia ou melhoria registrada nesta linha.", "—", "—", "Concluído"]],
-              theme: "grid",
-              styles: {
-                font: "helvetica",
-                fontSize: 6.5,
-                cellPadding: 1.3,
-                textColor: C.dark,
-                lineColor: C.border,
-                lineWidth: 0.15,
-                overflow: "ellipsize"
-              },
-              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.8 },
-              columnStyles: {
-                0: { cellWidth: 10, fontStyle: "bold", halign: "center" },
-                1: { cellWidth: 18, fontStyle: "bold", halign: "center" },
-                2: { cellWidth: rightW - 88 },
-                3: { cellWidth: 24 },
-                4: { cellWidth: 18, halign: "center" },
-                5: { cellWidth: 18, halign: "center", fontStyle: "bold" }
-              },
-              didParseCell(d) {
-                if (d.section === "body" && d.column.index === 1) {
-                  if (d.cell.raw === "Anomalia") d.cell.styles.textColor = C.rose;
-                  else if (d.cell.raw === "Melhoria") d.cell.styles.textColor = C.amber;
-                }
-                if (d.section === "body" && d.column.index === 5) {
-                  if (d.cell.raw === "Concluído") { d.cell.styles.textColor = C.green; d.cell.styles.fillColor = C.greenBg; }
-                  else if (d.cell.raw === "Atrasado") { d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg; }
-                  else { d.cell.styles.textColor = C.amber; }
-                }
-              }
-            });
-
-            // 5. RODAPÉ DA PÁGINA
-            doc.setDrawColor(...C.border);
-            doc.line(M, H - 8, W - M, H - 8);
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(6.8);
-            doc.setTextColor(...C.muted);
-            doc.text(`SomoGhiro Audit • Ficha Individual — Linha ${line} (${areaName})`, M, H - 4.2);
-            doc.text(`Página ${pageIdx + 1} de ${targetLines.length}`, W - M, H - 4.2, { align: "right" });
-          });
-
-          const fileName = targetLines.length === 1
-            ? `Ficha_Linha_${String(targetLines[0]).replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`
-            : `Fichas_Individuais_${targetLines.length}_Linhas.pdf`;
-          doc.save(fileName);
-          App.showToast(`PDF gerado (${targetLines.length} página${targetLines.length > 1 ? "s" : ""})!`, "success");
-        } catch (e) {
-          App.showToast("Erro ao gerar PDF individual: " + e.message, "error");
         }
+      },
+
+      pdf() {
+        if (!window.jspdf?.jsPDF) { App.showToast("Biblioteca PDF indisponível.", "error"); return; }
+        const m = this.metrics(), { jsPDF } = window.jspdf, doc = new jsPDF({ unit: "mm", format: "a4" }), W = 210, M = 14;
+        doc.setFillColor(15, 23, 42); doc.rect(0, 0, W, 30, "F");
+        doc.setFillColor(37, 99, 235); doc.rect(0, 30, W, 1.5, "F");
+        doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(15);
+        doc.text("RELATÓRIO CONSOLIDADO DE AUDITORIAS", M, 13);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(148, 163, 184);
+        const fTxt = Object.entries(this.F).map(([k, v]) => `${k}: ${v}`).join(" • ") || "Sem filtros aplicados";
+        doc.text(`Período: ${m.period}  •  ${this.files.length} planilha(s)  •  ${fTxt}`, M, 21);
+
+        let y = 39; const cw = (W - M * 2 - 9) / 4;
+        [["NOTA MÉDIA", f2(m.avg)], ["CONFORMIDADE", m.pctConf != null ? `${m.pctConf}%` : "—"], ["OCORRÊNCIAS", `${m.rel.length} (${m.abertas} ab.)`], ["ATRASADAS", String(m.atrasadas)]].forEach(([t, v], i) => {
+          const x = M + i * (cw + 3); doc.setFillColor(248, 250, 252); doc.setDrawColor(226, 232, 240); doc.roundedRect(x, y, cw, 19, 2, 2, "FD");
+          doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(100, 116, 139); doc.text(t, x + 3, y + 6);
+          doc.setFontSize(13); doc.setTextColor(15, 23, 42); doc.text(v, x + 3, y + 14.5);
+        });
+        y += 26;
+        if (m.lines.length) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(15, 23, 42); doc.text("RANKING DE MÉDIAS POR LINHA", M, y);
+          doc.autoTable({ startY: y + 2, margin: { left: M, right: M }, head: [["Linha / Área", "Média", "Detalhes"]], body: m.lines.map(l => [l.label, f2(l.value), l.sub]), styles: { fontSize: 8 }, headStyles: { fillColor: [15, 23, 42] } });
+          y = doc.lastAutoTable.finalY + 8;
+        }
+        if (m.rel.length) {
+          if (y > 235) { doc.addPage(); y = 16; }
+          doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(15, 23, 42); doc.text(`OCORRÊNCIAS (${m.rel.length})`, M, y);
+          doc.autoTable({ startY: y + 2, margin: { left: M, right: M }, head: [["Data", "Local", "Ponto", "Descrição", "Resp.", "Prazo", "Status"]], body: m.rel.map(r => [brDate(r.Data), `${r.Área} · ${r.Linha}`, r.Ponto, r.Descrição, r.Responsável || "—", brDate(r.Prazo), r.Status]), styles: { fontSize: 7.5 }, headStyles: { fillColor: [15, 23, 42] }, columnStyles: { 3: { cellWidth: 62 } } });
+        }
+        doc.save(`Relatorio_Consolidado_${CalculosModule.getTodayISO()}.pdf`);
+        App.showToast("PDF consolidado gerado com sucesso!", "success");
       }
     };
-
     window.RG = RG;
 
-    // 1. Injeta botão no menu lateral
-    document.querySelector("#drawer nav").insertAdjacentHTML("beforeend", `
-      <button onclick="App.navigate('gerador'); App.closeDrawer()" data-nav="gerador"
-        class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
-        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
-        Gerador de Relatórios
-      </button>`);
+    document.addEventListener("DOMContentLoaded", () => {
+      const nav = document.querySelector("#drawer nav");
+      const main = document.querySelector("main");
+      if (!nav || !main) return;
 
-    // 2. Injeta a View "Gerador de Relatórios" limpa, moderna e sem textos/spans desnecessários
-    document.querySelector("main").insertAdjacentHTML("beforeend", `
-      <section id="view-gerador" class="hidden space-y-5 animate-fade-in">
-        <input id="rg-input" type="file" accept=".xlsx,.xls" multiple class="hidden" onchange="RG.load(this.files);this.value=''" />
+      const btn = document.createElement("button");
+      btn.dataset.nav = "relatorios";
+      btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800";
+      btn.innerHTML = `<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg><span>Gerador de Relatórios</span>`;
+      btn.onclick = () => { App.navigate("relatorios"); App.closeDrawer(); };
+      nav.appendChild(btn);
 
-        <!-- Estado Vazio (Upload Rápido) -->
-        <div id="rg-empty" ondragover="event.preventDefault()" ondrop="event.preventDefault();RG.load(event.dataTransfer.files)"
-          class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 p-12 sm:p-16 text-center max-w-2xl mx-auto mt-6 transition">
-          <div class="w-16 h-16 mx-auto rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-          </div>
-          <h2 class="text-xl sm:text-2xl font-extrabold">Gerador de Relatórios</h2>
-          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Arraste suas planilhas Excel ou clique para selecionar</p>
-          <button onclick="$('rg-input').click()" class="mt-6 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-extrabold shadow-md hover:shadow-lg transition">
-            Selecionar Planilhas (.XLSX)
-          </button>
-        </div>
+      const sec = document.createElement("section");
+      sec.id = "view-relatorios";
+      sec.className = "hidden space-y-5 animate-fade-in";
+      main.appendChild(sec);
 
-        <!-- Dashboard de Análise -->
-        <div id="rg-body" class="hidden space-y-5">
-          <!-- Header Compacto -->
-          <div class="bg-slate-900 dark:bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            <div class="space-y-2 min-w-0">
-              <h2 class="text-lg sm:text-xl font-extrabold tracking-tight">Gerador de Relatórios</h2>
-              <div id="rg-files" class="flex flex-wrap gap-1.5"></div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 shrink-0">
-              <button id="rg-filter-toggle" type="button" onclick="RG.toggleFilters()"></button>
-              <button type="button" onclick="$('rg-input').click()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-bold transition">
-                + Planilhas
-              </button>
-              <button type="button" onclick="RG.exportPDF()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-1.5">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                PDF Consolidado
-              </button>
-              <button type="button" onclick="RG.clear()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 transition" title="Limpar dados">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-              </button>
-            </div>
-          </div>
-
-          <!-- Painel de Filtros Colapsável -->
-          <div id="rg-filter-panel" class="hidden"></div>
-
-          <!-- Abas de Navegação -->
-          <div id="rg-tabs" class="inline-flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm"></div>
-
-          <!-- Conteúdo da Aba -->
-          <div id="rg-view" class="space-y-5"></div>
-        </div>
-      </section>`);
-
-    // 3. Integra o roteamento com o App.navigate
-    const origNav = App.navigate.bind(App);
-    App.navigate = v => {
-      origNav(v);
-      const sec = $("view-gerador");
-      const btn = document.querySelector('[data-nav="gerador"]');
-      if (v === "gerador") {
-        sec.classList.remove("hidden");
-        btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition bg-blue-600 text-white";
-        RG.render();
-      } else {
-        sec.classList.add("hidden");
-        btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800";
-      }
-    };
+      const orig = App.navigate.bind(App);
+      App.navigate = v => {
+        orig(v);
+        document.getElementById("view-relatorios")?.classList.toggle("hidden", v !== "relatorios");
+        if (v === "relatorios") RG.render();
+      };
+      RG.render();
+    });
   })();
   </script>
 </body>
