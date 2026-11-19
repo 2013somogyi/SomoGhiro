@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="img/logo.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {A
+    tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
@@ -87,18 +87,18 @@
       <button onclick="App.navigate('auditoria'); App.closeDrawer()" data-nav="auditoria"
         class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-        <span>Nova Auditoria</span>
+        Nova Auditoria
       </button>
       <button onclick="App.navigate('revisao'); App.closeDrawer()" data-nav="revisao"
         class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <span>Revisão e Exportação</span>
+        Revisão e Exportação
         <span id="nav-badge-anomalias" class="hidden ml-auto px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-slate-950">0</span>
       </button>
       <button onclick="App.navigate('configuracoes'); App.closeDrawer()" data-nav="configuracoes"
         class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition">
         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        <span>Checklists</span>
+        Checklists
       </button>
     </nav>
 
@@ -460,10 +460,7 @@
   <!-- Toast -->
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0 safe-bottom"></div>
 
-
-  
   <script>
-
     const DEFAULT_CONFIG = {
       version: "2.1.0",
       macroareas: [
@@ -713,7 +710,6 @@
         const value = window.localStorage.getItem(key);
         return value === null ? fallback : value;
       } catch (error) {
-        console.warn("Armazenamento local indisponível:", error);
         return fallback;
       }
     };
@@ -723,7 +719,6 @@
         window.localStorage.setItem(key, value);
         return true;
       } catch (error) {
-        console.warn("Não foi possível salvar no armazenamento local:", error);
         return false;
       }
     };
@@ -756,7 +751,7 @@
       let totalQuestions = 0;
       Object.entries(config.checklists || {}).forEach(([key, checklist]) => {
         if (!checklist || !checklist.id || !checklist.titulo || !checklist.macroarea || !checklist.tipo || !Array.isArray(checklist.questoes)) {
-          errors.push(`Checklist '${key}': estrutura incompleta (id, titulo, macroarea, tipo e questoes são obrigatórios).`);
+          errors.push(`Checklist '${key}': estrutura incompleta.`);
           return;
         }
         if (!macroIds.has(checklist.macroarea)) errors.push(`Checklist '${key}': macroárea '${checklist.macroarea}' não existe.`);
@@ -777,7 +772,6 @@
       });
       if (errors.length) return { valid: false, errors };
 
-      // Normaliza valores opcionais sem alterar o texto fornecido pelo usuário.
       const normalized = JSON.parse(JSON.stringify(config));
       normalized.version = String(normalized.version || "1.0.0");
       normalized.regrasNotasPadrao = normalized.regrasNotasPadrao || JSON.parse(JSON.stringify(DEFAULT_CONFIG.regrasNotasPadrao));
@@ -805,7 +799,6 @@
         const result = validateImportedConfig(parsed);
         return result.valid ? result.config : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       } catch (error) {
-        console.warn("Configuração importada anteriormente não pôde ser carregada:", error);
         return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       }
     }
@@ -816,7 +809,6 @@
       theme: safeStorageGet("auditflow-theme", "light")
     };
 
-    // Utilitário para descobrir a Área Operacional de uma linha específica
     const LineDirectory = {
       getAreaForLine(linha, macroarea) {
         if (macroarea === "Mistura") {
@@ -914,7 +906,6 @@
         const validLineAvgs = lineStats.filter(l => l.average !== null).map(l => l.average);
         const generalAverage = validLineAvgs.length > 0 ? Number((validLineAvgs.reduce((a, b) => a + b, 0) / validLineAvgs.length).toFixed(2)) : null;
 
-        // Desempenho por Grupo (Materiais, Máquina, Ambiente, Operador)
         const groupMap = {};
         questions.forEach(q => {
           if (!groupMap[q.grupo]) groupMap[q.grupo] = { grupo: q.grupo, sum: 0, count: 0 };
@@ -1002,8 +993,8 @@
     const AuditoriaModule = {
       selectedMacro: "Fabrica",
       selectedTipo: "Seguranca",
-      selectedLinesSet: new Set(["11A"]), // Estado persistente das linhas selecionadas no setup
-      areaFilterTab: "ALL", // "ALL", "envase", "cha", "aroma"
+      selectedLinesSet: new Set(["11A"]),
+      areaFilterTab: "ALL",
       currentQuestionIndex: 0,
       evaluationMode: "question",
       activeLineForLineMode: null,
@@ -1032,7 +1023,7 @@
           const active = m.id === this.selectedMacro;
           return `<button type="button" onclick="AuditoriaModule.selectMacro('${m.id}')"
             class="py-3.5 px-4 rounded-xl border text-base font-bold transition flex items-center justify-center gap-2 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"}">
-            <span>${m.nome}</span>
+            ${m.nome}
           </button>`;
         }).join("");
 
@@ -1093,7 +1084,7 @@
           }
           return `<button type="button" onclick="AuditoriaModule.setAreaFilterTab('${t.id}')"
             class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${active ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
-            <span>${t.nome}</span>
+            ${t.nome}
             ${countInArea > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[11px] ${active ? "bg-white/20 text-white" : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"}">${countInArea}</span>` : ""}
           </button>`;
         }).join("");
@@ -1171,7 +1162,7 @@
                   return `
                     <button type="button" onclick="AuditoriaModule.toggleSingleLine('${linha}')"
                       class="py-2 px-2 rounded-lg border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 select-none ${checked ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
-                      <span>${linha}</span>
+                      ${linha}
                       ${checked ? `<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
                     </button>`;
                 }).join("")}
@@ -1209,7 +1200,6 @@
           lineAreaMap[linhaMistura] = "Mistura";
           areasEnvolvidasSet.add("Mistura");
         } else {
-          // Mantém ordenação lógica por área (Envase -> Chá -> Aroma)
           const fabricaAreas = AppState.config.areasOperacionais.filter(a => a.macroarea === "Fabrica");
           fabricaAreas.forEach(area => {
             area.linhas.forEach(l => {
@@ -1327,7 +1317,7 @@
                 ${availableLines.map(l => `
                   <button type="button" onclick="AuditoriaModule.addLineToActiveAudit('${l}', '${area.nome}')"
                     class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition flex items-center gap-1">
-                    <span>+ ${l}</span>
+                    + ${l}
                   </button>`).join("")}
               </div>
             </div>`;
@@ -1516,13 +1506,12 @@
             const areaTag = audit.areasEnvolvidas?.length > 1 ? ` (${audit.lineAreaMap?.[l] || ""})` : "";
             return `<button type="button" onclick="AuditoriaModule.selectLineForLineMode('${l}')"
               class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-1.5 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
-              <span>Linha ${l}${areaTag}</span>
+              Linha ${l}${areaTag}
               <span class="px-1.5 py-0.5 rounded-full text-[11px] ${done ? "bg-emerald-500 text-white" : (active ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200")}">${done ? "✓" : `${questions.length - (stat?.linePending || 0)}/${questions.length}`}</span>
             </button>`;
           }).join("");
         }
 
-        // Navegação rápida sem status "Parcial": apenas Respondida (100% concluída) ou Pendente
         const mapContainer = document.getElementById("question-map-pills");
         mapContainer.innerHTML = questions.map((q, idx) => {
           const targetLines = this.evaluationMode === "line" ? [this.activeLineForLineMode] : audit.linhas;
@@ -1598,7 +1587,6 @@
                     </button>
                   </div>
 
-                  <!-- Botões de nota compactos no mobile para caberem sem scroll -->
                   <div class="grid grid-cols-1 sm:grid-cols-5 gap-1.5 sm:gap-2">
                     ${[5, 4, 3, 2, 1].map(nota => {
                       const isSelected = selectedNota === nota;
@@ -1641,15 +1629,11 @@
         const audit = AppState.audit;
         if (!audit) return;
         const resp = audit.responses?.[questionId]?.[linha];
-        if (!resp) {
-          App.showToast("Não foi possível localizar a resposta desta linha.", "error");
-          return;
-        }
+        if (!resp) return;
         resp.status = "rated";
         resp.nota = Number(nota);
         AnomaliasModule.syncOccurrences(audit);
         this.renderExecution();
-
         this.handleAutoAdvance();
       },
 
@@ -1657,10 +1641,7 @@
         const audit = AppState.audit;
         if (!audit) return;
         const resp = audit.responses?.[questionId]?.[linha];
-        if (!resp) {
-          App.showToast("Não foi possível localizar a resposta desta linha.", "error");
-          return;
-        }
+        if (!resp) return;
         if (resp.status === "na") {
           resp.status = "pending";
           resp.nota = null;
@@ -1671,10 +1652,7 @@
         }
         AnomaliasModule.syncOccurrences(audit);
         this.renderExecution();
-
-        if (resp.status === "na") {
-          this.handleAutoAdvance();
-        }
+        if (resp.status === "na") this.handleAutoAdvance();
       },
 
       handleAutoAdvance() {
@@ -1729,11 +1707,8 @@
       },
 
       handleKeyboardShortcut(event) {
-        // Ignora atalhos se estiver digitando em campos de texto/formulário ou se houver modal/menu aberto
         const tag = event.target?.tagName?.toUpperCase();
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target?.isContentEditable) {
-          return;
-        }
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || event.target?.isContentEditable) return;
         if (event.ctrlKey || event.altKey || event.metaKey) return;
 
         const modalBackdrop = document.getElementById("modal-backdrop");
@@ -1741,7 +1716,6 @@
 
         if (App.currentView !== "auditoria" || !AppState.audit) return;
 
-        // Teclas numéricas de 1 a 5 (incluindo Numpad)
         if (["1", "2", "3", "4", "5"].includes(event.key)) {
           event.preventDefault();
           const nota = Number(event.key);
@@ -1751,20 +1725,14 @@
           if (!q) return;
 
           if (this.evaluationMode === "line") {
-            if (this.activeLineForLineMode) {
-              this.selectRating(q.id, this.activeLineForLineMode, nota);
-            }
+            if (this.activeLineForLineMode) this.selectRating(q.id, this.activeLineForLineMode, nota);
           } else {
-            // No modo Questão por Questão, aplica na próxima linha pendente desta questão (ou na primeira se todas já foram respondidas)
             const targetLine = audit.linhas.find(l => audit.responses[q.id]?.[l]?.status === "pending") || audit.linhas[0];
-            if (targetLine) {
-              this.selectRating(q.id, targetLine, nota);
-            }
+            if (targetLine) this.selectRating(q.id, targetLine, nota);
           }
           return;
         }
 
-        // Setas Esquerda e Direita para navegar entre questões
         if (event.key === "ArrowRight") {
           event.preventDefault();
           this.nextQuestion();
@@ -2059,7 +2027,6 @@
         return isNaN(d.getTime()) ? isoStr : d;
       },
 
-      // ==================== EXPORTAÇÃO EXCEL NO FORMATO PADRONIZADO SOLICITADO ====================
       generateExcel() {
         try {
           const audit = AppState.audit;
@@ -2083,7 +2050,6 @@
             }
           };
 
-          // ABA 1: RELATÓRIOS (13 colunas exatas solicitadas)
           const headersRelatorios = [
             "Data", "Turno", "Tipo de Auditoria", "Área", "Linha",
             "Responsável", "Prazo", "Status", "Data de Conclusão",
@@ -2139,7 +2105,6 @@
           applyDateFormat(wsRelatorios, rowsRelatorios.length, [0, 6, 8]);
           XLSX.utils.book_append_sheet(wb, wsRelatorios, "RELATÓRIOS");
 
-          // ABA 2: NOTAS POR LINHA ("linhas" na 1ª coluna, pontos 1.1 até 4.5 nas colunas seguintes)
           const pontosHeader = activeQuestions.map(q => q.codigo);
           const rowsNotasPorLinha = [["linhas", ...pontosHeader]];
 
@@ -2166,7 +2131,6 @@
           wsNotasPorLinha["!freeze"] = { xSplit: 1, ySplit: 1 };
           XLSX.utils.book_append_sheet(wb, wsNotasPorLinha, "NOTAS POR LINHA");
 
-          // ABA 3: RESPOSTAS DETALHADAS (Base tabular granular sem redundância de resumo)
           const headersRespostas = [
             "Data", "Turno", "Tipo de Auditoria", "Auditor", "Área", "Linha",
             "Ponto", "Grupo", "Pergunta", "Nota", "Classificação", "Critério / Observação"
@@ -2228,7 +2192,6 @@
         }
       },
 
-      // ==================== RELATÓRIO EXECUTIVO EM PDF (FOCADO EM UX/UI GERENCIAL) ====================
       generatePDF() {
         try {
           if (!window.jspdf || !window.jspdf.jsPDF) {
@@ -2246,19 +2209,18 @@
           const margin = 14;
           const contentW = pageW - margin * 2;
 
-          // Paleta Executiva
           const colors = {
-            navy: [15, 23, 42],       // #0F172A
-            blue: [37, 99, 235],      // #2563EB
-            slateDark: [51, 65, 85],  // #334155
-            slateMuted: [100, 116, 139], // #64748B
-            bgLight: [248, 250, 252], // #F8FAFC
-            border: [226, 232, 240],  // #E2E8F0
-            emerald: [5, 150, 105],   // #059669
+            navy: [15, 23, 42],
+            blue: [37, 99, 235],
+            slateDark: [51, 65, 85],
+            slateMuted: [100, 116, 139],
+            bgLight: [248, 250, 252],
+            border: [226, 232, 240],
+            emerald: [5, 150, 105],
             emeraldBg: [236, 253, 245],
-            amber: [217, 119, 6],     // #D97706
+            amber: [217, 119, 6],
             amberBg: [255, 251, 235],
-            rose: [225, 29, 72],      // #E11D48
+            rose: [225, 29, 72],
             roseBg: [255, 241, 242]
           };
 
@@ -2267,7 +2229,6 @@
           const dataBR = CalculosModule.formatDateBR(audit.data);
           const generalClassif = CalculosModule.classifyAverage(metrics.generalAverage, metrics.threshold);
 
-          // 1. HEADER EXECUTIVO (Banner Superior Limpo)
           doc.setFillColor(...colors.navy);
           doc.rect(0, 0, pageW, 34, "F");
 
@@ -2284,7 +2245,6 @@
           doc.setTextColor(148, 163, 184);
           doc.text(`${tipoNome.toUpperCase()}  •  ${macroNome.toUpperCase()}  •  ${audit.areaNome}`, margin, 21);
 
-          // Metadados à direita no header
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9.5);
           doc.setTextColor(255, 255, 255);
@@ -2297,7 +2257,6 @@
 
           let y = 43;
 
-          // 2. CARDS DE KPIs GERENCIAIS (4 Cards Limpos e Diretos)
           const gap = 3.5;
           const cardW = (contentW - gap * 3) / 4;
           const cardH = 22;
@@ -2324,7 +2283,6 @@
             doc.setDrawColor(...colors.border);
             doc.roundedRect(x, y, cardW, cardH, 2.5, 2.5, "FD");
 
-            // Barra de destaque superior no card
             doc.setFillColor(...k.accent);
             doc.rect(x + 3, y, cardW - 6, 1.2, "F");
 
@@ -2346,7 +2304,6 @@
 
           y += cardH + 8;
 
-          // 3. DIAGNÓSTICO POR PILAR / GRUPO (Barras Visuais)
           if (metrics.groupStats && metrics.groupStats.length > 0) {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10.5);
@@ -2373,7 +2330,6 @@
               const valStr = gs.average !== null ? gs.average.toFixed(2).replace(".", ",") : "N/A";
               doc.text(valStr, px + pColW - 3, py + 4.5, { align: "right" });
 
-              // Barra de progresso visual (escala 1 a 5)
               const barX = px + 3;
               const barY = py + 6.5;
               const barMaxW = pColW - 6;
@@ -2391,7 +2347,6 @@
             y += Math.ceil(metrics.groupStats.length / 2) * 12 + 5;
           }
 
-          // 4. RANKING E DESEMPENHO POR LINHA AUDITADA
           doc.setFont("helvetica", "bold");
           doc.setFontSize(10.5);
           doc.setTextColor(...colors.navy);
@@ -2441,7 +2396,6 @@
 
           y = doc.lastAutoTable.finalY + 9;
 
-          // 5. PLANO DE AÇÃO — ANOMALIAS E MELHORIAS (Ordenado por criticidade: Nota 1 -> 2 -> 3)
           if (y > pageH - 45) {
             doc.addPage();
             y = 16;
@@ -2514,7 +2468,6 @@
             });
           }
 
-          // Rodapé com numeração de páginas em todas as folhas
           const totalPages = doc.internal.getNumberOfPages();
           for (let p = 1; p <= totalPages; p++) {
             doc.setPage(p);
@@ -2579,7 +2532,7 @@
                 <span class="font-black text-base">Nota ${nota}</span>
                 <label class="inline-flex items-center gap-1.5 text-sm font-semibold cursor-pointer">
                   <input type="checkbox" ${r.gerarRegistro ? "checked" : ""} onchange="ConfiguracoesModule.updateRule(${nota}, 'gerarRegistro', this.checked)" class="rounded text-blue-600 w-4 h-4" />
-                  <span>Gera Ocorrência</span>
+                  Gera Ocorrência
                 </label>
               </div>
               <select onchange="ConfiguracoesModule.updateRule(${nota}, 'classificacao', this.value)"
@@ -2740,7 +2693,7 @@
 
       restoreDefaults() {
         AppState.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        try { window.localStorage.removeItem(CONFIG_STORAGE_KEY); } catch (error) { console.warn("Não foi possível limpar a configuração salva:", error); }
+        try { window.localStorage.removeItem(CONFIG_STORAGE_KEY); } catch (error) {}
         App.closeModal();
         this.render();
         AuditoriaModule.initSetupForm();
@@ -2755,39 +2708,36 @@
         try {
           const raw = await file.text();
           let content = raw.replace(/^\uFEFF/, "").trim();
-          // Também aceita JSON copiado para TXT com cercas Markdown.
           content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
           const parsed = JSON.parse(content);
           const result = validateImportedConfig(parsed);
           if (!result.valid) {
             App.showToast("Arquivo inválido: " + result.errors.slice(0, 2).join(" "), "error");
-            if (result.errors.length > 2) console.error("Erros na configuração importada:", result.errors);
             return;
           }
           const checklistCount = Object.keys(result.config.checklists).length;
           const questionCount = result.totalQuestions;
-          const confirmed = window.confirm(
-            `Importar configuração ${result.config.version}?\n\n` +
-            `${checklistCount} checklist(s) e ${questionCount} questão(ões).\n\n` +
-            `Isso substituirá os critérios e questões usados em NOVAS auditorias. Auditorias já iniciadas mantêm seu checklist original. Deseja continuar?`
-          );
-          if (!confirmed) return;
-
-          AppState.config = result.config;
-          const saved = safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
-          ConfiguracoesModule.selectedChecklistId = null;
-          ConfiguracoesModule.render();
-          if (!AppState.audit) AuditoriaModule.initSetupForm();
-          else AuditoriaModule.updateChecklistPreview();
-          App.showToast(
-            saved
-              ? `Configuração ${result.config.version} importada e salva neste navegador.`
-              : "Configuração importada, mas o navegador não permitiu salvá-la permanentemente.",
-            saved ? "success" : "info"
-          );
+          App.openModal(`
+            <div class="space-y-4">
+              <h3 class="text-lg font-extrabold">Importar configuração ${result.config.version}?</h3>
+              <p class="text-sm text-slate-600 dark:text-slate-300">${checklistCount} checklist(s) e ${questionCount} questão(ões). Isso substituirá os critérios de novas auditorias.</p>
+              <div class="flex justify-end gap-2 pt-2">
+                <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Cancelar</button>
+                <button id="btn-confirm-cfg-import" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold">Importar</button>
+              </div>
+            </div>`);
+          document.getElementById("btn-confirm-cfg-import").onclick = () => {
+            AppState.config = result.config;
+            const saved = safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
+            ConfiguracoesModule.selectedChecklistId = Object.keys(result.config.checklists)[0];
+            ConfiguracoesModule.render();
+            if (!AppState.audit) AuditoriaModule.initSetupForm();
+            else AuditoriaModule.updateChecklistPreview();
+            App.closeModal();
+            App.showToast(saved ? `Configuração ${result.config.version} importada.` : "Configuração importada na sessão.", "success");
+          };
         } catch (error) {
-          console.error("Falha ao importar critérios e questões:", error);
-          App.showToast("Não foi possível ler o arquivo. Verifique se ele contém JSON válido.", "error");
+          App.showToast("Arquivo JSON inválido.", "error");
         } finally {
           if (input) input.value = "";
         }
@@ -2921,1006 +2871,1051 @@
     });
   </script>
 
-  <!-- ===== GERADOR DE RELATÓRIOS — colar antes de </body>, depois do <script> principal ===== -->
-<script>
-(function () {
-  const $ = id => document.getElementById(id);
-  const p2 = n => String(n).padStart(2, "0");
-  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const f2 = (n, d = 2) => (n == null || isNaN(n)) ? "—" : Number(n).toFixed(d).replace(".", ",");
-  const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
-  const norm = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
-  const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
-  const days = (a, b) => (a && b) ? Math.round((new Date(b) - new Date(a)) / 864e5) : null;
-  const group = (rows, fn) => { const m = new Map(); rows.forEach(r => { const k = fn(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
-  const toISO = v => {
-    if (v == null || v === "") return "";
-    if (v instanceof Date) return isNaN(v) ? "" : `${v.getFullYear()}-${p2(v.getMonth() + 1)}-${p2(v.getDate())}`;
-    if (typeof v === "number") { const d = new Date(Math.round((v - 25569) * 864e5)); return `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}`; }
-    const s = String(v).trim(); let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
-    if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-    m = s.match(/^\d{4}-\d{2}-\d{2}/); return m ? m[0] : "";
-  };
-  const brDate = s => s ? s.split("-").reverse().join("/") : "—";
-  const txtCls = v => v == null ? "text-slate-400" : v >= 4.5 ? "text-emerald-500" : v >= 3 ? "text-amber-500" : "text-rose-500";
-  const bgCls = v => v >= 4.5 ? "bg-emerald-500" : v >= 3 ? "bg-amber-500" : "bg-rose-500";
-  const EMPTY = `<p class="text-sm text-slate-500 dark:text-slate-400 text-center py-4">Sem dados para os filtros atuais.</p>`;
+  <!-- ===== GERADOR DE RELATÓRIOS — REESTILIZADO UX/UI + PDF EXECUTIVO ===== -->
+  <script>
+  (function () {
+    const $ = id => document.getElementById(id);
+    const p2 = n => String(n).padStart(2, "0");
+    const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const f2 = (n, d = 2) => (n == null || isNaN(n)) ? "—" : Number(n).toFixed(d).replace(".", ",");
+    const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+    const norm = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
+    const days = (a, b) => (a && b) ? Math.round((new Date(b) - new Date(a)) / 864e5) : null;
+    const group = (rows, fn) => { const m = new Map(); rows.forEach(r => { const k = fn(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
+    const toISO = v => {
+      if (v == null || v === "") return "";
+      if (v instanceof Date) return isNaN(v) ? "" : `${v.getFullYear()}-${p2(v.getMonth() + 1)}-${p2(v.getDate())}`;
+      if (typeof v === "number") { const d = new Date(Math.round((v - 25569) * 864e5)); return `${d.getUTCFullYear()}-${p2(d.getUTCMonth() + 1)}-${p2(d.getUTCDate())}`; }
+      const s = String(v).trim(); let m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      m = s.match(/^\d{4}-\d{2}-\d{2}/); return m ? m[0] : "";
+    };
+    const brDate = s => s ? s.split("-").reverse().join("/") : "—";
+    const txtCls = v => v == null ? "text-slate-400" : v >= 4.5 ? "text-emerald-600 dark:text-emerald-400" : v >= 3 ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400";
+    const EMPTY = `<div class="py-10 text-center text-sm font-medium text-slate-400">Nenhum dado encontrado</div>`;
 
-  const kpi = (l, v, c = "", s = "") => `<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 shadow-sm"><p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">${l}</p><p class="text-2xl font-black mt-0.5 ${c}">${v}</p>${s ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">${s}</p>` : ""}</div>`;
-  const card = (t, body, sub = "") => `<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm"><h3 class="text-base font-extrabold">${t}</h3>${sub ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-3">${sub}</p>` : `<div class="mb-3"></div>`}${body}</div>`;
-  const bars = (it, o = {}) => {
-    if (!it.length) return EMPTY;
-    const mx = o.max ?? Math.max(...it.map(i => i.value), 1);
-    return `<div class="space-y-2.5 ${o.scroll ? "max-h-80 overflow-y-auto pr-1" : ""}">${it.map(i => `<div>
-      <div class="flex justify-between gap-2 text-xs sm:text-sm"><span class="font-semibold truncate">${esc(i.label)}</span><span class="font-extrabold shrink-0">${o.fmt ? o.fmt(i.value) : i.value}</span></div>
-      <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-1"><div class="h-full rounded-full ${i.cls || o.cls || "bg-blue-600"}" style="width:${Math.max(2, i.value / mx * 100)}%"></div></div>
-      ${i.sub ? `<p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">${esc(i.sub)}</p>` : ""}</div>`).join("")}</div>`;
-  };
+    // Componentes enxutos sem spans desnecessários
+    const kpi = (label, val, cls = "", sub = "", accent = "border-slate-200 dark:border-slate-800") => `
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border ${accent} p-4 shadow-sm flex flex-col justify-between">
+        <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${label}</p>
+        <p class="text-2xl sm:text-3xl font-black tracking-tight mt-1 ${cls}">${val}</p>
+        ${sub ? `<p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 truncate">${sub}</p>` : ""}
+      </div>`;
 
-  const RG = {
-    rel: [], res: [], files: [], tab: "rel", F: {}, monthFilter: "", filtersOpen: false, opts: [], open: new Set(), selectedLines: new Set(),
-    COLS: ["Tipo de Auditoria", "Área", "Linha", "Turno", "Ponto", "Grupo", "Auditor", "Responsável", "Status", "Tipo de problema"],
+    const card = (title, body, badge = "") => `
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm flex flex-col">
+        <div class="flex items-center justify-between gap-2 mb-3.5">
+          <h3 class="text-sm font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100">${title}</h3>
+          ${badge ? `<p class="text-xs font-bold text-slate-400">${badge}</p>` : ""}
+        </div>
+        <div class="flex-1">${body}</div>
+      </div>`;
 
-    async load(files) {
-      let nr = 0, ns = 0;
-      const present = v => v !== null && v !== undefined && String(v).trim() !== "";
-      const pick = (row, ...names) => {
-        const keys = Object.keys(row || {});
-        for (const name of names) {
-          const key = keys.find(k => norm(k) === norm(name));
-          if (key !== undefined) return row[key];
-        }
-        return "";
-      };
-      const parseScore = value => {
-        if (!present(value)) return null;
-        const n = typeof value === "number" ? value : Number(String(value).trim().replace(",", "."));
-        return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;
-      };
-      const isNA = value => /^(N\/?A|NA|NÃO APLICÁVEL|NAO APLICAVEL)$/i.test(String(value ?? "").trim());
+    const bars = (items, o = {}) => {
+      if (!items.length) return EMPTY;
+      const mx = o.max ?? Math.max(...items.map(i => i.value), 1);
+      return `<div class="space-y-3 ${o.scroll ? "max-h-72 overflow-y-auto pr-1.5" : ""}">
+        ${items.map(i => `
+          <div>
+            <div class="flex items-baseline justify-between gap-3 text-xs sm:text-sm">
+              <p class="font-semibold text-slate-700 dark:text-slate-200 truncate">${esc(i.label)}</p>
+              <p class="font-black text-slate-900 dark:text-white shrink-0 tabular-nums">${o.fmt ? o.fmt(i.value) : i.value}</p>
+            </div>
+            <div class="h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden mt-1.5">
+              <div class="h-full rounded-full transition-all duration-300 ${i.cls || o.cls || "bg-blue-600"}" style="width:${Math.max(2, (i.value / mx) * 100)}%"></div>
+            </div>
+            ${i.sub ? `<p class="text-[11px] font-medium text-slate-400 mt-1 truncate">${esc(i.sub)}</p>` : ""}
+          </div>`).join("")}
+      </div>`;
+    };
 
-      for (const f of files) {
-        try {
-          if (!window.XLSX) throw new Error("Biblioteca de leitura do Excel não carregada.");
-          const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
-          const sheetNames = wb.SheetNames || [];
-          const sheetName = key => sheetNames.find(name => norm(name) === norm(key));
-          const relName = sheetName("RELATÓRIOS") || sheetName("RELATORIOS");
-          const detailName = sheetName("RESPOSTAS DETALHADAS");
-          const matrixName = sheetName("NOTAS POR LINHA");
+    const RG = {
+      rel: [], res: [], files: [], tab: "rel", F: {}, monthFilter: "", filtersOpen: false, opts: [], open: new Set(), selectedLines: new Set(),
+      COLS: ["Tipo de Auditoria", "Área", "Linha", "Turno", "Ponto", "Grupo", "Auditor", "Responsável", "Status", "Tipo de problema"],
 
-          if (!relName && !detailName && !matrixName) {
-            throw new Error('nenhuma aba reconhecida. São aceitas: "RELATÓRIOS", "RESPOSTAS DETALHADAS" e/ou "NOTAS POR LINHA".');
+      async load(files) {
+        let nr = 0, ns = 0;
+        const present = v => v !== null && v !== undefined && String(v).trim() !== "";
+        const pick = (row, ...names) => {
+          const keys = Object.keys(row || {});
+          for (const name of names) {
+            const key = keys.find(k => norm(k) === norm(name));
+            if (key !== undefined) return row[key];
           }
+          return "";
+        };
+        const parseScore = value => {
+          if (!present(value)) return null;
+          const n = typeof value === "number" ? value : Number(String(value).trim().replace(",", "."));
+          return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;
+        };
+        const isNA = value => /^(N\/?A|NA|NÃO APLICÁVEL|NAO APLICAVEL)$/i.test(String(value ?? "").trim());
 
-          const readRows = name => name
-            ? XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: "", raw: true })
-            : [];
-          const hasAnyValue = row => Object.values(row || {}).some(present);
+        for (const f of files) {
+          try {
+            if (!window.XLSX) throw new Error("Biblioteca Excel indisponível.");
+            const wb = XLSX.read(await f.arrayBuffer(), { type: "array", cellDates: true });
+            const sheetNames = wb.SheetNames || [];
+            const sheetName = key => sheetNames.find(name => norm(name) === norm(key));
+            const relName = sheetName("RELATÓRIOS") || sheetName("RELATORIOS");
+            const detailName = sheetName("RESPOSTAS DETALHADAS");
+            const matrixName = sheetName("NOTAS POR LINHA");
 
-          // A aba RELATÓRIOS é opcional. Se estiver vazia, as demais abas continuam sendo importadas.
-          const rel = readRows(relName)
-            .filter(hasAnyValue)
-            .filter(r => String(pick(r, "Status")) !== "Sem Ocorrências" && String(pick(r, "Ponto")) !== "-")
-            .map(r => ({
-              ...r,
-              Data: toISO(pick(r, "Data", "Datas")),
-              Prazo: toISO(pick(r, "Prazo")),
-              "Data de Conclusão": toISO(pick(r, "Data de Conclusão")),
-              "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
-              Área: String(pick(r, "Área", "Area") || ""),
-              Linha: String(pick(r, "Linha", "Linhas") || ""),
-              Ponto: String(pick(r, "Ponto") || ""),
-              Responsável: String(pick(r, "Responsável", "Responsavel") || "")
-            }));
-
-          // A aba RESPOSTAS DETALHADAS também é opcional.
-          const detailedRaw = readRows(detailName).filter(hasAnyValue);
-          const detailed = detailedRaw.map(r => {
-            const original = pick(r, "Nota");
-            return {
-              ...r,
-              Data: toISO(pick(r, "Data", "Datas")),
-              Turno: String(pick(r, "Turno") || ""),
-              "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
-              Auditor: String(pick(r, "Auditor") || ""),
-              Área: String(pick(r, "Área", "Area") || ""),
-              Linha: String(pick(r, "Linha", "Linhas") || ""),
-              Ponto: String(pick(r, "Ponto") || ""),
-              Grupo: String(pick(r, "Grupo") || ""),
-              Pergunta: String(pick(r, "Pergunta") || ""),
-              NotaOriginal: original,
-              Nota: parseScore(original),
-              Classificação: String(pick(r, "Classificação", "Classificacao") || ""),
-              "Critério / Observação": String(pick(r, "Critério / Observação", "Criterio / Observacao") || "")
-            };
-          }).filter(r => [
-            r.Data, r.Turno, r["Tipo de Auditoria"], r.Auditor, r["Área"],
-            r.Linha, r.Ponto, r.Pergunta, r.NotaOriginal, r.Classificação
-          ].some(present));
-
-          // A aba NOTAS POR LINHA é uma matriz: cada coluna 1.1–4.5 vira uma avaliação.
-          // Ela é usada como alternativa quando RESPOSTAS DETALHADAS está ausente ou vazia.
-          const matrixRaw = readRows(matrixName).filter(hasAnyValue);
-          const matrixRecords = [];
-          if (matrixRaw.length) {
-            const matrixHeaders = Object.keys(matrixRaw[0]);
-            const pointHeaders = matrixHeaders
-              .filter(h => /^[1-4]\.[1-5]$/.test(String(h).trim()))
-              .sort(cmp);
-            const hasMetadata = matrixHeaders.some(h =>
-              ["DATAS", "DATA", "ÁREA", "AREA", "TURNO", "LINHAS", "LINHA", "TIPO DE AUDITORIA"].includes(norm(h))
-            );
-            if (!pointHeaders.length || !hasMetadata) {
-              throw new Error('a aba "NOTAS POR LINHA" não possui cabeçalhos reconhecíveis. Esperados: DATAS, ÁREA, TURNO, LINHAS, pontos (1.1 a 4.5) e TIPO DE AUDITORIA.');
+            if (!relName && !detailName && !matrixName) {
+              throw new Error('Nenhuma aba compatível encontrada.');
             }
 
-            matrixRaw.forEach(row => {
-              const data = toISO(pick(row, "DATAS", "DATA"));
-              const area = String(pick(row, "ÁREA", "AREA") || "").trim();
-              const turno = String(pick(row, "TURNO") || "").trim();
-              const linha = String(pick(row, "LINHAS", "LINHA") || "").trim();
-              const auditType = String(pick(row, "TIPO DE AUDITORIA") || "").trim();
+            const readRows = name => name ? XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: "", raw: true }) : [];
+            const hasAnyValue = row => Object.values(row || {}).some(present);
 
-              pointHeaders.forEach(point => {
-                const original = pick(row, point);
-                if (!present(original)) return;
-                const score = parseScore(original);
-                const na = isNA(original);
-                // Zero é tratado como ausência de avaliação, não como nota.
-                if (score === null && !na) return;
-                matrixRecords.push({
-                  Data: data,
-                  Turno: turno,
-                  "Tipo de Auditoria": auditType,
-                  Auditor: "",
-                  "Área": area,
-                  Linha: linha,
-                  Ponto: String(point),
-                  Grupo: String(point).split(".")[0],
-                  Pergunta: `Ponto ${point}`,
-                  NotaOriginal: original,
-                  Nota: score,
-                  Classificação: na ? "N/A" : "",
-                  "Critério / Observação": ""
+            const rel = readRows(relName)
+              .filter(hasAnyValue)
+              .filter(r => String(pick(r, "Status")) !== "Sem Ocorrências" && String(pick(r, "Ponto")) !== "-")
+              .map(r => ({
+                ...r,
+                Data: toISO(pick(r, "Data", "Datas")),
+                Prazo: toISO(pick(r, "Prazo")),
+                "Data de Conclusão": toISO(pick(r, "Data de Conclusão")),
+                "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
+                Área: String(pick(r, "Área", "Area") || ""),
+                Linha: String(pick(r, "Linha", "Linhas") || ""),
+                Ponto: String(pick(r, "Ponto") || ""),
+                Responsável: String(pick(r, "Responsável", "Responsavel") || "")
+              }));
+
+            const detailedRaw = readRows(detailName).filter(hasAnyValue);
+            const detailed = detailedRaw.map(r => {
+              const original = pick(r, "Nota");
+              return {
+                ...r,
+                Data: toISO(pick(r, "Data", "Datas")),
+                Turno: String(pick(r, "Turno") || ""),
+                "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
+                Auditor: String(pick(r, "Auditor") || ""),
+                Área: String(pick(r, "Área", "Area") || ""),
+                Linha: String(pick(r, "Linha", "Linhas") || ""),
+                Ponto: String(pick(r, "Ponto") || ""),
+                Grupo: String(pick(r, "Grupo") || ""),
+                Pergunta: String(pick(r, "Pergunta") || ""),
+                NotaOriginal: original,
+                Nota: parseScore(original),
+                Classificação: String(pick(r, "Classificação", "Classificacao") || ""),
+                "Critério / Observação": String(pick(r, "Critério / Observação", "Criterio / Observacao") || "")
+              };
+            }).filter(r => [r.Data, r.Turno, r["Tipo de Auditoria"], r.Auditor, r["Área"], r.Linha, r.Ponto, r.Pergunta, r.NotaOriginal, r.Classificação].some(present));
+
+            const matrixRaw = readRows(matrixName).filter(hasAnyValue);
+            const matrixRecords = [];
+            if (matrixRaw.length) {
+              const matrixHeaders = Object.keys(matrixRaw[0]);
+              const pointHeaders = matrixHeaders.filter(h => /^[1-4]\.[1-5]$/.test(String(h).trim())).sort(cmp);
+              const hasMetadata = matrixHeaders.some(h => ["DATAS", "DATA", "ÁREA", "AREA", "TURNO", "LINHAS", "LINHA", "TIPO DE AUDITORIA"].includes(norm(h)));
+              if (!pointHeaders.length || !hasMetadata) {
+                throw new Error('Cabeçalhos inválidos na aba "NOTAS POR LINHA".');
+              }
+
+              matrixRaw.forEach(row => {
+                const data = toISO(pick(row, "DATAS", "DATA"));
+                const area = String(pick(row, "ÁREA", "AREA") || "").trim();
+                const turno = String(pick(row, "TURNO") || "").trim();
+                const linha = String(pick(row, "LINHAS", "LINHA") || "").trim();
+                const auditType = String(pick(row, "TIPO DE AUDITORIA") || "").trim();
+
+                pointHeaders.forEach(point => {
+                  const original = pick(row, point);
+                  if (!present(original)) return;
+                  const score = parseScore(original);
+                  const na = isNA(original);
+                  if (score === null && !na) return;
+                  matrixRecords.push({
+                    Data: data,
+                    Turno: turno,
+                    "Tipo de Auditoria": auditType,
+                    Auditor: "",
+                    "Área": area,
+                    Linha: linha,
+                    Ponto: String(point),
+                    Grupo: String(point).split(".")[0],
+                    Pergunta: `Ponto ${point}`,
+                    NotaOriginal: original,
+                    Nota: score,
+                    Classificação: na ? "N/A" : "",
+                    "Critério / Observação": ""
+                  });
                 });
               });
-            });
-          }
-
-          // Evita contar duas vezes os mesmos resultados quando o arquivo contém
-          // tanto a matriz consolidada quanto as respostas detalhadas.
-          const res = detailed.length ? detailed : matrixRecords;
-          if (!rel.length && !res.length) {
-            throw new Error("as abas reconhecidas foram encontradas, mas estão vazias ou não possuem registros válidos para análise.");
-          }
-
-          this.rel.push(...rel);
-          this.res.push(...res);
-          this.files.push(f.name);
-          nr += rel.length;
-          ns += res.length;
-        } catch (e) {
-          console.error(`Erro ao importar ${f.name}:`, e);
-          App.showToast(`Erro ao ler ${f.name}: ${e.message}`, "error");
-        }
-      }
-
-      if (nr + ns > 0) {
-        App.showToast(`Importado: ${nr} ocorrências e ${ns} avaliações.`, "success");
-      } else if (this.files.length === 0) {
-        App.showToast("Nenhum dado válido foi importado. Verifique se existe ao menos uma aba reconhecida com registros e cabeçalhos válidos.", "error");
-      }
-      this.buildOpts();
-      this.render();
-    },
-    clear() { this.rel = []; this.res = []; this.files = []; this.F = {}; this.selectedLines.clear(); this.monthFilter = ""; this.filtersOpen = false; this.open.clear(); this.buildOpts(); this.render(); },
-
-    buildOpts() {
-      const all = [...this.rel, ...this.res];
-      this.opts = this.COLS.map(c => [c, [...new Set(all.filter(r => c in r).map(r => String(r[c])).filter(v => v !== ""))].sort(cmp)]).filter(o => o[1].length);
-    },
-    monthLabel(key) {
-      if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return String(key || "");
-      const [year, month] = key.split("-").map(Number);
-      const label = new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-      return label.charAt(0).toUpperCase() + label.slice(1);
-    },
-    monthOptions() {
-      const keys = [...new Set([...this.rel, ...this.res]
-        .map(r => String(r.Data || "").slice(0, 7))
-        .filter(key => /^\d{4}-(0[1-9]|1[0-2])$/.test(key)))].sort(cmp);
-      return keys.map(key => ({ key, label: this.monthLabel(key) }));
-    },
-    pass(r, noDate) {
-      for (const c in this.F) {
-        if (this.F[c]?.size && c in r && !this.F[c].has(String(r[c]))) return false;
-      }
-      if (!noDate && this.monthFilter && String(r.Data || "").slice(0, 7) !== this.monthFilter) return false;
-      return true;
-    },
-    notasRows(mode, noDate) { return this.res.filter(r => ((r["Área"] === "Mistura") === (mode === "mistura")) && this.pass(r, noDate)); },
-    activeFilters() { return Object.values(this.F).filter(s => s?.size).length + (this.monthFilter ? 1 : 0); },
-
-    // ---------- Filtros em painel expansível abaixo das abas ----------
-    toggleFilters() {
-      this.filtersOpen = !this.filtersOpen;
-      this.renderFilterPanel();
-    },
-    tog(ci, vi) {
-      const [c, vals] = this.opts[ci];
-      const s = this.F[c] || (this.F[c] = new Set());
-      const v = vals[vi];
-      s.has(v) ? s.delete(v) : s.add(v);
-      if (!s.size) delete this.F[c];
-      this.render();
-    },
-    setMonth(value) {
-      this.monthFilter = String(value || "");
-      this.render();
-    },
-    op(ci, opened) { opened ? this.open.add(ci) : this.open.delete(ci); },
-    clearF() {
-      this.F = {};
-      this.monthFilter = "";
-      this.open.clear();
-      this.render();
-    },
-    filterPanel() {
-      const months = this.monthOptions();
-      return `<div class="rounded-2xl border border-blue-200 dark:border-blue-900 bg-white dark:bg-slate-900 p-3 sm:p-4 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-end gap-3">
-          <div class="flex-1 min-w-0">
-            <label for="rg-month-select" class="block text-xs font-extrabold uppercase tracking-wide text-slate-600 dark:text-slate-400 mb-1.5">Mês de referência</label>
-            <select id="rg-month-select" onchange="RG.setMonth(this.value)" class="w-full sm:max-w-sm px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
-              <option value="">Todos os meses</option>
-              ${months.map(m => `<option value="${m.key}" ${this.monthFilter === m.key ? "selected" : ""}>${esc(m.label)}</option>`).join("")}
-            </select>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Selecione um único mês ou mantenha “Todos os meses” para analisar todo o período.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">${this.activeFilters()} filtro(s) ativo(s)</span>
-            <button type="button" onclick="RG.clearF()" class="px-3 py-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold">Limpar filtros</button>
-          </div>
-        </div>
-        ${this.opts.length ? `<div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-          ${this.opts.map(([c, vals], ci) => `<details ${this.open.has(ci) ? "open" : ""} ontoggle="RG.op(${ci},this.open)" class="rounded-xl border border-slate-200 dark:border-slate-700 p-2.5 min-w-0">
-            <summary class="cursor-pointer text-xs font-bold select-none flex items-center justify-between gap-2"><span class="truncate">${esc(c)}</span><span class="text-[11px] text-blue-600 dark:text-blue-400 shrink-0">${this.F[c]?.size ? this.F[c].size + " selecionado(s)" : "Todos"}</span></summary>
-            <div class="flex flex-wrap gap-1.5 mt-2 max-h-28 overflow-y-auto pr-1">${vals.map((v, vi) => { const on = this.F[c]?.has(v); return `<button type="button" onclick="RG.tog(${ci},${vi})" class="px-2.5 py-1.5 rounded-lg border text-[11px] font-bold ${on ? "bg-blue-600 text-white border-blue-600" : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200"}">${esc(v)}</button>`; }).join("")}</div>
-          </details>`).join("")}
-        </div>` : `<p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Não há outros campos disponíveis para refinar os dados importados.</p>`}
-      </div>`;
-    },
-    renderFilterPanel() {
-      const panel = $("rg-filter-panel");
-      const button = $("rg-filter-toggle");
-      if (!panel) return;
-      panel.innerHTML = this.filterPanel();
-      panel.classList.toggle("hidden", !this.filtersOpen || !(this.rel.length + this.res.length));
-      if (button) {
-        button.setAttribute("aria-expanded", this.filtersOpen ? "true" : "false");
-        button.classList.toggle("bg-blue-50", this.filtersOpen);
-        button.classList.toggle("dark:bg-blue-950/50", this.filtersOpen);
-      }
-    },
-
-    // ---------- Relatórios PDF individuais por linha ----------
-    visibleLineNames() {
-      return [...new Set(this.notasRows("linhas").filter(r => r.Nota != null).map(r => String(r.Linha || "").trim()).filter(Boolean))].sort(cmp);
-    },
-    toggleLine(line, checked) {
-      if (checked) this.selectedLines.add(line); else this.selectedLines.delete(line);
-      this.render();
-    },
-    selectVisibleLines(checked) {
-      this.visibleLineNames().forEach(line => checked ? this.selectedLines.add(line) : this.selectedLines.delete(line));
-      this.render();
-    },
-    lineReportPanel() {
-      const lines = this.visibleLineNames();
-      const selectedVisible = lines.filter(line => this.selectedLines.has(line));
-      return `<div class="mb-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 shadow-sm">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div class="min-w-0"><h3 class="font-extrabold text-sm">Relatórios individuais por linha</h3>
-            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Cada linha será gerada em uma página do PDF. A lista respeita os filtros ativos.</p></div>
-          <div class="flex flex-wrap gap-1.5 shrink-0">
-            <button type="button" onclick="RG.selectVisibleLines(true)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold">Selecionar todas</button>
-            <button type="button" onclick="RG.selectVisibleLines(false)" class="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold">Limpar seleção</button>
-          </div>
-        </div>
-        <div class="mt-2 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-1 max-h-24 overflow-y-auto pr-1">
-          ${lines.map(line => `<label class="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-xs cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 min-w-0"><input type="checkbox" class="w-3.5 h-3.5 shrink-0 accent-blue-600" ${this.selectedLines.has(line) ? "checked" : ""} onchange="RG.toggleLine(decodeURIComponent('${encodeURIComponent(line)}'),this.checked)"><span class="font-semibold truncate">${esc(line)}</span></label>`).join("") || `<p class="text-xs text-slate-500">Nenhuma linha encontrada com os filtros atuais.</p>`}
-        </div>
-        <div class="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <p class="text-[11px] text-slate-500 dark:text-slate-400">${selectedVisible.length} de ${lines.length} linha(s) selecionada(s)</p>
-          <div class="flex flex-wrap gap-1.5">
-            <button type="button" onclick="RG.generateIndividualPDF('selected')" class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold">Gerar selecionadas</button>
-            <button type="button" onclick="RG.generateIndividualPDF('all')" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold">Gerar todas as linhas</button>
-          </div>
-        </div>
-      </div>`;
-    },
-    // ---------- Exportação matricial: uma linha por auditoria/linha operacional ----------
-    exportLineMatrixExcel() {
-      try {
-        if (!window.XLSX) throw new Error("Biblioteca Excel não carregada. Verifique sua conexão.");
-        const source = this.notasRows("linhas");
-        if (!source.length) {
-          App.showToast("Não há avaliações para exportar com os filtros atuais.", "error");
-          return;
-        }
-
-        // Mantém a ordem fixa dos 20 pontos solicitados na planilha.
-        const standardPoints = [
-          "1.1", "1.2", "1.3", "1.4", "1.5",
-          "2.1", "2.2", "2.3", "2.4", "2.5",
-          "3.1", "3.2", "3.3", "3.4", "3.5",
-          "4.1", "4.2", "4.3", "4.4", "4.5"
-        ];
-        // A exportação mantém exatamente as 20 colunas padrão, na ordem solicitada.
-        const points = standardPoints;
-        const headers = ["DATAS", "ÁREA", "TURNO", "LINHAS", ...points, "TIPO DE AUDITORIA"];
-        const grouped = group(source, r => [r.Data, r["Área"], r.Turno, r.Linha, r["Tipo de Auditoria"]].map(v => String(v ?? "").trim()).join("¦"));
-        const records = [...grouped.entries()].map(([key, rows]) => {
-          const [date, area, turno, line, auditType] = key.split("¦");
-          const valuesByPoint = new Map();
-          rows.forEach(r => {
-            const point = String(r.Ponto || "").trim();
-            if (!point) return;
-            if (!valuesByPoint.has(point)) valuesByPoint.set(point, []);
-            valuesByPoint.get(point).push(r);
-          });
-          const row = [date || "", area || "", turno || "", line || ""];
-          points.forEach(point => {
-            const responses = valuesByPoint.get(point) || [];
-            const numeric = responses.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
-            if (numeric.length) {
-              const average = numeric.reduce((sum, n) => sum + n, 0) / numeric.length;
-              row.push(numeric.length > 1 ? Number(average.toFixed(2)) : numeric[0]);
-            } else if (responses.some(r => String(r.NotaOriginal ?? "").trim().toUpperCase() === "N/A" || String(r["Classificação"] || "").toLowerCase().includes("não aplicável"))) {
-              row.push("N/A");
-            } else {
-              row.push("");
             }
-          });
-          row.push(auditType || "");
-          return row;
-        }).sort((a, b) => cmp(a[0], b[0]) || cmp(a[1], b[1]) || cmp(a[3], b[3]) || cmp(a[headers.length - 1], b[headers.length - 1]) || cmp(a[2], b[2]));
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.aoa_to_sheet([headers, ...records]);
-        ws["!cols"] = [
-          { wch: 13 }, { wch: 18 }, { wch: 16 }, { wch: 14 },
-          ...points.map(() => ({ wch: 8 })),
-          { wch: 22 }
+            const res = detailed.length ? detailed : matrixRecords;
+            if (!rel.length && !res.length) throw new Error("Planilha sem registros válidos.");
+
+            this.rel.push(...rel);
+            this.res.push(...res);
+            this.files.push(f.name);
+            nr += rel.length;
+            ns += res.length;
+          } catch (e) {
+            App.showToast(`${f.name}: ${e.message}`, "error");
+          }
+        }
+
+        if (nr + ns > 0) App.showToast(`${nr} ocorrências • ${ns} avaliações carregadas`, "success");
+        this.buildOpts();
+        this.render();
+      },
+
+      clear() {
+        this.rel = []; this.res = []; this.files = []; this.F = {};
+        this.selectedLines.clear(); this.monthFilter = ""; this.filtersOpen = false; this.open.clear();
+        this.buildOpts(); this.render();
+      },
+
+      buildOpts() {
+        const all = [...this.rel, ...this.res];
+        this.opts = this.COLS.map(c => [c, [...new Set(all.filter(r => c in r).map(r => String(r[c])).filter(v => v !== ""))].sort(cmp)]).filter(o => o[1].length);
+      },
+
+      monthLabel(key) {
+        if (!/^\d{4}-\d{2}$/.test(String(key || ""))) return String(key || "");
+        const [year, month] = key.split("-").map(Number);
+        const label = new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }).replace(".", "");
+        return label.charAt(0).toUpperCase() + label.slice(1);
+      },
+
+      monthOptions() {
+        const keys = [...new Set([...this.rel, ...this.res]
+          .map(r => String(r.Data || "").slice(0, 7))
+          .filter(key => /^\d{4}-(0[1-9]|1[0-2])$/.test(key)))].sort(cmp);
+        return keys.map(key => ({ key, label: this.monthLabel(key) }));
+      },
+
+      pass(r, noDate) {
+        for (const c in this.F) {
+          if (this.F[c]?.size && c in r && !this.F[c].has(String(r[c]))) return false;
+        }
+        if (!noDate && this.monthFilter && String(r.Data || "").slice(0, 7) !== this.monthFilter) return false;
+        return true;
+      },
+
+      notasRows(mode, noDate) {
+        return this.res.filter(r => ((r["Área"] === "Mistura") === (mode === "mistura")) && this.pass(r, noDate));
+      },
+
+      activeFilters() {
+        return Object.values(this.F).filter(s => s?.size).length + (this.monthFilter ? 1 : 0);
+      },
+
+      toggleFilters() {
+        this.filtersOpen = !this.filtersOpen;
+        this.renderFilterPanel();
+      },
+
+      tog(ci, vi) {
+        const [c, vals] = this.opts[ci];
+        const s = this.F[c] || (this.F[c] = new Set());
+        const v = vals[vi];
+        s.has(v) ? s.delete(v) : s.add(v);
+        if (!s.size) delete this.F[c];
+        this.render();
+      },
+
+      setMonth(value) {
+        this.monthFilter = String(value || "");
+        this.render();
+      },
+
+      op(ci, opened) { opened ? this.open.add(ci) : this.open.delete(ci); },
+
+      clearF() {
+        this.F = {};
+        this.monthFilter = "";
+        this.open.clear();
+        this.render();
+      },
+
+      filterPanel() {
+        const months = this.monthOptions();
+        return `
+          <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2.5">
+                <select id="rg-month-select" onchange="RG.setMonth(this.value)" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="">Todos os meses</option>
+                  ${months.map(m => `<option value="${m.key}" ${this.monthFilter === m.key ? "selected" : ""}>${esc(m.label)}</option>`).join("")}
+                </select>
+                ${this.activeFilters() > 0 ? `<button type="button" onclick="RG.clearF()" class="px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-100 transition">Limpar (${this.activeFilters()})</button>` : ""}
+              </div>
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Filtros Avançados</p>
+            </div>
+            ${this.opts.length ? `
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                ${this.opts.map(([c, vals], ci) => `
+                  <details ${this.open.has(ci) ? "open" : ""} ontoggle="RG.op(${ci},this.open)" class="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 px-3 py-2">
+                    <summary class="cursor-pointer text-xs font-extrabold text-slate-700 dark:text-slate-200 select-none flex items-center justify-between">
+                      ${esc(c)}
+                      ${this.F[c]?.size ? `<b class="px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[10px]">${this.F[c].size}</b>` : ""}
+                    </summary>
+                    <div class="mt-2.5 max-h-40 overflow-y-auto space-y-1.5 pr-1">
+                      ${vals.map((v, vi) => `
+                        <label class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white">
+                          <input type="checkbox" ${this.F[c]?.has(v) ? "checked" : ""} onchange="RG.tog(${ci},${vi})" class="rounded text-blue-600 w-3.5 h-3.5" />
+                          <b class="font-medium truncate">${esc(v)}</b>
+                        </label>`).join("")}
+                    </div>
+                  </details>`).join("")}
+              </div>` : ""}
+          </div>`;
+      },
+
+      renderFilterPanel() {
+        const panel = $("rg-filter-panel");
+        const count = this.activeFilters();
+        if ($("rg-filter-toggle")) {
+          $("rg-filter-toggle").className = `px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-2 ${this.filtersOpen || count > 0 ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"}`;
+          $("rg-filter-toggle").innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg> Filtros${count > 0 ? ` (${count})` : ""}`;
+        }
+        if (!panel) return;
+        panel.classList.toggle("hidden", !this.filtersOpen);
+        panel.innerHTML = this.filtersOpen ? this.filterPanel() : "";
+      },
+
+      render() {
+        const has = this.rel.length + this.res.length > 0;
+        $("rg-empty").classList.toggle("hidden", has);
+        $("rg-body").classList.toggle("hidden", !has);
+        if (!has) return;
+
+        $("rg-files").innerHTML = this.files.map(f => `
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/10 text-xs font-semibold text-slate-200">
+            <svg class="w-3.5 h-3.5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            ${esc(f)}
+          </div>`).join("");
+
+        this.renderFilterPanel();
+
+        const tabs = [
+          ["rel", "Plano de Ação", this.rel.filter(r => this.pass(r)).length],
+          ["fab", "Fábrica", this.notasRows("fabrica").length],
+          ["mis", "Mistura", this.notasRows("mistura").length]
         ];
-        ws["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length - 1)}${records.length + 1}` };
-        ws["!freeze"] = { xSplit: 4, ySplit: 1 };
-        records.forEach((row, idx) => {
-          const cell = ws[XLSX.utils.encode_cell({ r: idx + 1, c: 0 })];
-          if (cell) cell.z = "dd/mm/yyyy";
-        });
-        XLSX.utils.book_append_sheet(wb, ws, "NOTAS POR LINHA");
-        const stamp = new Date().toISOString().slice(0, 10);
-        XLSX.writeFile(wb, `Notas_Por_Linha_${stamp}.xlsx`);
-        App.showToast(`Planilha exportada: ${records.length} registro(s), ${points.length} pontos avaliados.`, "success");
-      } catch (e) {
-        console.error("Erro ao exportar matriz de notas por linha:", e);
-        App.showToast("Erro ao exportar Excel: " + e.message, "error");
-      }
-    },
+        $("rg-tabs").innerHTML = tabs.map(([id, lbl, count]) => `
+          <button onclick="RG.tab='${id}';RG.render()"
+            class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-2 ${this.tab === id ? "bg-blue-600 text-white shadow-sm" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"}">
+            ${lbl}
+            <b class="px-1.5 py-0.5 rounded-md text-[11px] font-black ${this.tab === id ? "bg-white/20 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300"}">${count}</b>
+          </button>`).join("");
 
-    // ---------- PDF executivo da análise atualmente selecionada ----------
-    generateAnalysisPDF() {
-      try {
-        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("Biblioteca PDF não carregada. Verifique sua conexão.");
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
-        if (typeof doc.autoTable !== "function") throw new Error("O módulo de tabelas do PDF não foi carregado.");
+        const v = $("rg-view");
+        if (this.tab === "rel") v.innerHTML = this.viewRel();
+        else if (this.tab === "fab") v.innerHTML = this.viewNotas("fabrica");
+        else v.innerHTML = this.viewNotas("mistura");
+      },
 
-        const isRel = this.tab === "rel";
-        const mode = this.tab;
-        const source = isRel
-          ? this.rel.filter(r => this.pass(r))
-          : this.notasRows(mode).filter(r => r.Nota != null);
-        if (!source.length) {
-          App.showToast("Não há dados para gerar o PDF com os filtros atuais.", "error");
-          return;
-        }
+      viewRel() {
+        const rows = this.rel.filter(r => this.pass(r));
+        const all = this.rel.filter(r => this.pass(r, true));
+        if (!rows.length) return EMPTY;
 
-        const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 13, contentW = W - M * 2;
-        const C = {
-          navy: [15, 23, 42], blue: [37, 99, 235], slate: [51, 65, 85], muted: [100, 116, 139],
-          light: [248, 250, 252], border: [226, 232, 240], green: [5, 150, 105],
-          greenBg: [236, 253, 245], amber: [217, 119, 6], red: [225, 29, 72]
-        };
-        const clean = v => String(v ?? "—").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim() || "—";
-        const short = (v, max = 80) => { const t = clean(v); return t.length > max ? t.slice(0, Math.max(1, max - 1)) + "…" : t; };
-        const title = isRel ? "RELATÓRIO EXECUTIVO — OCORRÊNCIAS" : mode === "mistura" ? "RELATÓRIO EXECUTIVO — MISTURA" : "RELATÓRIO EXECUTIVO — NOTAS POR LINHA";
-        const filterText = this.monthFilter ? this.monthLabel(this.monthFilter) : "Todo o período importado";
+        const ok = rows.filter(r => r.Status === "Concluído").length;
+        const atr = rows.filter(r => r.Status === "Atrasado").length;
+        const anom = rows.filter(r => r["Tipo de problema"] === "Anomalia").length;
+        const lt = mean(rows.map(r => days(r.Data, r["Data de Conclusão"])).filter(x => x != null && x >= 0));
+        const cnt = c => [...group(rows, r => r[c] || "—")].map(([label, a]) => ({ label, value: a.length })).sort((a, b) => b.value - a.value);
 
-        const monthlyMap = new Map();
-        source.forEach(r => {
-          const month = String(r.Data || "").slice(0, 7);
-          if (!/^\d{4}-\d{2}$/.test(month)) return;
-          if (!monthlyMap.has(month)) monthlyMap.set(month, []);
-          monthlyMap.get(month).push(r);
-        });
-        const monthly = [...monthlyMap.entries()].sort((a, b) => cmp(a[0], b[0])).slice(-12).map(([month, arr]) => {
-          const pct = isRel ? arr.length / source.length * 100 : arr.filter(r => Number(r.Nota) >= 4).length / arr.length * 100;
-          return { month, rows: arr, pct };
-        });
+        const meses = [...group(all, r => (r.Data || "Sem data").slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([m, a]) => ({ label: m === "Sem data" ? m : this.monthLabel(m), value: a.length, sub: `${a.filter(x => x.Status === "Concluído").length} concluídas` }));
 
-        const drawHeader = () => {
-          doc.setFillColor(...C.navy); doc.rect(0, 0, W, 31, "F");
-          doc.setFillColor(...C.blue); doc.rect(0, 31, W, 1.4, "F");
-          doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-          doc.text("SOMOGHIRO AUDIT", M, 11);
-          doc.setFontSize(10.5); doc.text(title, M, 19);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(203, 213, 225);
-          doc.text(`Período: ${filterText}`, M, 26);
-          doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(255, 255, 255);
-          doc.text(`GERADO EM ${new Date().toLocaleDateString("pt-BR")}`, W - M, 12, { align: "right" });
-        };
-        const drawFooter = (page, total) => {
-          doc.setDrawColor(...C.border); doc.setLineWidth(0.2); doc.line(M, H - 9, W - M, H - 9);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...C.muted);
-          doc.text("SomoGhiro Audit • Relatório gerado a partir dos dados importados e dos filtros ativos", M, H - 5);
-          doc.text(`Página ${page} de ${total}`, W - M, H - 5, { align: "right" });
-        };
+        const top = rows.filter(r => r.Status !== "Concluído").sort((a, b) => (a.Prazo || "9").localeCompare(b.Prazo || "9")).slice(0, 12);
 
-        drawHeader();
-        let y = 38;
-        const monthText = monthly.length ? `${monthly[0].month.split("-").reverse().join("/")} a ${monthly[monthly.length - 1].month.split("-").reverse().join("/")}` : "Sem datas válidas";
-        doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...C.slate);
-        doc.text(`Visão: ${isRel ? "Ocorrências" : mode === "mistura" ? "Mistura" : "Notas por Linha"}   •   ${source.length} registro(s)   •   Meses com dados: ${monthly.length}   •   ${monthText}`, M, y);
-        y += 5;
+        const stBadge = s => s === "Concluído" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300" : s === "Atrasado" ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300" : "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300";
 
-        let cards;
-        if (isRel) {
-          const an = source.filter(r => /anomalia/i.test(String(r["Tipo de problema"] || ""))).length;
-          const mel = source.filter(r => /melhoria/i.test(String(r["Tipo de problema"] || ""))).length;
-          const concl = source.filter(r => /conclu/i.test(String(r.Status || ""))).length;
-          const late = source.filter(r => /atrasad/i.test(String(r.Status || ""))).length;
-          cards = [
-            ["OCORRÊNCIAS", String(source.length), C.blue], ["ANOMALIAS", String(an), C.red],
-            ["MELHORIAS", String(mel), C.amber], ["CONCLUÍDAS", `${(concl / source.length * 100).toFixed(1).replace(".", ",")}%`, C.green],
-            ["ATRASADAS", String(late), late ? C.red : C.muted]
-          ];
-        } else {
-          const total = source.length, conf = source.filter(r => r.Nota >= 4).length;
-          const mel = source.filter(r => r.Nota === 3).length, nc = source.filter(r => r.Nota <= 2).length;
-          const audits = new Set(source.map(r => [r.Data, r.Turno, r["Tipo de Auditoria"]].join("|"))).size;
-          const avg = mean(source.map(r => Number(r.Nota)).filter(Number.isFinite));
-          cards = [
-            ["CONFORMIDADE", `${(conf / total * 100).toFixed(1).replace(".", ",")}%`, C.green],
-            ["MÉDIA GERAL", avg == null ? "—" : f2(avg), C.blue],
-            ["AVALIAÇÕES", String(total), C.blue], ["AUDITORIAS", String(audits), C.muted],
-            ["NÃO CONFORMES", String(nc), nc ? C.red : C.muted]
-          ];
-        }
-        const gap = 2.2, cardW = (contentW - gap * (cards.length - 1)) / cards.length, cardH = 19;
-        cards.forEach((c, i) => {
-          const x = M + i * (cardW + gap);
-          doc.setFillColor(...C.light); doc.setDrawColor(...C.border); doc.roundedRect(x, y, cardW, cardH, 1.8, 1.8, "FD");
-          doc.setFillColor(...c[2]); doc.rect(x + 2, y, cardW - 4, 1, "F");
-          doc.setFont("helvetica", "bold"); doc.setFontSize(6); doc.setTextColor(...C.muted); doc.text(c[0], x + 2.5, y + 6);
-          doc.setFontSize(12); doc.setTextColor(...c[2]); doc.text(c[1], x + 2.5, y + 14.5);
-        });
-        y += cardH + 6;
+        return `
+          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            ${kpi("Total", rows.length, "text-slate-900 dark:text-white")}
+            ${kpi("Concluídas", `${Math.round((ok / rows.length) * 100)}%`, "text-emerald-600 dark:text-emerald-400", `${ok} de ${rows.length}`)}
+            ${kpi("Atrasadas", atr, atr ? "text-rose-600 dark:text-rose-400" : "text-slate-400")}
+            ${kpi("Anomalias", anom, "text-rose-600 dark:text-rose-400", `${rows.length - anom} melhorias`)}
+            ${kpi("Lead Time", lt == null ? "—" : `${f2(lt, 1)}d`, "text-blue-600 dark:text-blue-400")}
+          </div>
 
-        // Evolução mensal em percentual, com barras no mesmo padrão visual dos PDFs de auditoria.
-        doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...C.navy);
-        doc.text(isRel ? "EVOLUÇÃO MENSAL — PARTICIPAÇÃO NO TOTAL (%)" : "EVOLUÇÃO MENSAL — CONFORMIDADE (%)", M, y);
-        y += 3;
-        const chartX = M, chartY = y, chartW = contentW, chartH = 29;
-        doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(chartX, chartY, chartW, chartH, 1.5, 1.5, "FD");
-        if (!monthly.length) {
-          doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...C.muted);
-          doc.text("Não há datas válidas para montar a evolução mensal.", chartX + 4, chartY + 15);
-        } else {
-          const plotX = chartX + 5, plotW = chartW - 10, baseY = chartY + 22, plotH = 14;
-          doc.setDrawColor(...C.border); doc.line(plotX, baseY, plotX + plotW, baseY);
-          const slot = plotW / monthly.length, barW = Math.min(9, slot * 0.54);
-          monthly.forEach((m, i) => {
-            const h = Math.max(0.5, plotH * Math.max(0, Math.min(100, m.pct)) / 100);
-            const bx = plotX + i * slot + (slot - barW) / 2;
-            doc.setFillColor(...(isRel ? C.blue : C.green)); doc.roundedRect(bx, baseY - h, barW, h, 0.6, 0.6, "F");
-            doc.setFont("helvetica", "bold"); doc.setFontSize(5.5); doc.setTextColor(...C.slate);
-            doc.text(`${m.pct.toFixed(0)}%`, bx + barW / 2, Math.max(chartY + 7, baseY - h - 1.4), { align: "center" });
-            doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(...C.muted);
-            doc.text(m.month.slice(5, 7), bx + barW / 2, baseY + 4, { align: "center" });
-          });
-        }
-        y = chartY + chartH + 6;
-        doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...C.navy);
-        doc.text(isRel ? `DETALHAMENTO DAS OCORRÊNCIAS (${source.length})` : `DETALHAMENTO DAS AVALIAÇÕES (${source.length})`, M, y);
-        y += 2;
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${card("Status", bars(cnt("Status").map(i => ({ ...i, cls: i.label === "Concluído" ? "bg-emerald-500" : i.label === "Atrasado" ? "bg-rose-500" : "bg-amber-500" }))))}
+            ${card("Por Área", bars(cnt("Área")))}
+            ${card("Por Tipo", bars(cnt("Tipo de Auditoria"), { cls: "bg-indigo-600" }))}
+            ${card("Top Linhas", bars(cnt("Linha").slice(0, 8), { cls: "bg-rose-500" }))}
+            ${card("Responsáveis", bars(cnt("Responsável").slice(0, 8), { cls: "bg-teal-600" }))}
+            ${card("Evolução Mensal", bars(meses))}
+          </div>
 
-        const commonStyles = {
-          theme: "grid", styles: { font: "helvetica", fontSize: 6.5, cellPadding: 1.5, textColor: C.slate, lineColor: C.border, lineWidth: 0.15, valign: "middle", overflow: "linebreak" },
-          headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.5 },
-          alternateRowStyles: { fillColor: C.light }, margin: { left: M, right: M, top: 39, bottom: 13 }, startY: y,
-          showHead: "everyPage", rowPageBreak: "avoid",
-          didDrawPage: () => drawHeader()
-        };
-        if (isRel) {
-          const body = source.map(r => [
-            brDate(String(r.Data || "")), short(r["Tipo de Auditoria"], 18), short(r["Área"], 18), short(r.Linha, 12),
-            short(r.Ponto, 8), short(r["Tipo de problema"], 14), short(r.Descrição || r["Descrição"] || r.descricao, 52),
-            short(r.Status, 14), short(r.Responsável || r.Responsavel, 18), brDate(String(r.Prazo || ""))
-          ]);
-          doc.autoTable({ ...commonStyles, head: [["DATA", "AUDITORIA", "ÁREA", "LINHA", "PONTO", "TIPO", "DESCRIÇÃO", "STATUS", "RESPONSÁVEL", "PRAZO"]], body,
-            styles: { ...commonStyles.styles, fontSize: 5.8, cellPadding: 1.15 },
-            columnStyles: { 0: { cellWidth: 13 }, 1: { cellWidth: 19 }, 2: { cellWidth: 16 }, 3: { cellWidth: 10 }, 4: { cellWidth: 9 }, 5: { cellWidth: 15 }, 6: { cellWidth: 42 }, 7: { cellWidth: 15 }, 8: { cellWidth: 25 }, 9: { cellWidth: 20 } }
-          });
-        } else {
-          const body = source.map(r => [
-            brDate(String(r.Data || "")), short(r["Área"], 18), short(r.Linha, 12), short(r["Tipo de Auditoria"], 18),
-            short(r.Grupo, 10), short(r.Ponto, 8), r.Nota == null ? "N/A" : String(r.Nota), short(r.Classificação, 18),
-            short(r.Pergunta, 64), short(r["Critério / Observação"], 58)
-          ]);
-          doc.autoTable({ ...commonStyles, head: [["DATA", "ÁREA", "LINHA", "AUDITORIA", "GRUPO", "PONTO", "NOTA", "CLASSIFICAÇÃO", "PERGUNTA", "CRITÉRIO / OBSERVAÇÃO"]], body,
-            styles: { ...commonStyles.styles, fontSize: 5.8, cellPadding: 1.1 },
-            columnStyles: { 0: { cellWidth: 13 }, 1: { cellWidth: 14 }, 2: { cellWidth: 10 }, 3: { cellWidth: 16 }, 4: { cellWidth: 9 }, 5: { cellWidth: 9 }, 6: { cellWidth: 9, halign: "center" }, 7: { cellWidth: 17 }, 8: { cellWidth: 43 }, 9: { cellWidth: 44 } }
-          });
-        }
+          ${card("Pendências Prioritárias", top.length ? `
+            <div class="overflow-x-auto -mx-2 px-2">
+              <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    <th class="py-2.5 pr-3">Status</th>
+                    <th class="py-2.5 pr-3">Prazo</th>
+                    <th class="py-2.5 pr-3">Linha</th>
+                    <th class="py-2.5 pr-3">Item</th>
+                    <th class="py-2.5 pr-3">Responsável</th>
+                    <th class="py-2.5">Descrição</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                  ${top.map(r => `
+                    <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                      <td class="py-2.5 pr-3 whitespace-nowrap"><b class="px-2 py-0.5 rounded-md text-xs font-bold ${stBadge(r.Status)}">${esc(r.Status)}</b></td>
+                      <td class="py-2.5 pr-3 whitespace-nowrap font-bold tabular-nums">${brDate(r.Prazo)}</td>
+                      <td class="py-2.5 pr-3 whitespace-nowrap font-extrabold">${esc(r.Linha)}</td>
+                      <td class="py-2.5 pr-3 whitespace-nowrap font-semibold text-slate-500">${esc(r.Ponto)}</td>
+                      <td class="py-2.5 pr-3 whitespace-nowrap font-medium">${esc(r["Responsável"] || "—")}</td>
+                      <td class="py-2.5 text-slate-700 dark:text-slate-200 max-w-md truncate">${esc(r["Descrição"])}</td>
+                    </tr>`).join("")}
+                </tbody>
+              </table>
+            </div>` : EMPTY, `${top.length}`)}`;
+      },
 
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let page = 1; page <= totalPages; page++) {
-          doc.setPage(page);
-          drawFooter(page, totalPages);
-        }
-        const stamp = new Date().toISOString().slice(0, 10);
-        const fileTab = isRel ? "Ocorrencias" : mode === "mistura" ? "Mistura" : "Notas_Por_Linha";
-        doc.save(`SomoGhiro_Analise_${fileTab}_${stamp}.pdf`);
-        App.showToast("Relatório PDF da análise atual gerado com todos os registros filtrados.", "success");
-      } catch (e) {
-        console.error("Erro ao gerar PDF da análise:", e);
-        App.showToast("Erro ao gerar PDF: " + e.message, "error");
-      }
-    },
+      toggleLine(line) {
+        this.selectedLines.has(line) ? this.selectedLines.delete(line) : this.selectedLines.add(line);
+        this.render();
+      },
 
-    // ---------- Relatórios PDF individuais por linha: 1 página por linha ----------
-    generateIndividualPDF(mode = "selected") {
-      try {
-        if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("Biblioteca PDF não carregada. Verifique sua conexão.");
-        const visible = this.visibleLineNames();
-        const lines = mode === "all" ? visible : visible.filter(line => this.selectedLines.has(line));
-        if (!lines.length) {
-          App.showToast(mode === "all" ? "Não há linhas com avaliações para gerar." : "Selecione ao menos uma linha ou use 'Gerar todas as linhas'.", "error");
-          return;
-        }
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4", compress: true });
-        const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 8, contentW = W - M * 2;
-        const C = { navy: [15, 23, 42], blue: [37, 99, 235], slate: [51, 65, 85], muted: [100, 116, 139], light: [248, 250, 252], border: [226, 232, 240], green: [5, 150, 105], amber: [217, 119, 6], red: [225, 29, 72] };
-        const clean = v => String(v ?? "—").replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim() || "—";
-        const short = (v, max) => { const t = clean(v); return t.length > max ? t.slice(0, Math.max(1, max - 1)) + "…" : t; };
-        const allFiltered = this.notasRows("linhas", true).filter(r => r.Nota != null && String(r.Linha || "").trim());
-        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
-        const selectedYear = this.monthFilter ? this.monthFilter.slice(0, 4) : "";
+      selectAllLines(mode, select) {
+        if (!select) { this.selectedLines.clear(); this.render(); return; }
+        const rows = this.notasRows(mode);
+        rows.forEach(r => this.selectedLines.add(r.Linha));
+        this.render();
+      },
 
-        lines.forEach((line, idx) => {
-          if (idx) doc.addPage("a4", "landscape");
-          const lineAllYears = allFiltered.filter(r => String(r.Linha || "").trim() === line);
-          const years = [...new Set(lineAllYears.map(r => String(r.Data || "").slice(0, 4)).filter(y => /^\d{4}$/.test(y)))].sort();
-          const year = (selectedYear && years.includes(selectedYear) ? selectedYear : years[years.length - 1]) || String(new Date().getFullYear());
-          const data = lineAllYears.filter(r => String(r.Data || "").startsWith(year + "-") && Number.isFinite(Number(r.Nota)));
-          const conformes = data.filter(r => Number(r.Nota) >= 4).length;
-          const melhorias = data.filter(r => Number(r.Nota) === 3).length;
-          const ncs = data.filter(r => Number(r.Nota) <= 2).length;
-          const avg = mean(data.map(r => Number(r.Nota)).filter(Number.isFinite));
-          const pct = data.length ? conformes / data.length * 100 : 0;
-          const areas = [...new Set(data.map(r => clean(r["Área"])).filter(v => v !== "—"))].join(", ") || "—";
-          const types = [...new Set(data.map(r => clean(r["Tipo de Auditoria"])).filter(v => v !== "—"))].join(", ") || "—";
-          const audits = new Set(data.map(r => [r.Data, r.Turno, r["Tipo de Auditoria"]].join("|"))).size;
+      viewNotas(mode) {
+        const rows = this.notasRows(mode);
+        const all = this.notasRows(mode, true);
+        if (!rows.length) return EMPTY;
 
-          const monthly = monthNames.map((name, i) => {
-            const key = `${year}-${String(i + 1).padStart(2, "0")}`;
-            const arr = data.filter(r => String(r.Data || "").slice(0, 7) === key);
-            return { name, key, total: arr.length, ncs: arr.filter(r => Number(r.Nota) <= 2).length, pct: arr.length ? arr.filter(r => Number(r.Nota) >= 4).length / arr.length * 100 : null };
-          });
-          const totalNcs = monthly.reduce((sum, item) => sum + item.ncs, 0);
-          const recurrentMonth = totalNcs ? monthly.reduce((best, item, i) => item.ncs > (monthly[best]?.ncs ?? -1) ? i : best, -1) : -1;
+        const valid = rows.filter(r => r.Nota != null);
+        const avg = mean(valid.map(r => r.Nota));
+        const ok = valid.filter(r => r.Nota >= 4).length;
+        const nc = valid.filter(r => r.Nota <= 2).length;
+        const na = rows.length - valid.length;
+        const scoreBar = i => ({ ...i, cls: i.value >= 4.5 ? "bg-emerald-500" : i.value >= 3 ? "bg-amber-500" : "bg-rose-500" });
 
-          // Top 10 problemas são calculados sobre o ano inteiro, independentemente do mês selecionado.
-          const occurrenceRows = this.rel.filter(r => this.pass(r, true)
-            && String(r.Linha || "").trim() === line
-            && String(r.Data || "").startsWith(year + "-")
-            && !/melhoria/i.test(String(r["Tipo de problema"] || "")));
-          const problemMap = new Map();
-          occurrenceRows.forEach(r => {
-            const point = clean(r.Ponto), desc = clean(r.Descrição || r["Descrição"] || r.descricao || r["Tipo de problema"]);
-            const key = `${point} — ${desc}`;
-            problemMap.set(key, (problemMap.get(key) || 0) + 1);
-          });
-          const topProblems = [...problemMap.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value || cmp(a.label, b.label)).slice(0, 10);
+        const rank = [...group(valid, r => r.Linha)].map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)), sub: `${a.length} itens` })).sort((a, b) => a.value - b.value);
+        const pontos = [...group(valid, r => `${r.Ponto} — ${r.Pergunta}`)].map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)) })).sort((a, b) => a.value - b.value);
+        const grupos = [...group(valid, r => r.Grupo || "—")].map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)) })).sort((a, b) => a.value - b.value);
+        const dist = [5, 4, 3, 2, 1].map(n => ({ label: `Nota ${n}`, value: valid.filter(r => r.Nota === n).length, cls: n >= 4 ? "bg-emerald-500" : n === 3 ? "bg-amber-500" : "bg-rose-500" }));
+        const meses = [...group(all.filter(r => r.Nota != null), r => (r.Data || "Sem data").slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([m, a]) => scoreBar({ label: m === "Sem data" ? m : this.monthLabel(m), value: mean(a.map(x => x.Nota)) }));
 
-          // Consolida a listagem de questões por tipo, área e ponto.
-          const buckets = group(data, r => [r["Tipo de Auditoria"], r["Área"], r.Grupo, r.Ponto, r.Pergunta].map(clean).join("¦"));
-          const items = [...buckets.entries()].map(([key, arr]) => {
-            const parts = key.split("¦");
-            const numeric = arr.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
-            const itemConf = numeric.length ? numeric.filter(n => n >= 4).length / numeric.length * 100 : null;
-            return { tipo: parts[0], area: parts[1], grupo: parts[2], ponto: parts[3], pergunta: parts[4], media: mean(numeric), qtd: arr.length, conformidade: itemConf };
-          }).sort((a, b) => cmp(a.tipo, b.tipo) || cmp(a.area, b.area) || cmp(a.ponto, b.ponto));
+        const lines = [...new Set(rows.map(r => r.Linha))].sort(cmp);
+        const selectedCount = lines.filter(l => this.selectedLines.has(l)).length;
 
-          // Cabeçalho executivo e indicadores em faixa horizontal.
-          doc.setFillColor(...C.navy); doc.rect(0, 0, W, 25, "F");
-          doc.setFillColor(...C.blue); doc.rect(0, 25, W, 1.3, "F");
-          doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-          doc.text("RELATÓRIO INDIVIDUAL DE AUDITORIA", M, 10.5);
-          doc.setFontSize(10); doc.text(`LINHA: ${short(line, 65)}`, M, 18);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(7.2); doc.setTextColor(203, 213, 225);
-          doc.text(`ANO ANALISADO: ${year}  •  GERADO EM ${new Date().toLocaleDateString("pt-BR")}`, W - M, 18, { align: "right" });
+        const linesGridHtml = lines.length ? `
+          <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+            ${lines.map(l => {
+              const sel = this.selectedLines.has(l);
+              const lRows = valid.filter(r => r.Linha === l);
+              const lAvg = mean(lRows.map(x => x.Nota));
+              return `
+                <button type="button" onclick="RG.toggleLine('${esc(l)}')"
+                  class="p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${sel ? "bg-blue-600 border-blue-600 text-white shadow-sm" : "bg-slate-50/80 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
+                  <div class="flex items-center justify-between gap-1">
+                    <b class="text-xs sm:text-sm font-extrabold truncate">${esc(l)}</b>
+                    <div class="w-4 h-4 rounded-md border flex items-center justify-center shrink-0 ${sel ? "bg-white text-blue-600 border-white" : "border-slate-300 dark:border-slate-600"}">
+                      ${sel ? `<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
+                    </div>
+                  </div>
+                  <p class="text-base font-black mt-1.5 tabular-nums ${sel ? "text-white" : txtCls(lAvg)}">${f2(lAvg)}</p>
+                </button>`;
+            }).join("")}
+          </div>` : EMPTY;
+
+        return `
+          <!-- Barra de Exportação PDF Individual (1 Página por Linha) -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-3.5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5">
+                <h3 class="text-sm sm:text-base font-extrabold">Relatório PDF Individual por Linha</h3>
+                <b class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">${selectedCount} selecionada${selectedCount === 1 ? "" : "s"}</b>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="RG.selectAllLines('${mode}', true)" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition">Todas</button>
+                <button type="button" onclick="RG.selectAllLines('${mode}', false)" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold transition">Limpar</button>
+                <button type="button" onclick="RG.exportSelectedLinesPDF('${mode}')"
+                  class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-1.5">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                  Gerar PDF (${selectedCount})
+                </button>
+              </div>
+            </div>
+            ${linesGridHtml}
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-5 gap-3">
+            ${kpi("Média Geral", f2(avg), txtCls(avg))}
+            ${kpi("Conformidade", `${valid.length ? Math.round((ok / valid.length) * 100) : 0}%`, "text-emerald-600 dark:text-emerald-400", `${ok} de ${valid.length}`)}
+            ${kpi("Não Conformes", nc, nc ? "text-rose-600 dark:text-rose-400" : "text-slate-400")}
+            ${kpi("Avaliações", valid.length, "text-slate-900 dark:text-white", `${na} N/A`)}
+            ${kpi("Linhas", rank.length, "text-blue-600 dark:text-blue-400")}
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${card("Ranking por Linha", bars(rank.map(scoreBar), { max: 5, fmt: v => f2(v), scroll: true }))}
+            ${card("Pilares", bars(grupos.map(scoreBar), { max: 5, fmt: v => f2(v) }))}
+            ${card("Distribuição de Notas", bars(dist))}
+            ${card("Pontos Críticos", bars(pontos.slice(0, 10).map(scoreBar), { max: 5, fmt: v => f2(v), scroll: true }))}
+            ${card("Por Tipo", bars([...group(valid, r => r["Tipo de Auditoria"] || "—")].map(([label, a]) => scoreBar({ label, value: mean(a.map(x => x.Nota)) })), { max: 5, fmt: v => f2(v) }))}
+            ${card("Evolução Mensal", bars(meses, { max: 5, fmt: v => f2(v) }))}
+          </div>`;
+      },
+
+      // ==================== EXPORTAÇÃO PDF EXECUTIVO CONSOLIDADO (1 PÁGINA EXECUTIVA) ====================
+      exportPDF() {
+        try {
+          if (!window.jspdf?.jsPDF) { App.showToast("Biblioteca PDF indisponível.", "error"); return; }
+          const rel = this.rel.filter(r => this.pass(r));
+          const res = this.res.filter(r => this.pass(r));
+          if (!rel.length && !res.length) { App.showToast("Nenhum dado filtrado para exportar.", "error"); return; }
+
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+          const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 12, CW = W - M * 2;
+          const C = {
+            navy: [15, 23, 42], blue: [37, 99, 235], dark: [30, 41, 59], muted: [100, 116, 139],
+            bg: [248, 250, 252], border: [226, 232, 240],
+            green: [5, 150, 105], greenBg: [236, 253, 245],
+            amber: [217, 119, 6], amberBg: [255, 251, 235],
+            rose: [225, 29, 72], roseBg: [255, 241, 242]
+          };
+
+          // Header Executivo Compacto
+          doc.setFillColor(...C.navy); doc.rect(0, 0, W, 24, "F");
+          doc.setFillColor(...C.blue); doc.rect(0, 24, W, 1.2, "F");
+          doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+          doc.text("RELATÓRIO EXECUTIVO DE AUDITORIAS", M, 10.5);
+          doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+          const periodText = this.monthFilter ? `Período: ${this.monthLabel(this.monthFilter)}` : "Período: Consolidado Geral";
+          doc.text(`${periodText}  •  Gerado em ${new Date().toLocaleDateString("pt-BR")}`, M, 17.5);
 
           let y = 30;
-          doc.setFont("helvetica", "normal"); doc.setFontSize(6.8); doc.setTextColor(...C.slate);
-          doc.text(`Área(s): ${short(areas, 75)}  •  Auditorias: ${audits}  •  Avaliações: ${data.length}  •  Tipo(s): ${short(types, 65)}`, M, y);
-          y += 2.5;
-          const kpis = [
-            ["MÉDIA GERAL", f2(avg, 2), C.blue], ["CONFORMIDADE", `${f2(pct, 1)}%`, C.green],
-            ["CONFORMES (4–5)", String(conformes), C.green], ["MELHORIAS (3)", String(melhorias), C.amber],
-            ["NÃO CONFORMES (1–2)", String(ncs), ncs ? C.red : C.muted]
+          const valid = res.filter(r => r.Nota != null);
+          const avg = mean(valid.map(r => r.Nota));
+          const okPct = valid.length ? Math.round((valid.filter(r => r.Nota >= 4).length / valid.length) * 100) : 0;
+          const relOk = rel.filter(r => r.Status === "Concluído").length;
+          const relAtr = rel.filter(r => r.Status === "Atrasado").length;
+
+          // 4 KPI Cards
+          const gap = 3, cw = (CW - gap * 3) / 4, ch = 18;
+          const cards = [
+            { t: "MÉDIA GERAL", v: f2(avg), s: `${valid.length} avaliações`, c: avg >= 4.5 ? C.green : avg >= 3 ? C.amber : C.rose },
+            { t: "CONFORMIDADE", v: `${okPct}%`, s: "Notas 4 e 5", c: C.green },
+            { t: "PLANO DE AÇÃO", v: `${rel.length ? Math.round((relOk / rel.length) * 100) : 0}%`, s: `${relOk}/${rel.length} concluídas`, c: C.blue },
+            { t: "ATRASADAS", v: String(relAtr), s: "Ação imediata", c: relAtr > 0 ? C.rose : C.muted }
           ];
-          const gap = 2, kw = (contentW - gap * (kpis.length - 1)) / kpis.length, kh = 12.5;
-          kpis.forEach((k, i) => {
-            const x = M + i * (kw + gap);
-            doc.setFillColor(...C.light); doc.setDrawColor(...C.border); doc.roundedRect(x, y, kw, kh, 1.2, 1.2, "FD");
-            doc.setFillColor(...k[2]); doc.rect(x + 1.5, y, kw - 3, 0.8, "F");
-            doc.setFont("helvetica", "bold"); doc.setFontSize(5.8); doc.setTextColor(...C.muted); doc.text(k[0], x + 2, y + 4.5);
-            doc.setFontSize(10); doc.setTextColor(...k[2]); doc.text(k[1], x + 2, y + 10.5);
+          cards.forEach((k, i) => {
+            const x = M + i * (cw + gap);
+            doc.setFillColor(...C.bg); doc.setDrawColor(...C.border);
+            doc.roundedRect(x, y, cw, ch, 2, 2, "FD");
+            doc.setFillColor(...k.c); doc.rect(x + 2, y, cw - 4, 1, "F");
+            doc.setFont("helvetica", "bold"); doc.setFontSize(6.5); doc.setTextColor(...C.muted);
+            doc.text(k.t, x + 3, y + 5.2);
+            doc.setFontSize(12); doc.setTextColor(...k.c);
+            doc.text(k.v, x + 3, y + 11.8);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(6.5); doc.setTextColor(...C.dark);
+            doc.text(k.s, x + 3, y + 15.8);
           });
+          y += ch + 6;
 
-          const contentTop = y + kh + 3;
-          const footerY = H - 7;
-          const contentBottom = footerY - 2;
-          const leftX = M, leftW = 183, panelGap = 4, rightX = leftX + leftW + panelGap, rightW = W - M - rightX;
-          const blockH = contentBottom - contentTop;
+          // Tabela Ranking de Linhas
+          if (valid.length) {
+            doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...C.navy);
+            doc.text("DESEMPENHO POR LINHA", M, y); y += 2;
+            const rankBody = [...group(valid, r => `${r["Área"]}||${r.Linha}`)].map(([k, a]) => {
+              const [area, linha] = k.split("||");
+              const m = mean(a.map(x => x.Nota));
+              const nc = a.filter(x => x.Nota <= 2).length;
+              const mel = a.filter(x => x.Nota === 3).length;
+              return [area, linha, f2(m), m >= 4.5 ? "Conforme" : m >= 3 ? "Melhoria" : "Não Conforme", String(mel), String(nc)];
+            }).sort((a, b) => Number(a[2].replace(",", ".")) - Number(b[2].replace(",", ".")));
 
-          // ESQUERDA: listagem completa de questões em colunas adaptáveis, com fonte legível.
-          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(leftX, contentTop, leftW, blockH, 1.4, 1.4, "FD");
-          doc.setFont("helvetica", "bold"); doc.setFontSize(7.4); doc.setTextColor(...C.navy);
-          doc.text(`QUESTÕES AVALIADAS — ${items.length} item(ns)`, leftX + 3, contentTop + 5);
-          const tableTop = contentTop + 8;
-          const tableBottom = contentBottom - 2;
-          const tableH = tableBottom - tableTop;
-          const columnCount = items.length > 64 ? 3 : items.length > 20 ? 2 : 1;
-          const colGap = 2;
-          const colW = (leftW - 6 - colGap * (columnCount - 1)) / columnCount;
-          const perColumn = Math.ceil(items.length / columnCount);
-          const headerH = 5.4;
-          const rowH = perColumn ? (tableH - headerH) / perColumn : 7;
-          const fontSize = columnCount === 1 ? 7.0 : columnCount === 2 ? 6.0 : 5.3;
-          const questionFont = Math.max(4.8, fontSize - 0.25);
-          const columnItems = Array.from({ length: columnCount }, (_, col) => items.slice(col * perColumn, (col + 1) * perColumn));
-
-          columnItems.forEach((list, col) => {
-            const x = leftX + 3 + col * (colW + colGap);
-            const widths = columnCount === 1
-              ? [18, colW - 18 - 13 - 8 - 20, 13, 8, 20]
-              : columnCount === 2
-                ? [14, colW - 14 - 11 - 6 - 14, 11, 6, 14]
-                : [11, colW - 11 - 8 - 5 - 10, 8, 5, 10];
-            const headers = ["PT/TIPO", "QUESTÃO", "MÉDIA", "N", "%" ];
-            let hx = x;
-            doc.setFillColor(...C.navy); doc.rect(x, tableTop, colW, headerH, "F");
-            doc.setFont("helvetica", "bold"); doc.setFontSize(columnCount === 3 ? 4.8 : 5.3); doc.setTextColor(255, 255, 255);
-            headers.forEach((h, i) => { doc.text(h, hx + 0.8, tableTop + 3.6); hx += widths[i]; });
-            list.forEach((it, ri) => {
-              const ry = tableTop + headerH + ri * rowH;
-              if (ry + rowH > tableBottom + 0.2) return;
-              if (ri % 2 === 0) { doc.setFillColor(...C.light); doc.rect(x, ry, colW, rowH, "F"); }
-              doc.setDrawColor(...C.border); doc.setLineWidth(0.1); doc.line(x, ry + rowH, x + colW, ry + rowH);
-              const pointLabel = columnCount === 1 ? `${it.ponto} · ${short(it.tipo, 14)}` : `${it.ponto} ${short(it.tipo, columnCount === 2 ? 6 : 3)}`;
-              let cx = x;
-              doc.setFont("helvetica", "bold"); doc.setFontSize(Math.max(4.6, fontSize - 0.2)); doc.setTextColor(...C.navy);
-              doc.text(short(pointLabel, 18), cx + 0.8, ry + Math.min(rowH * 0.55, 3.7)); cx += widths[0];
-              const qW = widths[1] - 1.5;
-              doc.setFont("helvetica", "normal"); doc.setFontSize(questionFont);
-              const allQuestionLines = doc.splitTextToSize(clean(it.pergunta), qW);
-              const maxQuestionLines = columnCount === 1 ? 3 : 2;
-              const lines = allQuestionLines.slice(0, maxQuestionLines);
-              if (allQuestionLines.length > maxQuestionLines && lines.length) {
-                let lastLine = lines[lines.length - 1];
-                while (lastLine.length > 2 && doc.getTextWidth(lastLine + "…") > qW) lastLine = lastLine.slice(0, -1);
-                lines[lines.length - 1] = lastLine + "…";
+            doc.autoTable({
+              startY: y, margin: { left: M, right: M },
+              head: [["Área", "Linha", "Média", "Classificação", "Melhorias", "NC"]],
+              body: rankBody, theme: "grid",
+              styles: { font: "helvetica", fontSize: 7.5, cellPadding: 1.8, textColor: C.dark, lineColor: C.border, lineWidth: 0.15 },
+              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", halign: "center" },
+              columnStyles: {
+                0: { cellWidth: 32 }, 1: { cellWidth: 28, fontStyle: "bold" },
+                2: { cellWidth: 22, halign: "center", fontStyle: "bold" },
+                3: { cellWidth: 38, halign: "center", fontStyle: "bold" },
+                4: { cellWidth: 33, halign: "center" }, 5: { cellWidth: 33, halign: "center", fontStyle: "bold" }
+              },
+              didParseCell(d) {
+                if (d.section === "body" && d.column.index === 3) {
+                  const v = d.cell.raw;
+                  if (v === "Conforme") { d.cell.styles.textColor = C.green; d.cell.styles.fillColor = C.greenBg; }
+                  else if (v === "Melhoria") { d.cell.styles.textColor = C.amber; d.cell.styles.fillColor = C.amberBg; }
+                  else { d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg; }
+                }
               }
-              doc.setFont("helvetica", "normal"); doc.setFontSize(questionFont); doc.setTextColor(...C.slate);
-              const lineHeight = Math.min(2.2, Math.max(1.55, rowH / (lines.length + 0.7)));
-              const startTextY = ry + Math.max(1.9, (rowH - lines.length * lineHeight) / 2 + lineHeight * 0.72);
-              lines.forEach((lineText, li) => doc.text(lineText, cx + 0.7, startTextY + li * lineHeight));
-              cx += widths[1];
-              const values = [f2(it.media, 1), String(it.qtd), it.conformidade == null ? "—" : `${f2(it.conformidade, 0)}%`];
-              values.forEach((value, vi) => {
-                const cellW = widths[vi + 2];
-                doc.setFont("helvetica", vi === 0 || vi === 2 ? "bold" : "normal");
-                doc.setFontSize(Math.max(4.7, fontSize - 0.2));
-                if (vi === 0 || vi === 2) {
-                  const colorValue = vi === 0 ? (it.media == null ? null : it.media / 5 * 100) : it.conformidade;
-                  doc.setTextColor(...(colorValue == null ? C.muted : colorValue >= 80 ? C.green : colorValue >= 60 ? C.amber : C.red));
-                } else doc.setTextColor(...C.slate);
-                doc.text(short(value, 7), cx + cellW / 2, ry + Math.min(rowH * 0.55, 3.7), { align: "center" });
-                cx += cellW;
+            });
+            y = doc.lastAutoTable.finalY + 6;
+          }
+
+          // Pendências Prioritárias
+          const pend = rel.filter(r => r.Status !== "Concluído").sort((a, b) => (a.Prazo || "9").localeCompare(b.Prazo || "9"));
+          if (pend.length) {
+            if (y > H - 40) { doc.addPage(); y = 14; }
+            doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...C.navy);
+            doc.text(`PENDÊNCIAS DO PLANO DE AÇÃO (${pend.length})`, M, y); y += 2;
+            doc.autoTable({
+              startY: y, margin: { left: M, right: M },
+              head: [["Status", "Prazo", "Linha", "Ponto", "Responsável", "Descrição"]],
+              body: pend.map(r => [r.Status, brDate(r.Prazo), r.Linha, r.Ponto, r["Responsável"] || "—", r["Descrição"]]),
+              theme: "grid",
+              styles: { font: "helvetica", fontSize: 7.2, cellPadding: 1.8, textColor: C.dark, lineColor: C.border, lineWidth: 0.15 },
+              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold" },
+              columnStyles: { 0: { cellWidth: 22, fontStyle: "bold" }, 1: { cellWidth: 20 }, 2: { cellWidth: 18, fontStyle: "bold" }, 3: { cellWidth: 14 }, 4: { cellWidth: 32 }, 5: { cellWidth: 80 } },
+              didParseCell(d) {
+                if (d.section === "body" && d.column.index === 0 && d.cell.raw === "Atrasado") {
+                  d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg;
+                }
+              }
+            });
+          }
+
+          const pages = doc.internal.getNumberOfPages();
+          for (let p = 1; p <= pages; p++) {
+            doc.setPage(p);
+            doc.setFontSize(7); doc.setTextColor(...C.muted);
+            doc.text("SomoGhiro Audit • Relatório Consolidado", M, H - 6);
+            doc.text(`Página ${p} de ${pages}`, W - M, H - 6, { align: "right" });
+          }
+          doc.save(`Relatorio_Consolidado_${new Date().toISOString().slice(0, 10)}.pdf`);
+          App.showToast("PDF consolidado gerado com sucesso!", "success");
+        } catch (e) { App.showToast("Erro ao gerar PDF: " + e.message, "error"); }
+      },
+
+      // ==================== RELATÓRIOS INDIVIDUAIS POR LINHA — EXATAMENTE 1 PÁGINA POR LINHA ====================
+      exportSelectedLinesPDF(mode) {
+        try {
+          if (!window.jspdf?.jsPDF) { App.showToast("Biblioteca PDF indisponível.", "error"); return; }
+          const rows = this.notasRows(mode);
+          const allUnfiltered = this.notasRows(mode, true);
+          const availableLines = [...new Set(rows.map(r => r.Linha))].sort(cmp);
+          const targetLines = availableLines.filter(l => this.selectedLines.has(l));
+
+          if (!targetLines.length) {
+            App.showToast("Selecione pelo menos uma linha.", "error");
+            return;
+          }
+
+          const { jsPDF } = window.jspdf;
+          // Formato A4 Paisagem (297mm x 210mm) para garantir 1 página por linha sem quebra
+          const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+          const W = doc.internal.pageSize.getWidth();  // 297mm
+          const H = doc.internal.pageSize.getHeight(); // 210mm
+          const M = 10;
+          const CW = W - M * 2; // 277mm
+
+          const C = {
+            navy: [15, 23, 42],
+            blue: [37, 99, 235],
+            dark: [30, 41, 59],
+            muted: [100, 116, 139],
+            bg: [248, 250, 252],
+            border: [226, 232, 240],
+            green: [5, 150, 105],
+            greenBg: [236, 253, 245],
+            amber: [217, 119, 6],
+            amberBg: [255, 251, 235],
+            rose: [225, 29, 72],
+            roseBg: [255, 241, 242]
+          };
+
+          const drawMiniBarChart = (title, items, bx, by, bw, bh, maxVal = 5, isScore = true) => {
+            doc.setFillColor(255, 255, 255);
+            doc.setDrawColor(...C.border);
+            doc.roundedRect(bx, by, bw, bh, 2, 2, "FD");
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(7.5);
+            doc.setTextColor(...C.navy);
+            doc.text(title, bx + 3, by + 5);
+
+            if (!items.length) {
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(7);
+              doc.setTextColor(...C.muted);
+              doc.text("Sem dados", bx + 3, by + 12);
+              return;
+            }
+
+            const startY = by + 8.5;
+            const availH = bh - 10.5;
+            const stepY = Math.min(8.2, availH / items.length);
+            const barH = Math.min(2.6, stepY * 0.42);
+            const barMaxW = bw - 6;
+
+            items.forEach((it, idx) => {
+              const iy = startY + idx * stepY;
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(6.6);
+              doc.setTextColor(...C.dark);
+              const lbl = it.label.length > 26 ? it.label.slice(0, 25) + "…" : it.label;
+              doc.text(lbl, bx + 3, iy + 2.2);
+
+              const valStr = isScore ? f2(it.value) : String(it.value);
+              const valColor = isScore
+                ? (it.value >= 4.5 ? C.green : it.value >= 3 ? C.amber : C.rose)
+                : (it.color || C.blue);
+              doc.setTextColor(...valColor);
+              doc.text(valStr, bx + bw - 3, iy + 2.2, { align: "right" });
+
+              // Track
+              doc.setFillColor(...C.border);
+              doc.roundedRect(bx + 3, iy + 3.2, barMaxW, barH, 0.8, 0.8, "F");
+
+              // Fill
+              const ratio = Math.max(0.02, Math.min(1, it.value / (maxVal || 1)));
+              doc.setFillColor(...valColor);
+              doc.roundedRect(bx + 3, iy + 3.2, barMaxW * ratio, barH, 0.8, 0.8, "F");
+            });
+          };
+
+          targetLines.forEach((line, pageIdx) => {
+            if (pageIdx > 0) doc.addPage();
+
+            const lRows = rows.filter(r => r.Linha === line);
+            const lValid = lRows.filter(r => r.Nota != null);
+            const lAllValid = allUnfiltered.filter(r => r.Linha === line && r.Nota != null);
+            const lRel = this.rel.filter(r => r.Linha === line && this.pass(r));
+
+            const areaName = lRows[0]?.["Área"] || (mode === "mistura" ? "Mistura" : "Fábrica");
+            const avg = mean(lValid.map(r => r.Nota));
+            const ok = lValid.filter(r => r.Nota >= 4).length;
+            const nc = lValid.filter(r => r.Nota <= 2).length;
+            const mel = lValid.filter(r => r.Nota === 3).length;
+            const na = lRows.length - lValid.length;
+            const okPct = lValid.length ? Math.round((ok / lValid.length) * 100) : 0;
+            const relOpen = lRel.filter(r => r.Status !== "Concluído").length;
+
+            // 1. HEADER COMPACTO (y: 0 -> 19mm)
+            doc.setFillColor(...C.navy);
+            doc.rect(0, 0, W, 18, "F");
+            doc.setFillColor(...C.blue);
+            doc.rect(0, 18, W, 1, "F");
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(13);
+            doc.text(`FICHA EXECUTIVA — LINHA ${String(line).toUpperCase()}`, M, 8.5);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8);
+            doc.setTextColor(148, 163, 184);
+            const periodTxt = this.monthFilter ? `Período: ${this.monthLabel(this.monthFilter)}` : "Período: Consolidado";
+            doc.text(`Área: ${areaName}  •  ${periodTxt}  •  Emissão: ${new Date().toLocaleDateString("pt-BR")}`, M, 14.2);
+
+            // Badge de Status Geral no canto direito do Header
+            const statusLabel = avg == null ? "SEM DADOS" : avg >= 4.5 ? "CONFORME" : avg >= 3 ? "EM MELHORIA" : "NÃO CONFORME";
+            const statusBg = avg == null ? C.muted : avg >= 4.5 ? C.green : avg >= 3 ? C.amber : C.rose;
+            doc.setFillColor(...statusBg);
+            doc.roundedRect(W - M - 38, 4.5, 38, 9, 2, 2, "F");
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.text(statusLabel, W - M - 19, 10.2, { align: "center" });
+
+            // 2. FAIXA DE 5 KPIs COMPACTOS (y: 22 -> 38mm)
+            let y = 22;
+            const gap = 3;
+            const kW = (CW - gap * 4) / 5;
+            const kH = 16;
+
+            const kpiList = [
+              { t: "MÉDIA DA LINHA", v: f2(avg), s: `${lValid.length} itens avaliados (${na} N/A)`, c: avg >= 4.5 ? C.green : avg >= 3 ? C.amber : C.rose },
+              { t: "CONFORMIDADE", v: `${okPct}%`, s: `${ok} itens notas 4 e 5`, c: C.green },
+              { t: "MELHORIAS (NOTA 3)", v: String(mel), s: "Pontos de atenção", c: mel > 0 ? C.amber : C.muted },
+              { t: "NÃO CONFORMIDADES", v: String(nc), s: "Notas 1 e 2", c: nc > 0 ? C.rose : C.muted },
+              { t: "PENDÊNCIAS PLANO", v: String(relOpen), s: `De ${lRel.length} registradas`, c: relOpen > 0 ? C.rose : C.blue }
+            ];
+
+            kpiList.forEach((k, idx) => {
+              const x = M + idx * (kW + gap);
+              doc.setFillColor(...C.bg);
+              doc.setDrawColor(...C.border);
+              doc.roundedRect(x, y, kW, kH, 1.8, 1.8, "FD");
+              doc.setFillColor(...k.c);
+              doc.rect(x + 2, y, kW - 4, 1, "F");
+
+              doc.setFont("helvetica", "bold");
+              doc.setFontSize(6.2);
+              doc.setTextColor(...C.muted);
+              doc.text(k.t, x + 2.8, y + 4.8);
+
+              doc.setFontSize(11.5);
+              doc.setTextColor(...k.c);
+              doc.text(k.v, x + 2.8, y + 10.6);
+
+              doc.setFont("helvetica", "normal");
+              doc.setFontSize(6);
+              doc.setTextColor(...C.dark);
+              doc.text(k.s, x + 2.8, y + 14.3);
+            });
+
+            y += kH + 4;
+
+            // 3. BLOCO VISUAL DE 3 GRÁFICOS LADO A LADO (y: 42 -> 86mm)
+            const cW = (CW - gap * 2) / 3;
+            const cH = 43;
+
+            const pilares = [...group(lValid, r => r.Grupo || "Geral")]
+              .map(([label, a]) => ({ label, value: mean(a.map(x => x.Nota)) }))
+              .sort((a, b) => a.value - b.value)
+              .slice(0, 4);
+
+            const distNotas = [5, 4, 3, 2, 1].map(n => ({
+              label: `Nota ${n}`,
+              value: lValid.filter(r => r.Nota === n).length,
+              color: n >= 4 ? C.green : n === 3 ? C.amber : C.rose
+            }));
+            const maxDist = Math.max(...distNotas.map(d => d.value), 1);
+
+            const evolucao = [...group(lAllValid, r => (r.Data || "").slice(0, 7))]
+              .filter(([k]) => k)
+              .sort((a, b) => a[0].localeCompare(b[0]))
+              .slice(-4)
+              .map(([m, a]) => ({ label: this.monthLabel(m), value: mean(a.map(x => x.Nota)) }));
+
+            drawMiniBarChart("DESEMPENHO POR PILAR", pilares, M, y, cW, cH, 5, true);
+            drawMiniBarChart("DISTRIBUIÇÃO DE NOTAS", distNotas, M + cW + gap, y, cW, cH, maxDist, false);
+            drawMiniBarChart("EVOLUÇÃO MENSAL (MÉDIA)", evolucao, M + (cW + gap) * 2, y, cW, cH, 5, true);
+
+            y += cH + 4.5;
+
+            // 4. DUAS COLUNAS INFERIORES AJUSTADAS AO RESTANTE DA PÁGINA (y: 89.5 -> 198mm)
+            // Esquerda: Matriz de Pontos da Linha | Direita: Ocorrências e Plano de Ação da Linha
+            const leftW = CW * 0.44;
+            const rightW = CW - leftW - gap;
+            const maxBottomY = H - 10;
+            const availTableH = maxBottomY - y - 5;
+
+            // Coluna Esquerda: Resumo por Ponto Avaliado
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.setTextColor(...C.navy);
+            doc.text("MÉDIA POR PONTO AVALIADO", M, y + 3);
+
+            const pointRows = [...group(lRows, r => r.Ponto)]
+              .sort((a, b) => cmp(a[0], b[0]))
+              .map(([pt, a]) => {
+                const v = a.filter(x => x.Nota != null);
+                const m = mean(v.map(x => x.Nota));
+                const qText = a[0]?.Pergunta || `Ponto ${pt}`;
+                return [pt, qText, v.length ? f2(m) : "N/A"];
               });
+
+            const ptPad = pointRows.length > 16 ? 1.05 : 1.4;
+            const ptFont = pointRows.length > 16 ? 6.2 : 6.8;
+
+            doc.autoTable({
+              startY: y + 4.5,
+              margin: { left: M, right: W - (M + leftW) },
+              head: [["Pt", "Questão / Critério", "Média"]],
+              body: pointRows.length ? pointRows : [["—", "Sem pontos avaliados", "—"]],
+              theme: "grid",
+              styles: {
+                font: "helvetica",
+                fontSize: ptFont,
+                cellPadding: ptPad,
+                textColor: C.dark,
+                lineColor: C.border,
+                lineWidth: 0.15,
+                overflow: "ellipsize"
+              },
+              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.8 },
+              columnStyles: {
+                0: { cellWidth: 11, fontStyle: "bold", halign: "center" },
+                1: { cellWidth: leftW - 25 },
+                2: { cellWidth: 14, halign: "center", fontStyle: "bold" }
+              },
+              didParseCell(d) {
+                if (d.section === "body" && d.column.index === 2 && d.cell.raw !== "N/A" && d.cell.raw !== "—") {
+                  const val = Number(String(d.cell.raw).replace(",", "."));
+                  if (val >= 4.5) { d.cell.styles.textColor = C.green; d.cell.styles.fillColor = C.greenBg; }
+                  else if (val >= 3) { d.cell.styles.textColor = C.amber; d.cell.styles.fillColor = C.amberBg; }
+                  else { d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg; }
+                }
+              }
             });
-          });
-          if (!items.length) {
-            doc.setFont("helvetica", "normal"); doc.setFontSize(7); doc.setTextColor(...C.muted);
-            doc.text("Nenhuma questão encontrada para esta linha no ano analisado.", leftX + 4, tableTop + 10);
-          }
 
-          // DIREITA: gráficos empilhados e alinhados à tabela.
-          const chartX = rightX, chartW = rightW;
-          const monthlyH = 57, topY = contentTop;
-          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(chartX, topY, chartW, monthlyH, 1.4, 1.4, "FD");
-          doc.setFont("helvetica", "bold"); doc.setFontSize(7.1); doc.setTextColor(...C.navy);
-          doc.text(`CONFORMIDADE MENSAL — ${year}`, chartX + 3, topY + 5);
-          const plotX = chartX + 5, plotW = chartW - 10, baseY = topY + 44, plotH = 29;
-          doc.setDrawColor(...C.border); doc.line(plotX, baseY, plotX + plotW, baseY);
-          const slot = plotW / 12, barW = Math.min(4.0, slot * 0.56);
-          monthly.forEach((m, i) => {
-            const h = m.pct == null ? 0 : Math.max(0.5, plotH * m.pct / 100);
-            const bx = plotX + i * slot + (slot - barW) / 2;
-            if (h > 0) {
-              doc.setFillColor(...(i === recurrentMonth ? C.amber : C.blue));
-              doc.roundedRect(bx, baseY - h, barW, h, 0.35, 0.35, "F");
-            }
-            if (m.pct != null) {
-              doc.setFont("helvetica", "bold"); doc.setFontSize(4.7); doc.setTextColor(...C.slate);
-              doc.text(`${Math.round(m.pct)}%`, bx + barW / 2, Math.max(topY + 10, baseY - h - 1), { align: "center" });
-            }
-            doc.setFont("helvetica", "normal"); doc.setFontSize(5.0); doc.setTextColor(...C.muted);
-            doc.text(m.name, bx + barW / 2, baseY + 4, { align: "center" });
-          });
-          doc.setFont("helvetica", "normal"); doc.setFontSize(5.0); doc.setTextColor(...C.muted);
-          doc.text(recurrentMonth >= 0 ? `Mês recorrente: ${monthly[recurrentMonth].name} (mais NC)` : "Sem não conformidades no ano", chartX + 3, topY + 53);
+            // Coluna Direita: Ocorrências / Plano de Ação da Linha
+            const rightX = M + leftW + gap;
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(8);
+            doc.setTextColor(...C.navy);
+            doc.text(`OCORRÊNCIAS E PLANO DE AÇÃO (${lRel.length})`, rightX, y + 3);
 
-          const problemsY = topY + monthlyH + 3;
-          const problemsH = contentBottom - problemsY;
-          doc.setFillColor(255, 255, 255); doc.setDrawColor(...C.border); doc.roundedRect(chartX, problemsY, chartW, problemsH, 1.4, 1.4, "FD");
-          doc.setFont("helvetica", "bold"); doc.setFontSize(7.1); doc.setTextColor(...C.navy);
-          doc.text(`TOP 10 PROBLEMAS — ${year}`, chartX + 3, problemsY + 5);
-          if (!topProblems.length) {
-            doc.setFont("helvetica", "normal"); doc.setFontSize(6); doc.setTextColor(...C.muted);
-            doc.text("Nenhuma anomalia registrada para esta linha no ano.", chartX + 4, problemsY + 14);
-          } else {
-            const maxProblem = Math.max(...topProblems.map(problem => problem.value), 1);
-            const startY = problemsY + 10, rowSpace = Math.min(7.0, (problemsH - 13) / 10);
-            const labelW = chartW * 0.50, barX = chartX + 3 + labelW, barW2 = chartW - labelW - 13;
-            topProblems.forEach((problem, i) => {
-              const ry = startY + i * rowSpace;
-              doc.setFont("helvetica", "normal"); doc.setFontSize(5.2); doc.setTextColor(...C.slate);
-              doc.text(short(problem.label, 37), chartX + 3, ry + 2.2);
-              doc.setFillColor(241, 245, 249); doc.roundedRect(barX, ry + 0.7, barW2, 1.7, 0.35, 0.35, "F");
-              doc.setFillColor(...C.red); doc.roundedRect(barX, ry + 0.7, barW2 * problem.value / maxProblem, 1.7, 0.35, 0.35, "F");
-              doc.setFont("helvetica", "bold"); doc.setFontSize(5.2); doc.setTextColor(...C.red);
-              doc.text(String(problem.value), chartX + chartW - 3, ry + 2.2, { align: "right" });
+            // Limita linhas visíveis na direita para jamais estourar 1 página
+            const maxOccRows = Math.floor(availTableH / 6.2);
+            const sortedOccs = [...lRel].sort((a, b) => {
+              const sA = a.Status === "Concluído" ? 1 : 0;
+              const sB = b.Status === "Concluído" ? 1 : 0;
+              if (sA !== sB) return sA - sB;
+              return (a.Prazo || "9").localeCompare(b.Prazo || "9");
             });
-          }
 
-          doc.setDrawColor(...C.border); doc.line(M, footerY, W - M, footerY);
-          doc.setFont("helvetica", "normal"); doc.setFontSize(5.5); doc.setTextColor(...C.muted);
-          doc.text(`SomoGhiro Audit • Linha ${short(line, 45)} • Ano ${year} • Página ${idx + 1} de ${lines.length}`, M, H - 2.5);
-        });
-        const stamp = new Date().toISOString().slice(0, 10);
-        doc.save(`SomoGhiro_Relatorios_Individuais_${stamp}.pdf`);
-        App.showToast(`${lines.length} relatório(s) individual(is) gerado(s), com tabela à esquerda e gráficos à direita, um por página.`, "success");
-      } catch (e) {
-        console.error("Erro ao gerar relatórios individuais:", e);
-        App.showToast("Erro ao gerar PDF individual: " + e.message, "error");
+            const visibleOccs = sortedOccs.slice(0, Math.max(1, maxOccRows));
+            const occBody = visibleOccs.map(r => [
+              r.Ponto || "—",
+              r["Tipo de problema"] || "—",
+              r["Descrição"] || "—",
+              r["Responsável"] || "—",
+              brDate(r.Prazo),
+              r.Status || "—"
+            ]);
+
+            if (sortedOccs.length > visibleOccs.length) {
+              occBody.push(["+", "Info", `... e mais ${sortedOccs.length - visibleOccs.length} ocorrência(s) no Excel.`, "—", "—", "—"]);
+            }
+
+            doc.autoTable({
+              startY: y + 4.5,
+              margin: { left: rightX, right: M },
+              head: [["Pt", "Tipo", "Descrição", "Responsável", "Prazo", "Status"]],
+              body: occBody.length ? occBody : [["—", "OK", "Nenhuma anomalia ou melhoria registrada nesta linha.", "—", "—", "Concluído"]],
+              theme: "grid",
+              styles: {
+                font: "helvetica",
+                fontSize: 6.5,
+                cellPadding: 1.3,
+                textColor: C.dark,
+                lineColor: C.border,
+                lineWidth: 0.15,
+                overflow: "ellipsize"
+              },
+              headStyles: { fillColor: C.navy, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 6.8 },
+              columnStyles: {
+                0: { cellWidth: 10, fontStyle: "bold", halign: "center" },
+                1: { cellWidth: 18, fontStyle: "bold", halign: "center" },
+                2: { cellWidth: rightW - 88 },
+                3: { cellWidth: 24 },
+                4: { cellWidth: 18, halign: "center" },
+                5: { cellWidth: 18, halign: "center", fontStyle: "bold" }
+              },
+              didParseCell(d) {
+                if (d.section === "body" && d.column.index === 1) {
+                  if (d.cell.raw === "Anomalia") d.cell.styles.textColor = C.rose;
+                  else if (d.cell.raw === "Melhoria") d.cell.styles.textColor = C.amber;
+                }
+                if (d.section === "body" && d.column.index === 5) {
+                  if (d.cell.raw === "Concluído") { d.cell.styles.textColor = C.green; d.cell.styles.fillColor = C.greenBg; }
+                  else if (d.cell.raw === "Atrasado") { d.cell.styles.textColor = C.rose; d.cell.styles.fillColor = C.roseBg; }
+                  else { d.cell.styles.textColor = C.amber; }
+                }
+              }
+            });
+
+            // 5. RODAPÉ DA PÁGINA
+            doc.setDrawColor(...C.border);
+            doc.line(M, H - 8, W - M, H - 8);
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(6.8);
+            doc.setTextColor(...C.muted);
+            doc.text(`SomoGhiro Audit • Ficha Individual — Linha ${line} (${areaName})`, M, H - 4.2);
+            doc.text(`Página ${pageIdx + 1} de ${targetLines.length}`, W - M, H - 4.2, { align: "right" });
+          });
+
+          const fileName = targetLines.length === 1
+            ? `Ficha_Linha_${String(targetLines[0]).replace(/[^a-zA-Z0-9_-]/g, "_")}.pdf`
+            : `Fichas_Individuais_${targetLines.length}_Linhas.pdf`;
+          doc.save(fileName);
+          App.showToast(`PDF gerado (${targetLines.length} página${targetLines.length > 1 ? "s" : ""})!`, "success");
+        } catch (e) {
+          App.showToast("Erro ao gerar PDF individual: " + e.message, "error");
+        }
       }
-    },
+    };
 
-    setTab(t) { this.tab = t; this.render(); },
+    window.RG = RG;
 
-    // ---------- Render principal ----------
-    render() {
-      const has = this.rel.length + this.res.length > 0;
-      $("rg-files").textContent = has ? `${this.files.length} arquivo(s) • ${this.rel.length} ocorrências • ${this.res.length} avaliações` : "Nenhum arquivo importado";
-      $("rg-clear").classList.toggle("hidden", !has);
-      $("rg-pdf").classList.toggle("hidden", !has);
-      $("rg-toolbar").classList.toggle("hidden", !has);
-      const n = this.activeFilters(), b = $("rg-fbadge"); b.textContent = n; b.classList.toggle("hidden", !n);
-      this.renderFilterPanel();
-      [["rel", "Relatórios"], ["linhas", "Notas por Linha"], ["mistura", "Mistura"]].forEach(([k]) => {
-        $("rg-tab-" + k).className = "flex-1 px-3 py-2 rounded-lg text-xs sm:text-sm font-bold transition whitespace-nowrap " + (this.tab === k ? "bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 shadow-sm" : "text-slate-600 dark:text-slate-300");
-      });
-      const body = $("rg-body");
-      if (!has) { body.innerHTML = `<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-8 text-center"><p class="font-bold">Importe a planilha exportada pelo sistema</p><p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Abas aceitas: RELATÓRIOS, RESPOSTAS DETALHADAS e NOTAS POR LINHA. As abas são opcionais; basta uma delas conter dados válidos. Você pode importar vários meses de uma vez.</p></div>`; return; }
-      body.innerHTML = this.tab === "rel" ? this.dashRel() : this.dashNotas(this.tab);
-    },
+    // 1. Injeta botão no menu lateral
+    document.querySelector("#drawer nav").insertAdjacentHTML("beforeend", `
+      <button onclick="App.navigate('gerador'); App.closeDrawer()" data-nav="gerador"
+        class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>
+        Gerador de Relatórios
+      </button>`);
 
-    // ---------- Dashboard 1: Relatórios ----------
-    dashRel() {
-      const rows = this.rel.filter(r => this.pass(r));
-      if (!rows.length) return card("Análise de Relatórios", EMPTY);
-      const an = rows.filter(r => r["Tipo de problema"] === "Anomalia").length;
-      const mel = rows.filter(r => r["Tipo de problema"] === "Melhoria").length;
-      const conc = rows.filter(r => r["Status"] === "Concluído");
-      const atr = rows.filter(r => r["Status"] === "Atrasado").length;
-      const semP = rows.filter(r => !r["Prazo"]).length;
-      const prazoMed = mean(rows.map(r => days(r.Data, r.Prazo)).filter(v => v != null));
-      const concMed = mean(conc.map(r => days(r.Data, r["Data de Conclusão"])).filter(v => v != null));
-      const noPrazo = conc.filter(r => r.Prazo && r["Data de Conclusão"] <= r.Prazo).length;
-      const pctConc = conc.length / rows.length * 100;
+    // 2. Injeta a View "Gerador de Relatórios" limpa, moderna e sem textos/spans desnecessários
+    document.querySelector("main").insertAdjacentHTML("beforeend", `
+      <section id="view-gerador" class="hidden space-y-5 animate-fade-in">
+        <input id="rg-input" type="file" accept=".xlsx,.xls" multiple class="hidden" onchange="RG.load(this.files);this.value=''" />
 
-      const byPt = [...group(rows, r => r["Tipo de Auditoria"] + "|" + r.Ponto)].map(([k, a]) => {
-        const [t, pt] = k.split("|"); return { label: `${pt} · ${t} — ${a[0]["Descrição"]}`, value: a.length, sub: `${new Set(a.map(r => r.Linha)).size} linha(s) • nota média ${f2(mean(a.map(r => Number(r.Nota)).filter(Boolean)) ?? null, 1)}`, pt, t };
-      }).sort((a, b) => b.value - a.value);
-      const top10 = byPt.slice(0, 10).map(i => ({ ...i, cls: "bg-rose-500" }));
-      const stair = byPt.slice(0, 12), tot = rows.length; let acc = 0;
-      const mxs = Math.max(...stair.map(s => s.value), 1);
-      const stairHtml = `<div class="overflow-x-auto"><div class="flex items-end gap-1.5 h-44 min-w-[420px]">${stair.map(s => { acc += s.value; return `<div class="flex-1 flex flex-col items-center justify-end h-full"><span class="text-[11px] font-extrabold">${s.value}</span><div class="w-full rounded-t-md bg-blue-600" style="height:${s.value / mxs * 82}%"></div></div>`; }).join("")}</div>
-        <div class="flex gap-1.5 min-w-[420px] mt-1">${(acc = 0, stair.map(s => { acc += s.value; return `<div class="flex-1 text-center"><p class="text-[11px] font-bold">${esc(s.pt)}</p><p class="text-[10px] text-slate-500 dark:text-slate-400">${Math.round(acc / tot * 100)}%</p></div>`; }).join(""))}</div></div>
-        <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Degraus: pontos com mais ocorrências, em ordem decrescente; % abaixo = acumulado do total.</p>`;
-
-      const cnt = (fn, o = {}) => bars([...group(rows, fn)].map(([k, a]) => ({ label: k || "Não atribuído", value: a.length })).sort((a, b) => b.value - a.value).slice(0, o.n || 99), { scroll: true, cls: o.cls });
-      const st = { "Atrasado": "bg-rose-500", "Vence Hoje": "bg-amber-500", "No Prazo": "bg-blue-600", "Concluído": "bg-emerald-500", "Sem Prazo": "bg-slate-400" };
-      const stBars = bars([...group(rows, r => r["Status"])].map(([k, a]) => ({ label: k, value: a.length, cls: st[k] })).sort((a, b) => b.value - a.value));
-      const resp = bars([...group(rows, r => r["Responsável"] || "Não atribuído")].map(([k, a]) => {
-        const pm = mean(a.map(r => days(r.Data, r.Prazo)).filter(v => v != null));
-        return { label: k, value: a.length, sub: `prazo médio ${pm == null ? "—" : f2(pm, 1) + " d"} • ${a.filter(r => r["Status"] === "Atrasado").length} atrasada(s)` };
-      }).sort((a, b) => b.value - a.value), { scroll: true });
-      const mes = bars([...group(rows.filter(r => /^\d{4}-\d{2}/.test(String(r.Data || ""))), r => r.Data.slice(0, 7))].sort((a, b) => cmp(a[0], b[0])).map(([k, a]) => ({
-        label: k.split("-").reverse().join("/"),
-        value: rows.length ? a.length / rows.length * 100 : 0,
-        sub: `${f2(a.length / rows.length * 100, 1)}% do total • ${f2(a.filter(r => r["Tipo de problema"] === "Anomalia").length / a.length * 100, 1)}% anomalias • ${f2(a.filter(r => r["Tipo de problema"] === "Melhoria").length / a.length * 100, 1)}% melhorias`
-      })), { max: 100, fmt: v => f2(v, 1) + "%" });
-
-      return `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        ${kpi("Ocorrências", rows.length)}${kpi("Anomalias", an, "text-rose-500", "Notas 1 e 2")}${kpi("Melhorias", mel, "text-amber-500", "Nota 3")}${kpi("Concluídas", f2(pctConc, 0) + "%", "text-emerald-500", `${conc.length} de ${rows.length}`)}
-        ${kpi("Atrasadas", atr, atr ? "text-rose-500" : "")}${kpi("Sem prazo", semP, semP ? "text-amber-500" : "")}
-        ${kpi("Prazo médio", prazoMed == null ? "—" : f2(prazoMed, 1) + " d", "text-blue-600", "Da auditoria ao prazo")}${kpi("Tempo p/ concluir", concMed == null ? "—" : f2(concMed, 1) + " d", "text-blue-600", conc.length ? `${noPrazo} no prazo (${f2(noPrazo / conc.length * 100, 0)}%)` : "")}
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        ${card("Top 10 maiores problemas", bars(top10), "Pontos com mais ocorrências")}
-        ${card("Escada dos pontos mais pontuados", stairHtml)}
-        ${card("Status das ocorrências", stBars)}
-        ${card("Por responsável", resp, "Volume e médias de prazo")}
-        ${card("Por área", cnt(r => r["Área"]))}
-        ${card("Por linha (top 15)", cnt(r => r.Linha, { n: 15, cls: "bg-rose-500" }))}
-        ${card("Evolução mensal (%)", mes, "% de cada mês sobre o total de ocorrências filtradas")}
-      </div>`;
-    },
-
-    // ---------- Dashboards 2 e 3: Notas ----------
-    dashNotas(mode) {
-      const rows = this.notasRows(mode).filter(r => r.Nota != null);
-      const all = this.notasRows(mode, true).filter(r => r.Nota != null);
-      if (!rows.length) return card(mode === "mistura" ? "Análise da Mistura" : "Análise de Notas por Linha", EMPTY);
-      const conf = rows.filter(r => r.Nota >= 4).length, pct = conf / rows.length * 100;
-      const nc = rows.filter(r => r.Nota <= 2).length, mel = rows.filter(r => r.Nota === 3).length;
-      const avg = mean(rows.map(r => r.Nota));
-      const months = [...new Set(rows.map(r => String(r.Data || "").slice(0, 7)).filter(v => /^\d{4}-\d{2}$/.test(v)))].sort();
-      const cur = this.monthFilter || months[months.length - 1] || "";
-      let prev = "";
-      if (cur) { const [y, m] = cur.split("-").map(Number), d = new Date(y, m - 2, 1); prev = `${d.getFullYear()}-${p2(d.getMonth() + 1)}`; }
-      const curR = rows.filter(r => String(r.Data || "").startsWith(cur));
-      const prevR = prev ? all.filter(r => String(r.Data || "").startsWith(prev)) : [];
-      const conformityPct = arr => arr.length ? arr.filter(r => r.Nota >= 4).length / arr.length * 100 : null;
-      const averageScore = arr => arr.length ? mean(arr.map(r => Number(r.Nota)).filter(Number.isFinite)) : null;
-      const pAvg = conformityPct(prevR), cAvg = conformityPct(curR);
-      const delta = (pAvg != null && cAvg != null) ? cAvg - pAvg : null;
-      const auditorias = new Set(rows.map(r => [r.Data, r.Turno, r["Tipo de Auditoria"]].join("|")).filter(Boolean)).size;
-      const lines = new Set(rows.map(r => r.Linha).filter(Boolean)).size;
-      const tipos = [...new Set(curR.map(r => r["Tipo de Auditoria"]).filter(Boolean))].sort(cmp);
-      const grid = tipos.map(t => {
-        const a = curR.filter(r => r["Tipo de Auditoria"] === t), b = prevR.filter(r => r["Tipo de Auditoria"] === t);
-        const pts = [...new Set([...a, ...b].map(r => r.Ponto).filter(Boolean))].sort(cmp);
-        return `<div class="${tipos.length > 1 ? "mb-4" : ""}">${tipos.length > 1 ? `<p class="text-xs font-extrabold uppercase text-slate-500 dark:text-slate-400 mb-2">${esc(t)}</p>` : ""}
-          <div class="grid grid-cols-5 sm:grid-cols-5 lg:grid-cols-10 gap-1.5">${pts.map(pt => {
-            const xRows = a.filter(r => r.Ponto === pt), yRows = b.filter(r => r.Ponto === pt);
-            const x = averageScore(xRows), y = averageScore(yRows);
-            const ar = (x != null && y != null) ? (x > y + 0.005 ? "▲" : x < y - 0.005 ? "▼" : "") : "";
-            return `<div class="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700"><div class="bg-slate-800 text-white text-center text-xs font-bold py-1">${esc(pt)}</div>
-              <div class="bg-slate-100 dark:bg-slate-800 py-1.5 text-center"><p class="text-base sm:text-lg font-black leading-tight ${txtCls(x)}">${x == null ? "—" : f2(x, 1)}</p><p class="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">ant. ${y == null ? "—" : f2(y, 1)} ${ar}</p></div></div>`;
-          }).join("")}</div></div>`;
-      }).join("");
-      const mFmt = m => m ? this.monthLabel(m) : "—";
-      const pctColor = v => v == null ? "bg-slate-400" : v >= 80 ? "bg-emerald-500" : v >= 60 ? "bg-amber-500" : "bg-rose-500";
-      const percentBars = (fn, options = {}) => {
-        const items = [...group(rows, fn)].map(([key, arr]) => {
-          const valid = arr.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
-          const value = valid.length ? valid.filter(n => n >= 4).length / valid.length * 100 : 0;
-          return { label: key || "Não atribuído", value, cls: pctColor(value), sub: `${valid.length} avaliações • média ${f2(mean(valid), 1)}/5 • ${arr.filter(r => r.Nota <= 2).length} NC` };
-        }).sort((a, b) => a.value - b.value || cmp(a.label, b.label));
-        return bars(items.slice(0, options.n || 99), { max: 100, fmt: v => f2(v, 1) + "%", scroll: true });
-      };
-      const crit = bars([...group(rows, r => `${r["Tipo de Auditoria"] || ""}|${r.Ponto || ""}`)].map(([key, arr]) => {
-        const [type, point] = key.split("|");
-        const valid = arr.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
-        const value = valid.length ? valid.filter(n => n >= 4).length / valid.length * 100 : 0;
-        return { label: `${point} · ${type}`, value, cls: pctColor(value), sub: `${shortText(arr[0].Pergunta, 76)} • ${valid.length} avaliação(ões)` };
-      }).sort((a, b) => a.value - b.value).slice(0, 5), { max: 100, fmt: v => f2(v, 1) + "%" });
-      const evo = bars([...group(rows.filter(r => mode === "mistura" ? !!r.Data : /^\d{4}-\d{2}/.test(String(r.Data || ""))), r => mode === "mistura" ? r.Data : r.Data.slice(0, 7))]
-        .sort((a, b) => cmp(a[0], b[0])).slice(-12).map(([key, arr]) => {
-          const total = arr.length;
-          const conformesPct = total ? arr.filter(r => r.Nota >= 4).length / total * 100 : 0;
-          const melhoriasPct = total ? arr.filter(r => r.Nota === 3).length / total * 100 : 0;
-          const ncPct = total ? arr.filter(r => r.Nota <= 2).length / total * 100 : 0;
-          return { label: mode === "mistura" ? brDate(key) : mFmt(key), value: conformesPct, cls: "bg-emerald-500", sub: `${f2(conformesPct, 1)}% conformes • ${f2(melhoriasPct, 1)}% melhorias • ${f2(ncPct, 1)}% NC (${total})` };
-        }), { max: 100, fmt: v => f2(v, 1) + "%" });
-      // Evita depender de helpers externos ao escopo do gerador.
-      function shortText(value, max) { const t = String(value ?? ""); return t.length > max ? t.slice(0, max - 1) + "…" : t; }
-
-      return `${mode === "linhas" ? this.lineReportPanel() : ""}<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        ${kpi("Média de conformidade", f2(pct, 1) + "%", txtCls(pct / 20), delta == null ? "Notas ≥ 4" : `${f2(cAvg, 1)}% em ${mFmt(cur)} • ${delta >= 0 ? "▲" : "▼"} ${f2(Math.abs(delta), 1)} p.p. vs ${mFmt(prev)}`)}
-        ${mode === "linhas" ? kpi("Linhas auditadas", lines, "text-blue-600") : kpi("Auditorias", auditorias, "text-blue-600")}
-        ${kpi("Média geral", f2(avg), txtCls(avg), "Escala de notas de 1 a 5")}
-        ${kpi("Avaliações", rows.length, "", mode === "linhas" ? `${auditorias} auditoria(s)` : "")}
-        ${kpi("Não conformidades", nc, nc ? "text-rose-500" : "", "Notas 1 e 2")}${kpi("Melhorias", mel, mel ? "text-amber-500" : "", "Nota 3")}
-        ${kpi("Conformes", conf, "text-emerald-500", "Notas 4 e 5")}${kpi("Mês de referência", mFmt(cur), "text-slate-700 dark:text-slate-200", "Mês filtrado ou mais recente")}
-      </div>
-      <div class="mt-4">${card("Conformidade ponto a ponto", grid || EMPTY, `Média das notas (escala 1 a 5): ${mFmt(cur)} (valor principal) × mês anterior ${mFmt(prev)} (valor secundário)` )}</div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-        ${card("Pontos mais críticos", crit, "Conformidade em percentual • menores percentuais primeiro")}
-        ${card(mode === "mistura" ? "Evolução por data (%)" : "Evolução mensal (%)", evo, "Conformes, melhorias e não conformidades em percentual por período")}
-        ${mode === "linhas" ? card("Ranking por linha", percentBars(r => r.Linha), "Conformidade por linha • menores percentuais primeiro") : ""}
-        ${mode === "linhas" ? card("Por área", percentBars(r => r["Área"]), "Conformidade por área") : ""}
-        ${card("Por tipo de auditoria", percentBars(r => r["Tipo de Auditoria"]), "Conformidade por tipo de auditoria")}
-      </div>`;
-    }
-  };
-  window.RG = RG;
-
-  // ---------- Injeção na interface ----------
-  document.querySelector("#drawer nav").insertAdjacentHTML("beforeend", `
-    <button onclick="App.navigate('relatorios'); App.closeDrawer()" data-nav="relatorios" id="rg-nav"
-      class="nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
-      <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-      <span>Gerador de relatórios</span>
-    </button>`);
-
-  document.querySelector("main").insertAdjacentHTML("beforeend", `
-    <section id="view-relatorios" class="hidden space-y-4 animate-fade-in">
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="min-w-0"><h2 class="text-xl font-extrabold">Gerador de Relatórios</h2><p id="rg-files" class="text-sm text-slate-500 dark:text-slate-400 truncate"></p></div>
-        <div class="flex flex-wrap gap-2">
-          <label class="flex-1 sm:flex-none cursor-pointer px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold text-center shadow">
-            Importar dados<input type="file" accept=".xlsx,.xls" multiple class="hidden" onchange="RG.load(this.files); this.value=''"/>
-          </label>
-          <button id="rg-pdf" onclick="RG.generateAnalysisPDF()" class="hidden px-4 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-extrabold shadow flex items-center justify-center gap-2"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>Gerar PDF</button>
-          <button id="rg-clear" onclick="RG.clear()" class="hidden px-4 py-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-sm font-bold">Limpar</button>
+        <!-- Estado Vazio (Upload Rápido) -->
+        <div id="rg-empty" ondragover="event.preventDefault()" ondrop="event.preventDefault();RG.load(event.dataTransfer.files)"
+          class="bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 p-12 sm:p-16 text-center max-w-2xl mx-auto mt-6 transition">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          </div>
+          <h2 class="text-xl sm:text-2xl font-extrabold">Gerador de Relatórios</h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Arraste suas planilhas Excel ou clique para selecionar</p>
+          <button onclick="$('rg-input').click()" class="mt-6 px-6 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm sm:text-base font-extrabold shadow-md hover:shadow-lg transition">
+            Selecionar Planilhas (.XLSX)
+          </button>
         </div>
-      </div>
-      <div id="rg-toolbar" class="hidden sticky top-14 sm:top-16 z-20 flex items-center gap-2 bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur py-2">
-        <div class="flex-1 flex rounded-xl bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
-          <button id="rg-tab-rel" onclick="RG.setTab('rel')">Relatórios</button>
-          <button id="rg-tab-linhas" onclick="RG.setTab('linhas')">Notas por Linha</button>
-          <button id="rg-tab-mistura" onclick="RG.setTab('mistura')">Mistura</button>
+
+        <!-- Dashboard de Análise -->
+        <div id="rg-body" class="hidden space-y-5">
+          <!-- Header Compacto -->
+          <div class="bg-slate-900 dark:bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div class="space-y-2 min-w-0">
+              <h2 class="text-lg sm:text-xl font-extrabold tracking-tight">Gerador de Relatórios</h2>
+              <div id="rg-files" class="flex flex-wrap gap-1.5"></div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button id="rg-filter-toggle" type="button" onclick="RG.toggleFilters()"></button>
+              <button type="button" onclick="$('rg-input').click()" class="px-3.5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs sm:text-sm font-bold transition">
+                + Planilhas
+              </button>
+              <button type="button" onclick="RG.exportPDF()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                PDF Consolidado
+              </button>
+              <button type="button" onclick="RG.clear()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 transition" title="Limpar dados">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Painel de Filtros Colapsável -->
+          <div id="rg-filter-panel" class="hidden"></div>
+
+          <!-- Abas de Navegação -->
+          <div id="rg-tabs" class="inline-flex flex-wrap gap-1.5 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm"></div>
+
+          <!-- Conteúdo da Aba -->
+          <div id="rg-view" class="space-y-5"></div>
         </div>
-        <button id="rg-filter-toggle" onclick="RG.toggleFilters()" class="relative p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 shadow-sm transition" aria-label="Mostrar filtros" aria-expanded="false">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h18l-7 8v6l-4 2v-8L3 4z"/></svg>
-          <span id="rg-fbadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-blue-600 text-white text-[11px] font-extrabold flex items-center justify-center"></span>
-        </button>
-      </div>
-      <div id="rg-filter-panel" class="hidden mb-3"></div>
-      <div id="rg-body"></div>
-    </section>`);
+      </section>`);
 
-  // ---------- Integração com a navegação existente ----------
-  const origNav = App.navigate.bind(App);
-  const NAV_ON = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition bg-blue-600 text-white";
-  const NAV_OFF = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800";
-  App.navigate = function (v) {
-    const sec = $("view-relatorios");
-    if (v === "relatorios") {
-      App.currentView = v;
-      ["auditoria", "revisao", "configuracoes"].forEach(n => {
-        $("view-" + n).classList.add("hidden");
-        document.querySelectorAll(`[data-nav="${n}"]`).forEach(b => b.className = NAV_OFF);
-      });
-      sec.classList.remove("hidden"); $("rg-nav").className = NAV_ON;
-      RG.render(); window.scrollTo({ top: 0, behavior: "smooth" });
-    } else {
-      sec.classList.add("hidden"); $("rg-nav").className = NAV_OFF; origNav(v);
-    }
-  };
-  RG.render();
-})();
-</script>
-
+    // 3. Integra o roteamento com o App.navigate
+    const origNav = App.navigate.bind(App);
+    App.navigate = v => {
+      origNav(v);
+      const sec = $("view-gerador");
+      const btn = document.querySelector('[data-nav="gerador"]');
+      if (v === "gerador") {
+        sec.classList.remove("hidden");
+        btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition bg-blue-600 text-white";
+        RG.render();
+      } else {
+        sec.classList.add("hidden");
+        btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800";
+      }
+    };
+  })();
+  </script>
 </body>
 </html>
