@@ -2139,14 +2139,23 @@
           applyDateFormat(wsRelatorios, rowsRelatorios.length, [0, 6, 8]);
           XLSX.utils.book_append_sheet(wb, wsRelatorios, "RELATÓRIOS");
 
-          // ABA 2: NOTAS POR LINHA ("linhas" na 1ª coluna, pontos 1.1 até 4.5 nas colunas seguintes)
-          const pontosHeader = activeQuestions.map(q => q.codigo);
-          const rowsNotasPorLinha = [["linhas", ...pontosHeader]];
+          // ABA 2: NOTAS POR LINHA — estrutura fixa solicitada, uma coluna por campo/ponto.
+          const pontosHeader = [
+            "1.1", "1.2", "1.3", "1.4", "1.5",
+            "2.1", "2.2", "2.3", "2.4", "2.5",
+            "3.1", "3.2", "3.3", "3.4", "3.5",
+            "4.1", "4.2", "4.3", "4.4", "4.5"
+          ];
+          const questionByCode = new Map(activeQuestions.map(q => [String(q.codigo).trim(), q]));
+          const headersNotasPorLinha = ["DATAS", "ÁREA", "TURNO", "LINHAS", ...pontosHeader, "TIPO DE AUDITORIA"];
+          const rowsNotasPorLinha = [headersNotasPorLinha];
 
           audit.linhas.forEach(linha => {
-            const row = [linha];
-            activeQuestions.forEach(q => {
-              const resp = audit.responses?.[q.id]?.[linha];
+            const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea) || "";
+            const row = [dataExcel, areaLinha, audit.turno || "", linha || ""];
+            pontosHeader.forEach(codigo => {
+              const question = questionByCode.get(codigo);
+              const resp = question ? audit.responses?.[question.id]?.[linha] : null;
               if (!resp || resp.status === "pending") {
                 row.push("");
               } else if (resp.status === "na") {
@@ -2157,13 +2166,19 @@
                 row.push("");
               }
             });
+            row.push(tipoNome || "");
             rowsNotasPorLinha.push(row);
           });
 
-          const wsNotasPorLinha = XLSX.utils.aoa_to_sheet(rowsNotasPorLinha);
-          wsNotasPorLinha["!cols"] = [{ wch: 16 }, ...pontosHeader.map(() => ({ wch: 8 }))];
-          wsNotasPorLinha["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(pontosHeader.length)}${rowsNotasPorLinha.length}` };
-          wsNotasPorLinha["!freeze"] = { xSplit: 1, ySplit: 1 };
+          const wsNotasPorLinha = XLSX.utils.aoa_to_sheet(rowsNotasPorLinha, { cellDates: true });
+          wsNotasPorLinha["!cols"] = [
+            { wch: 13 }, { wch: 18 }, { wch: 14 }, { wch: 16 },
+            ...pontosHeader.map(() => ({ wch: 8 })),
+            { wch: 22 }
+          ];
+          wsNotasPorLinha["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headersNotasPorLinha.length - 1)}${rowsNotasPorLinha.length}` };
+          wsNotasPorLinha["!freeze"] = { xSplit: 4, ySplit: 1 };
+          applyDateFormat(wsNotasPorLinha, rowsNotasPorLinha.length, [0]);
           XLSX.utils.book_append_sheet(wb, wsNotasPorLinha, "NOTAS POR LINHA");
 
           // ABA 3: RESPOSTAS DETALHADAS (Base tabular granular sem redundância de resumo)
@@ -3094,21 +3109,16 @@
           return;
         }
 
-        // Mantém a ordem padronizada dos pontos solicitados; pontos adicionais importados são acrescentados ao final.
+        // Mantém a ordem fixa dos 20 pontos solicitados na planilha.
         const standardPoints = [
           "1.1", "1.2", "1.3", "1.4", "1.5",
           "2.1", "2.2", "2.3", "2.4", "2.5",
           "3.1", "3.2", "3.3", "3.4", "3.5",
           "4.1", "4.2", "4.3", "4.4", "4.5"
         ];
-        const importedPoints = [...new Set(source.map(r => String(r.Ponto || "").trim()).filter(Boolean))];
-        const pointOrder = value => {
-          const parts = String(value).split(".").map(Number);
-          return parts.length === 2 && parts.every(Number.isFinite) ? parts[0] * 100 + parts[1] : 99999;
-        };
-        const extraPoints = importedPoints.filter(p => !standardPoints.includes(p)).sort((a, b) => pointOrder(a) - pointOrder(b) || cmp(a, b));
-        const points = [...standardPoints, ...extraPoints];
-        const headers = ["DATAS", "ÁREA", "TURNO", "LINHAS", "TIPO DE AUDITORIA", ...points];
+        // A exportação mantém exatamente as 20 colunas padrão, na ordem solicitada.
+        const points = standardPoints;
+        const headers = ["DATAS", "ÁREA", "TURNO", "LINHAS", ...points, "TIPO DE AUDITORIA"];
         const grouped = group(source, r => [r.Data, r["Área"], r.Turno, r.Linha, r["Tipo de Auditoria"]].map(v => String(v ?? "").trim()).join("¦"));
         const records = [...grouped.entries()].map(([key, rows]) => {
           const [date, area, turno, line, auditType] = key.split("¦");
@@ -3119,7 +3129,7 @@
             if (!valuesByPoint.has(point)) valuesByPoint.set(point, []);
             valuesByPoint.get(point).push(r);
           });
-          const row = [date || "", area || "", turno || "", line || "", auditType || ""];
+          const row = [date || "", area || "", turno || "", line || ""];
           points.forEach(point => {
             const responses = valuesByPoint.get(point) || [];
             const numeric = responses.map(r => Number(r.Nota)).filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
@@ -3132,17 +3142,19 @@
               row.push("");
             }
           });
+          row.push(auditType || "");
           return row;
-        }).sort((a, b) => cmp(a[0], b[0]) || cmp(a[1], b[1]) || cmp(a[3], b[3]) || cmp(a[4], b[4]) || cmp(a[2], b[2]));
+        }).sort((a, b) => cmp(a[0], b[0]) || cmp(a[1], b[1]) || cmp(a[3], b[3]) || cmp(a[headers.length - 1], b[headers.length - 1]) || cmp(a[2], b[2]));
 
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet([headers, ...records]);
         ws["!cols"] = [
-          { wch: 13 }, { wch: 18 }, { wch: 16 }, { wch: 14 }, { wch: 22 },
-          ...points.map(() => ({ wch: 8 }))
+          { wch: 13 }, { wch: 18 }, { wch: 16 }, { wch: 14 },
+          ...points.map(() => ({ wch: 8 })),
+          { wch: 22 }
         ];
         ws["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length - 1)}${records.length + 1}` };
-        ws["!freeze"] = { xSplit: 5, ySplit: 1 };
+        ws["!freeze"] = { xSplit: 4, ySplit: 1 };
         records.forEach((row, idx) => {
           const cell = ws[XLSX.utils.encode_cell({ r: idx + 1, c: 0 })];
           if (cell) cell.z = "dd/mm/yyyy";
