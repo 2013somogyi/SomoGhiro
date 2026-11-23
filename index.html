@@ -4559,7 +4559,7 @@
         const lines = new Set(rows.map(r => r.Linha).filter(Boolean)).size;
 
         return `${mode === "linhas" ? this.lineReportPanel() : ""}<div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          ${kpi("Média de conformidade", f2(pct, 1) + "%", txtCls(pct / 20), "Itens com nota 4 ou 5")}
+          ${kpi("Média de conformidade", f2(pct, 1) + "%", txtCls(pct / 20), "Média dos itens")}
           ${mode === "linhas" ? kpi("Linhas auditadas", lines, "text-blue-600 dark:text-blue-400", "Unidades avaliadas") : kpi("Auditorias", auditorias, "text-blue-600 dark:text-blue-400", "Sessões consolidadas")}
           ${kpi("Média geral", f2(avg), txtCls(avg), "Escala de notas de 1 a 5")}
           ${kpi("Avaliações", rows.length, "", mode === "linhas" ? `${auditorias} auditoria(s)` : "Total de respostas")}
