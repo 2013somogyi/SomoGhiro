@@ -3611,7 +3611,7 @@
       COLS: ["Tipo de Auditoria", "Área"],
 
       async load(files) {
-        let nr = 0, ns = 0;
+        let nr = 0, ns = 0, invalidMatrixScores = 0;
         const present = v => v !== null && v !== undefined && String(v).trim() !== "";
         const pick = (row, ...names) => {
           const keys = Object.keys(row || {});
@@ -3623,10 +3623,21 @@
         };
         const parseScore = value => {
           if (!present(value)) return null;
+          // Em algumas planilhas as células sem avaliação vêm como 0. Zero não é nota válida.
           const n = typeof value === "number" ? value : Number(String(value).trim().replace(",", "."));
           return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;
         };
         const isNA = value => /^(N\/?A|NA|NÃO APLICÁVEL|NAO APLICAVEL)$/i.test(String(value ?? "").trim());
+        const normalizeShift = value => {
+          const raw = String(value ?? "").trim();
+          const match = raw.match(/^([1-3])\s*(?:[º°o]\s*)?(?:TURNO)?$/i);
+          return match ? `${match[1]}º Turno` : raw;
+        };
+        // Identidade de uma avaliação para mesclar a matriz com os detalhes sem duplicar pontos.
+        const responseKey = row => [
+          toISO(row.Data), norm(normalizeShift(row.Turno)), norm(row["Tipo de Auditoria"]),
+          norm(row["Área"]), norm(row.Linha), String(row.Ponto ?? "").trim()
+        ].join("¦");
 
         for (const f of files) {
           try {
@@ -3703,7 +3714,7 @@
               matrixRaw.forEach(row => {
                 const data = toISO(pick(row, "DATAS", "DATA"));
                 const area = String(pick(row, "ÁREA", "AREA") || "").trim();
-                const turno = String(pick(row, "TURNO") || "").trim();
+                const turno = normalizeShift(pick(row, "TURNO"));
                 const linha = String(pick(row, "LINHAS", "LINHA") || "").trim();
                 const auditType = String(pick(row, "TIPO DE AUDITORIA") || "").trim();
 
@@ -3712,7 +3723,12 @@
                   if (!present(original)) return;
                   const score = parseScore(original);
                   const na = isNA(original);
-                  if (score === null && !na) return;
+                  if (score === null && !na) {
+                    // Zero representa ponto sem resposta; outros valores fora da escala são sinalizados.
+                    const rawNumeric = Number(String(original).trim().replace(",", "."));
+                    if (!(Number.isFinite(rawNumeric) && rawNumeric === 0)) invalidMatrixScores++;
+                    return;
+                  }
                   matrixRecords.push({
                     Data: data,
                     Turno: turno,
@@ -3732,7 +3748,32 @@
               });
             }
 
-            const res = detailed.length ? detailed : matrixRecords;
+            // A matriz NOTAS POR LINHA é a fonte completa das notas por linha.
+            // RESPOSTAS DETALHADAS complementa a matriz com pergunta, classificação e critério.
+            // Antes, quando havia qualquer linha detalhada, a matriz inteira era descartada;
+            // isso fazia desaparecer quase todas as auditorias de Fábrica em arquivos consolidados.
+            const detailedByKey = new Map();
+            detailed.forEach(row => {
+              const key = responseKey(row);
+              if (!detailedByKey.has(key)) detailedByKey.set(key, row);
+            });
+
+            const matrixMerged = matrixRecords.map(row => {
+              const detail = detailedByKey.get(responseKey(row));
+              if (!detail) return row;
+              const merged = { ...row, ...detail };
+              // A matriz já contém a nota consolidada por ponto/linha; não a sobrescreva
+              // por uma célula vazia ou pendente da aba de respostas detalhadas.
+              if (row.Nota != null && detail.Nota == null) {
+                merged.Nota = row.Nota;
+                merged.NotaOriginal = row.NotaOriginal;
+              }
+              return merged;
+            });
+            const matrixKeys = new Set(matrixMerged.map(responseKey));
+            const detailedOnly = detailed.filter(row => !matrixKeys.has(responseKey(row)));
+            const res = [...matrixMerged, ...detailedOnly];
+
             if (!rel.length && !res.length) {
               throw new Error("as abas reconhecidas foram encontradas, mas estão vazias ou não possuem registros válidos para análise.");
             }
@@ -3750,6 +3791,9 @@
 
         if (nr + ns > 0) {
           App.showToast(`Importado: ${nr} ocorrências e ${ns} avaliações.`, "success");
+          if (invalidMatrixScores > 0) {
+            App.showToast(`${invalidMatrixScores} valor(es) inválido(s) na aba NOTAS POR LINHA foram desconsiderados. A escala aceita notas de 1 a 5 ou N/A.`, "info");
+          }
         } else if (this.files.length === 0) {
           App.showToast("Nenhum dado válido foi importado. Verifique se existe ao menos uma aba reconhecida com registros e cabeçalhos válidos.", "error");
         }
