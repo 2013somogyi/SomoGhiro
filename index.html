@@ -2526,26 +2526,63 @@
           const audit = auditOverride;
           if (!audit) throw new Error("Nenhuma auditoria selecionada.");
           if (audit === AppState.audit) AnomaliasModule.syncOccurrences(audit);
+
           const activeQuestions = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot);
           const rules = ChecklistsModule.getRatingRules(audit.checklistSnapshot);
           const wb = options.workbook || XLSX.utils.book_new();
-          const sheetName = base => `${options.prefix || ""}${base}`.slice(0, 31);
-
+          // Os nomes das abas são fixos. Na exportação múltipla, cada auditoria
+          // acrescenta somente suas linhas às três abas já existentes.
+          const sheetName = base => base;
           const tipoNome = ChecklistsModule.getTipoName(audit.tipo);
-          const macroNome = ChecklistsModule.getMacroareaName(audit.macroarea);
           const dataExcel = this.toExcelDateCell(audit.data);
+          const occurrences = Array.isArray(audit.occurrences) ? audit.occurrences : [];
+          const linhas = Array.isArray(audit.linhas) ? audit.linhas : [];
 
           const applyDateFormat = (ws, rowCount, dateColIndices) => {
             for (let r = 1; r < rowCount; r++) {
               dateColIndices.forEach(c => {
                 const cellAddr = XLSX.utils.encode_cell({ r, c });
-                if (ws[cellAddr] && ws[cellAddr].v instanceof Date) {
-                  ws[cellAddr].z = "dd/mm/yyyy";
-                }
+                if (ws[cellAddr] && ws[cellAddr].v instanceof Date) ws[cellAddr].z = "dd/mm/yyyy";
               });
             }
           };
 
+          // Cria a aba na primeira auditoria e, nas próximas, empilha apenas os
+          // registros abaixo do cabeçalho. Isso garante exatamente três abas.
+          const appendOrCreateSheet = (name, rows, widths, dateColumns) => {
+            let ws = options.workbook ? wb.Sheets[name] : null;
+            if (ws) {
+              const currentRange = ws["!ref"]
+                ? XLSX.utils.decode_range(ws["!ref"])
+                : { e: { r: 0 } };
+              const nextRow = currentRange.e.r + 1;
+              const additionalRows = rows.slice(1);
+              if (additionalRows.length) {
+                XLSX.utils.sheet_add_aoa(ws, additionalRows, {
+                  origin: { r: nextRow, c: 0 },
+                  cellDates: true
+                });
+              }
+              const finalRange = XLSX.utils.decode_range(ws["!ref"] || "A1");
+              ws["!autofilter"] = {
+                ref: `A1:${XLSX.utils.encode_col(rows[0].length - 1)}${finalRange.e.r + 1}`
+              };
+              applyDateFormat(ws, finalRange.e.r + 1, dateColumns);
+              return ws;
+            }
+
+            ws = XLSX.utils.aoa_to_sheet(rows, { cellDates: true });
+            ws["!cols"] = widths;
+            ws["!autofilter"] = {
+              ref: `A1:${XLSX.utils.encode_col(rows[0].length - 1)}${rows.length}`
+            };
+            ws["!freeze"] = name === "Notas por linha" ? { xSplit: 4, ySplit: 1 } : { xSplit: 0, ySplit: 1 };
+            applyDateFormat(ws, rows.length, dateColumns);
+            XLSX.utils.book_append_sheet(wb, ws, name);
+            return ws;
+          };
+
+          // ABA 1 — RELATÓRIOS: esquema único para auditorias da Fábrica e da Mistura.
           const headersRelatorios = [
             "Data", "Turno", "Tipo de Auditoria", "Área", "Linha",
             "Responsável", "Prazo", "Status", "Data de Conclusão",
@@ -2553,13 +2590,13 @@
           ];
           const rowsRelatorios = [headersRelatorios];
 
-          if (audit.occurrences.length === 0) {
+          if (occurrences.length === 0) {
             rowsRelatorios.push([
               dataExcel,
-              audit.turno,
-              tipoNome,
-              audit.areaNome,
-              audit.linhas.join(", "),
+              audit.turno || "",
+              tipoNome || "",
+              audit.areaNome || "",
+              linhas.join(", "),
               "",
               null,
               "Sem Ocorrências",
@@ -2570,71 +2607,92 @@
               "Conformidade"
             ]);
           } else {
-            audit.occurrences.forEach(occ => {
+            occurrences.forEach(occ => {
               occ.status = CalculosModule.calculateOccurrenceStatus(occ.prazo, occ.dataConclusao);
               rowsRelatorios.push([
-                this.toExcelDateCell(occ.data),
-                occ.turno,
-                occ.tipoAuditoria,
-                occ.area,
-                occ.linha,
+                this.toExcelDateCell(occ.data || audit.data),
+                occ.turno || audit.turno || "",
+                occ.tipoAuditoria || tipoNome || "",
+                occ.area || audit.areaNome || "",
+                occ.linha || linhas.join(", "),
                 occ.responsavel || "",
                 this.toExcelDateCell(occ.prazo),
-                occ.status,
+                occ.status || "",
                 this.toExcelDateCell(occ.dataConclusao),
                 occ.observacao || "",
-                occ.ponto,
-                occ.descricao,
-                occ.tipoProblema
+                occ.ponto || "",
+                occ.descricao || "",
+                occ.tipoProblema || ""
               ]);
             });
           }
 
-          const wsRelatorios = XLSX.utils.aoa_to_sheet(rowsRelatorios, { cellDates: true });
-          wsRelatorios["!cols"] = [
-            { wch: 13 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 12 },
-            { wch: 22 }, { wch: 13 }, { wch: 15 }, { wch: 17 },
-            { wch: 32 }, { wch: 10 }, { wch: 48 }, { wch: 18 }
+          appendOrCreateSheet(sheetName("Relatórios"), rowsRelatorios, [
+            { wch: 13 }, { wch: 14 }, { wch: 20 }, { wch: 18 }, { wch: 14 },
+            { wch: 22 }, { wch: 13 }, { wch: 17 }, { wch: 19 },
+            { wch: 34 }, { wch: 10 }, { wch: 48 }, { wch: 20 }
+          ], [0, 6, 8]);
+
+          // ABA 2 — NOTAS POR LINHA: cabeçalho fixo com os 20 pontos padronizados.
+          // Pontos ausentes em determinado checklist ficam em branco, sem deslocar colunas.
+          const standardPoints = [
+            "1.1", "1.2", "1.3", "1.4", "1.5",
+            "2.1", "2.2", "2.3", "2.4", "2.5",
+            "3.1", "3.2", "3.3", "3.4", "3.5",
+            "4.1", "4.2", "4.3", "4.4", "4.5"
           ];
-          wsRelatorios["!autofilter"] = { ref: `A1:M${rowsRelatorios.length}` };
-          wsRelatorios["!freeze"] = { xSplit: 0, ySplit: 1 };
-          applyDateFormat(wsRelatorios, rowsRelatorios.length, [0, 6, 8]);
-          XLSX.utils.book_append_sheet(wb, wsRelatorios, sheetName("RELATÓRIOS"));
-
-          const pontosHeader = activeQuestions.map(q => q.codigo);
-          const rowsNotasPorLinha = [["linhas", ...pontosHeader]];
-
-          audit.linhas.forEach(linha => {
-            const row = [linha];
-            activeQuestions.forEach(q => {
-              const resp = audit.responses?.[q.id]?.[linha];
-              if (!resp || resp.status === "pending") {
-                row.push("");
-              } else if (resp.status === "na") {
-                row.push("N/A");
-              } else if (resp.status === "rated" && resp.nota !== null && resp.nota !== undefined) {
-                row.push(Number(resp.nota));
-              } else {
-                row.push("");
-              }
-            });
-            rowsNotasPorLinha.push(row);
+          const headersNotasPorLinha = ["DATAS", "ÁREA", "TURNO", "LINHAS", ...standardPoints, "TIPO DE AUDITORIA"];
+          const rowsNotasPorLinha = [headersNotasPorLinha];
+          const questionsByCode = new Map();
+          activeQuestions.forEach(q => {
+            const code = String(q.codigo || "").trim().replace(",", ".");
+            if (!code) return;
+            if (!questionsByCode.has(code)) questionsByCode.set(code, []);
+            questionsByCode.get(code).push(q);
           });
 
-          const wsNotasPorLinha = XLSX.utils.aoa_to_sheet(rowsNotasPorLinha);
-          wsNotasPorLinha["!cols"] = [{ wch: 16 }, ...pontosHeader.map(() => ({ wch: 8 }))];
-          wsNotasPorLinha["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(pontosHeader.length)}${rowsNotasPorLinha.length}` };
-          wsNotasPorLinha["!freeze"] = { xSplit: 1, ySplit: 1 };
-          XLSX.utils.book_append_sheet(wb, wsNotasPorLinha, sheetName("NOTAS POR LINHA"));
+          linhas.forEach(linha => {
+            const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea) || audit.areaNome || "";
+            const values = standardPoints.map(point => {
+              const questions = questionsByCode.get(point) || [];
+              const responses = questions
+                .map(q => audit.responses?.[q.id]?.[linha])
+                .filter(Boolean);
+              const numeric = responses
+                .filter(resp => resp.status === "rated" && resp.nota !== null && resp.nota !== undefined && resp.nota !== "")
+                .map(resp => Number(resp.nota))
+                .filter(n => Number.isFinite(n) && n >= 1 && n <= 5);
+              if (numeric.length) {
+                const average = numeric.reduce((sum, n) => sum + n, 0) / numeric.length;
+                return Number(average.toFixed(2));
+              }
+              return responses.some(resp => resp.status === "na") ? "N/A" : "";
+            });
+            rowsNotasPorLinha.push([
+              dataExcel,
+              areaLinha,
+              audit.turno || "",
+              linha,
+              ...values,
+              tipoNome || ""
+            ]);
+          });
 
+          appendOrCreateSheet(sheetName("Notas por linha"), rowsNotasPorLinha, [
+            { wch: 13 }, { wch: 18 }, { wch: 16 }, { wch: 14 },
+            ...standardPoints.map(() => ({ wch: 8 })),
+            { wch: 22 }
+          ], [0]);
+
+          // ABA 3 — RESPOSTAS DETALHADAS: mesmas colunas e na mesma ordem em qualquer macroárea.
           const headersRespostas = [
             "Data", "Turno", "Tipo de Auditoria", "Auditor", "Área", "Linha",
             "Ponto", "Grupo", "Pergunta", "Nota", "Classificação", "Critério / Observação"
           ];
           const rowsRespostas = [headersRespostas];
 
-          audit.linhas.forEach(linha => {
-            const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea);
+          linhas.forEach(linha => {
+            const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea) || audit.areaNome || "";
             activeQuestions.forEach(q => {
               const resp = audit.responses?.[q.id]?.[linha];
               let notaVal = "";
@@ -2645,23 +2703,23 @@
                 notaVal = "N/A";
                 classif = "Não Aplicável";
                 critObs = "Não Aplicável";
-              } else if (resp && resp.status === "rated" && resp.nota) {
+              } else if (resp && resp.status === "rated" && resp.nota !== null && resp.nota !== undefined) {
                 notaVal = Number(resp.nota);
                 classif = rules[notaVal]?.classificacao || "";
-                const rawCrit = (q.criterios?.[notaVal] || "").trim();
+                const rawCrit = String(q.criterios?.[notaVal] || "").trim();
                 critObs = rawCrit || resp.manualDescription || "";
               }
 
               rowsRespostas.push([
                 dataExcel,
-                audit.turno,
-                tipoNome,
-                audit.auditor,
+                audit.turno || "",
+                tipoNome || "",
+                audit.auditor || "",
                 areaLinha,
                 linha,
-                q.codigo,
-                q.grupo,
-                q.pergunta,
+                q.codigo || "",
+                q.grupo || "",
+                q.pergunta || "",
                 notaVal,
                 classif,
                 critObs
@@ -2669,21 +2727,17 @@
             });
           });
 
-          const wsRespostas = XLSX.utils.aoa_to_sheet(rowsRespostas, { cellDates: true });
-          wsRespostas["!cols"] = [
-            { wch: 13 }, { wch: 14 }, { wch: 18 }, { wch: 20 }, { wch: 15 }, { wch: 12 },
-            { wch: 10 }, { wch: 14 }, { wch: 48 }, { wch: 8 }, { wch: 18 }, { wch: 45 }
-          ];
-          wsRespostas["!autofilter"] = { ref: `A1:L${rowsRespostas.length}` };
-          wsRespostas["!freeze"] = { xSplit: 0, ySplit: 1 };
-          applyDateFormat(wsRespostas, rowsRespostas.length, [0]);
-          XLSX.utils.book_append_sheet(wb, wsRespostas, sheetName("RESPOSTAS DETALHADAS"));
+          appendOrCreateSheet(sheetName("Respostas detalhadas"), rowsRespostas, [
+            { wch: 13 }, { wch: 14 }, { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 12 },
+            { wch: 10 }, { wch: 16 }, { wch: 52 }, { wch: 8 }, { wch: 20 }, { wch: 48 }
+          ], [0]);
 
           if (options.workbook) return true;
-          const cleanStr = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
-          const fileName = `Auditoria_${cleanStr(tipoNome)}_${cleanStr(macroNome)}_${audit.data}.xlsx`;
+          const cleanStr = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
+          const fileName = `Auditoria_${cleanStr(tipoNome)}_${cleanStr(ChecklistsModule.getMacroareaName(audit.macroarea))}_${audit.data || new Date().toISOString().slice(0, 10)}.xlsx`;
           XLSX.writeFile(wb, fileName);
-          App.showToast(`Planilha "${fileName}" exportada com sucesso!`, "success");
+          App.showToast(`Planilha "${fileName}" exportada com as 3 abas padronizadas.`, "success");
+          return true;
         } catch (err) {
           console.error("Erro ao montar planilha da auditoria:", err);
           if (!options.workbook) App.showToast("Erro ao exportar Excel: " + err.message, "error");
@@ -2698,15 +2752,18 @@
           if (!validAudits.length) throw new Error("Não há auditorias para exportar.");
           const wb = XLSX.utils.book_new();
           validAudits.forEach((audit, index) => {
-            const prefix = `A${String(index + 1).padStart(2, "0")}_`;
-            const appended = this.generateExcel(audit, { workbook: wb, prefix });
+            const appended = this.generateExcel(audit, { workbook: wb });
             if (appended !== true) throw new Error(`Falha ao adicionar a auditoria ${audit.id || index + 1} à planilha.`);
           });
-          if (!wb.SheetNames || !wb.SheetNames.length) throw new Error("Nenhuma aba foi criada para exportação.");
+          const expectedSheets = ["Relatórios", "Notas por linha", "Respostas detalhadas"];
+          if (!wb.SheetNames || wb.SheetNames.length !== expectedSheets.length ||
+              expectedSheets.some(name => !wb.Sheets[name])) {
+            throw new Error("A planilha consolidada não contém exatamente as três abas padronizadas.");
+          }
           const stamp = new Date().toISOString().slice(0, 10);
           const fileName = `Historico_Auditorias_${validAudits.length}_registros_${stamp}.xlsx`;
           XLSX.writeFile(wb, fileName);
-          App.showToast(`${validAudits.length} auditoria(s) exportada(s) em uma única planilha.`, "success");
+          App.showToast(`${validAudits.length} auditoria(s) consolidada(s) em 3 abas (Relatórios, Notas por linha e Respostas detalhadas).`, "success");
         } catch (error) {
           console.error("Erro ao exportar histórico de auditorias:", error);
           App.showToast("Erro ao exportar auditorias: " + error.message, "error");
