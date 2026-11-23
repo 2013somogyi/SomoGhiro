@@ -464,6 +464,18 @@
             </div>
           </div>
           <div id="rev-lines-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+          <div id="rev-audit-charts" class="mt-5"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div>
+              <h3 class="text-base font-extrabold">Questões, respostas e responsáveis</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Consulte cada questão por linha. Em auditorias finalizadas, edite o responsável e inclua uma descrição complementar; as alterações são salvas no histórico sem renovar o prazo de retenção.</p>
+            </div>
+            <span id="rev-question-count" class="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 self-start">0 questões</span>
+          </div>
+          <div id="rev-question-details" class="space-y-3"></div>
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4">
@@ -2103,7 +2115,11 @@
       getText(ticket) {
         return this.normalize([
           ticket?.descricao, ticket?.Descricao, ticket?.["Descrição"], ticket?.observacao,
-          ticket?.Observacao, ticket?.["Observação"], ticket?.pergunta, ticket?.Pergunta
+          ticket?.Observacao, ticket?.["Observação"], ticket?.pergunta, ticket?.Pergunta,
+          ticket?.manualDescription, ticket?.extraDescription, ticket?.grupo, ticket?.Grupo,
+          ticket?.area, ticket?.Area, ticket?.["Área"], ticket?.areaNome,
+          ticket?.macroarea, ticket?.Macroarea, ticket?.["Macroárea"],
+          ticket?.linha, ticket?.Linha, ticket?.ponto, ticket?.Ponto
         ].filter(Boolean).join(" "));
       },
       getSignature(ticket) {
@@ -2206,6 +2222,120 @@
           break;
         }
 
+        // As regras históricas continuam tendo prioridade. Este complemento cobre formulações
+        // usadas diretamente nos checklists quando o critério descreve o problema com sinônimos.
+        if (!selected) {
+          const questionRules = [
+            {
+              id: "TECHNICAL_MAINTENANCE_CHECKLIST", owner: "Bruno", label: "Manutenção técnica (questão do checklist)",
+              phrases: [
+                "motor rotativo", "motores rotativos", "sensor indutivo", "bloqueio de energia",
+                "botão de parada de emergência", "parada de emergência", "proteções da máquina",
+                "proteção da máquina", "painel elétrico", "painel de energia", "fiação exposta",
+                "fiação ressecada", "fiação mal isolada", "superfície crítica", "ferrugem",
+                "descascando", "conexões e portas dos equipamentos", "vedação quebrada",
+                "vazamento claro", "vazamento acumulando", "paletes debilitados", "plataformas de trabalho",
+                "plataforma instável", "parafusos", "rebites", "equipamento impactando o operador",
+                "equipamentos necessitando de reparo", "amortecedores", "cadeiras", "tubos dos misturadores",
+                "carcaça", "gambiarras", "furos", "facas de abrir sacaria", "cabo de segurança",
+                "mangueiras danificadas", "mangueira com vazamento", "mangueiras de alta pressão", "válvula quebrada", "infiltração",
+                "peso do produto baixo", "sobrepeso", "peso baixo", "balança descalibrada", "equipamento de pesagem",
+                "ferramentas modificadas", "equipamentos quebrados", "ferramentas quebradas", "coletores quebrados",
+                "fiação", "painéis elétricos", "grelhas de escoamento", "ralos", "buracos no piso", "buracos",
+                "superfícies dos equipamentos", "paletes limpos e íntegros", "conexões de descarga", "acoplamento",
+                "equipamentos apresentando riscos durante o funcionamento", "manípulos de movimentação",
+                "botão de parada", "botões de parada", "botão de emergência", "destrancado", "painel destrancado",
+                "trancado com solução improvisada", "pó acumulado dentro das máquinas", "cola acumulada dentro das máquinas",
+                "ralo entupido", "escoamento de água", "buraco significativo", "buraco leve", "piso com buracos",
+                "grelhas faltando", "grelha torta", "pregos expostos", "partes quebradas", "manípulos rasgados",
+                "fita durex", "fita teflon", "solução improvisada", "ferramentas debilitadas", "escovões danificados",
+                "materiais de lavagem danificados", "coletores danificados", "vazamento que pode prejudicar",
+                "equipamentos estão apresentando riscos", "equipamentos apresentando risco", "caixas de energia",
+                "painéis estão trancados", "lixeiras quebradas", "bandejas coletoras quebradas",
+                "proteções contra impacto de carrinhos", "ferramentas gastas", "utensílios de limpeza quebrados"
+              ]
+            },
+            {
+              id: "ADMIN_DOCUMENTATION_CHECKLIST", owner: "Lucas", label: "Controle administrativo (questão do checklist)",
+              phrases: [
+                "validade vencida", "validade quase vencendo", "data de validade", "data de inspeção",
+                "extintores e hidrantes", "placas de advertência", "placas obrigatórias", "sinalização desbotada",
+                "químicos identificados", "produtos químicos identificados", "produtos químicos", "não identificados",
+                "identificação do produto", "código de barras corresponde", "registro de inspeção",
+                "caderno de apontamento ausente", "marcações, etiquetas e quadros", "etiquetas e quadros",
+                "ilegíveis", "rasgados ou quebrados", "legibilidade reduzida", "utensílios identificados",
+                "sem identificação", "ferramentas não identificadas", "controle de pragas", "sinais de pragas", "teias", "insetos",
+                "lixeiras sem identificação", "coletores sem identificação", "lixeira e bandeja coletora identificadas"
+              ]
+            },
+            {
+              id: "SUPPLIES_AND_PROCUREMENT_CHECKLIST", owner: "Cesar", label: "Suprimentos e materiais (questão do checklist)",
+              phrases: [
+                "material faltando", "materiais faltando", "utensílios faltando", "falta de utensílios",
+                "falta de epi no estoque", "luvas faltando no estoque", "máscaras faltando no estoque",
+                "sem suporte de vassouras", "sem suporte de escovões", "sem suporte para o esfregão",
+                "corpos de prova", "corpo de prova ausente", "instrumentos de limpeza ausentes",
+                "linha possui todos os itens de trabalho", "mais de um item faltando", "item faltando",
+                "itens de trabalho ausentes", "itens de limpeza faltando", "utensílios ausentes", "lixeira ausente",
+                "bandeja coletora ausente", "lixeiras ausentes", "bandejas coletoras ausentes", "ferramentas ausentes"
+              ]
+            },
+            {
+              id: "DAILY_OPERATIONS_CHECKLIST", owner: "Supervisores", label: "Operação diária (questão do checklist)",
+              phrases: [
+                "não abriram olhar seguro", "não abriu olhar seguro", "risco de tropeço", "mangueiras ou paletes gerando risco",
+                "materiais apoiados sobre motor", "materiais encostando", "acesso parcialmente obstruído",
+                "acesso difícil", "impossível de acessar", "caminho bloqueado", "obstrução significativa",
+                "chão molhado", "umidade no chão", "poeira aérea", "pallets e carrinhos", "ajustes proibidos",
+                "pequeno ajuste não crítico", "epi faltando", "epi ausente", "máscara abaixada", "luva mal colocada",
+                "itens pessoais", "ferramentas sujas", "ferramentas levemente sujas", "embalagem ruim",
+                "algumas ruins", "resíduo antigo", "contaminação evidente", "risco de contaminação",
+                "materiais muito perto", "objetos estranhos", "sacaria para fora", "sacaria trocada",
+                "materiais de limpeza", "sacaria vazia acumulada", "itens fora do suporte", "caderno com atrasos",
+                "caderno ausente", "controles feitos parcialmente", "registros incompletos", "acúmulo de retrabalho",
+                "mangueiras jogadas no chão", "ferramentas fora de condições", "ferramentas gastas",
+                "escadas organizadas", "mofo", "lodo", "acúmulo pesado", "sujeira forte", "piso crítico",
+                "sujeira impregnada", "manchas moderadas", "descarte adequado", "adornos", "máscara ausente",
+                "itens fora do lugar", "ferramentas espalhadas", "materiais espalhados", "sem demarcação",
+                "demarcação apagada", "carrinhos desalinhados", "carrinhos fora da faixa", "resíduo na lixeira errada",
+                "sacos de ingredientes abertos", "sacarias rasgadas", "lixeira transbordando", "lixeira sem tampa",
+                "paredes e teto", "cantos e locais de difícil acesso", "máquina limpa", "máquina suja",
+                "olhar seguro", "riscos de tropeço", "tropeço", "mangueiras ou paletes", "materiais perto de equipamentos",
+                "caminhos e áreas de circulação", "áreas de circulação", "obstruções", "passagens e saídas de emergência",
+                "rota parcialmente estreita", "objetos de passagem", "chão", "área apresenta umidade", "umidade",
+                "embalagens de insumos", "limpas antes do uso", "ferramentas de trabalho", "embalagem apresenta falhas",
+                "resíduos de produto antigo", "produto antigo na máquina", "contaminação cruzada", "corpos de prova estão disponíveis",
+                "caderno de apontamento", "cadernos de apontamento", "operador executou os controles", "controle e monitoramento",
+                "grande volume de retrabalho", "escadas de acesso", "escadas organizadas", "vassouras e rodos", "pás e vassouras",
+                "carrinhos estão limpos", "carrinhos estacionados", "descarte de resíduos", "poças de água", "água acumulada", "piso",
+                "epis faltando", "epis ausentes", "operadores estão utilizando corretamente os epis", "operadores estão utilizando o epi",
+                "epi nas áreas requeridas", "máscaras ausentes",
+                "bpf geral", "posto apresenta as marcações", "linha possui itens de trabalho", "objetos pontiagudos espalhados",
+                "facas, vidros quebrados", "operador mantém o ritmo de organização", "acúmulo moderado", "partes inferiores",
+                "locais de difícil acesso das máquinas", "utensílios de limpeza organizados", "itens desorganizados",
+                "bancadas de trabalho limpas", "bancadas de trabalho", "faixa de circulação", "quase nenhum alinhado", "sem marcação", "vários fora",
+                "carrinhos desalinhados", "carrinhos fora da faixa", "carrinhos estão estacionados", "sacaria para fora", "sacaria trocada", "lixeiras tampadas",
+                "lixeira transbordando", "lixeiras transbordando", "transbordando", "lixeira sem tampa", "lixeiras estão tampadas",
+                "lixeiras e bandejas coletoras", "ausentes ou quebradas", "sacos de ingredientes", "ingredientes em uso", "bem fechados",
+                "máquina limpa de acordo com o padrão", "máquina está limpa", "utensílios móveis", "locais fixos e demarcados", "armazenados",
+                "as ferramentas estão íntegras e limpas", "utensílios de limpeza estão organizados", "utensílios de limpeza",
+                "mal armazenados", "objetos pendurados", "degraus limpos", "caderno está sendo preenchido", "caderno sem preenchimento",
+                "quadros de energia", "chaves gerais", "cabos e conduítes", "crostas", "pó", "escovões e materiais de lavagem"
+              ]
+            }
+          ];
+
+          for (const fallbackRule of questionRules) {
+            const ownerExists = Object.prototype.hasOwnProperty.call(this.config.roles || {}, fallbackRule.owner);
+            if (!ownerExists) continue;
+            const hits = this.findMatches(text, fallbackRule.phrases);
+            if (!hits.length) continue;
+            selected = { id: fallbackRule.id, assign_to: fallbackRule.owner };
+            matched = hits;
+            break;
+          }
+        }
+
         // Resíduos exigem correção diária; a classificação sistêmica depende de recorrência entre linhas ou áreas.
         if (!selected && (this.phraseMatch(text, "acúmulo de resíduo") || this.phraseMatch(text, "resíduo acumulado") || this.phraseMatch(text, "acúmulo recorrente de resíduo"))) {
           const systemic = ordered.find(rule => rule.id === "SYSTEMIC_PRODUCTION_STANDARD");
@@ -2233,7 +2363,11 @@
         const labels = {
           IT_SUPPORT: "Suporte de TI", TECHNICAL_MAINTENANCE: "Manutenção técnica",
           ADMIN_DOCUMENTATION: "Controle administrativo", SUPPLIES_AND_PROCUREMENT: "Suprimentos e compras",
-          SYSTEMIC_PRODUCTION_STANDARD: "Padronização da produção", DAILY_OPERATIONS: "Operação diária"
+          SYSTEMIC_PRODUCTION_STANDARD: "Padronização da produção", DAILY_OPERATIONS: "Operação diária",
+          TECHNICAL_MAINTENANCE_CHECKLIST: "Manutenção técnica (questão do checklist)",
+          ADMIN_DOCUMENTATION_CHECKLIST: "Controle administrativo (questão do checklist)",
+          SUPPLIES_AND_PROCUREMENT_CHECKLIST: "Suprimentos e materiais (questão do checklist)",
+          DAILY_OPERATIONS_CHECKLIST: "Operação diária (questão do checklist)"
         };
         const reason = `Encaminhado por ${labels[selected.id] || selected.id}. Correspondência: ${matched.slice(0, 4).join(", ")}.`;
         return {
@@ -2444,9 +2578,13 @@
             const criterioTexto = (q.criterios && q.criterios[nota]) ? String(q.criterios[nota]).trim() : "";
             const isCriterioAusente = criterioTexto === "";
             const prev = existingMap.get(internalKey);
-            const descricaoFinal = isCriterioAusente
+            const descricaoBase = isCriterioAusente
               ? (resp.manualDescription || (prev ? prev.descricao : ""))
               : (prev && prev.descricaoEditadaManualmente ? prev.descricao : criterioTexto);
+            const descricaoComplementar = String(resp.extraDescription || "").trim();
+            const descricaoFinal = descricaoComplementar
+              ? [descricaoBase, `Complemento: ${descricaoComplementar}`].filter(Boolean).join("\n")
+              : descricaoBase;
             const prazo = prev ? prev.prazo : "";
             const dataConclusao = prev ? prev.dataConclusao : "";
             updatedOccurrences.push({
@@ -3397,6 +3535,9 @@
         document.getElementById("rev-threshold-info").textContent =
           `Meta Conforme: ≥ ${metrics.threshold.toFixed(1).replace(".", ",")} | Melhoria: ≥ 3,0 | NC: < 3,0`;
 
+        this.renderAuditCharts(audit, metrics);
+        this.renderQuestionDetails(audit, isArchived);
+
         const linesContainer = document.getElementById("rev-lines-cards");
         linesContainer.innerHTML = metrics.lineStats.map(ls => `
           <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col justify-between gap-2">
@@ -3426,6 +3567,149 @@
         ).join("");
         this.renderOccurrencesTable(audit.occurrences || [], isArchived);
         this.renderRoutingSummary(audit.occurrences || []);
+      },
+
+      /**
+       * Renderiza gráficos simples e isolados para a auditoria atualmente selecionada.
+       * Os valores vêm exclusivamente de computeAuditMetrics(audit).
+       */
+      renderAuditCharts(audit, metrics) {
+        const container = document.getElementById("rev-audit-charts");
+        if (!container) return;
+        const renderBars = (items, title, labelKey) => {
+          if (!items.length) return `<div class="text-xs text-slate-500 dark:text-slate-400">Sem dados suficientes para este gráfico.</div>`;
+          return `<div class="space-y-2">${items.map(item => {
+            const average = item.average;
+            const width = average === null ? 0 : Math.max(0, Math.min(100, average / 5 * 100));
+            return `<div class="grid grid-cols-[minmax(76px,1fr)_minmax(80px,2fr)_42px] items-center gap-2">
+              <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate" title="${escapeHTML(item[labelKey])}">${escapeHTML(item[labelKey])}</span>
+              <div class="h-2.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden"><div class="h-full rounded-full bg-blue-600" style="width:${width}%"></div></div>
+              <span class="text-xs font-extrabold text-right tabular-nums">${average === null ? "—" : average.toFixed(2).replace(".", ",")}</span>
+            </div>`;
+          }).join("")}</div>`;
+        };
+        const lineData = metrics.lineStats.map(item => ({ ...item, label: `${item.area} • ${item.linha}` }));
+        container.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <section class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 p-3.5 space-y-3">
+            <div><h4 class="text-sm font-extrabold">Média por linha</h4><p class="text-[11px] text-slate-500 dark:text-slate-400">Escala de 0 a 5 • somente esta auditoria</p></div>
+            ${renderBars(lineData, "Média por linha", "label")}
+          </section>
+          <section class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 p-3.5 space-y-3">
+            <div><h4 class="text-sm font-extrabold">Média por grupo de questões</h4><p class="text-[11px] text-slate-500 dark:text-slate-400">Escala de 0 a 5 • somente esta auditoria</p></div>
+            ${renderBars(metrics.groupStats, "Média por grupo", "grupo")}
+          </section>
+        </div>`;
+      },
+
+      /**
+       * Lista as questões e respostas do checklist, agrupadas por questão e linha.
+       * Auditorias arquivadas permitem editar responsável e descrição complementar.
+       */
+      renderQuestionDetails(audit, isArchived) {
+        const container = document.getElementById("rev-question-details");
+        const count = document.getElementById("rev-question-count");
+        if (!container) return;
+        const questions = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot);
+        const rules = ChecklistsModule.getRatingRules(audit.checklistSnapshot);
+        if (count) count.textContent = `${questions.length} questão(ões) • ${audit.linhas.length} linha(s)`;
+        if (!questions.length) {
+          container.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400">O snapshot desta auditoria não contém questões.</p>`;
+          return;
+        }
+
+        container.innerHTML = questions.map((question, index) => {
+          const responseRows = (audit.linhas || []).map(line => {
+            const response = audit.responses?.[question.id]?.[line] || { status: "pending", nota: null };
+            const occurrence = (audit.occurrences || []).find(item => item.internalKey === `${question.id}__${line}`);
+            const lineArea = audit.lineAreaMap?.[line] || LineDirectory.getAreaForLine(line, audit.macroarea);
+            const rated = response.status === "rated" && Number(response.nota) >= 1 && Number(response.nota) <= 5;
+            const na = response.status === "na";
+            const rule = rated ? rules[Number(response.nota)] : null;
+            const criterion = rated ? String(question.criterios?.[response.nota] || "").trim() : "";
+            const statusText = rated ? `Nota ${response.nota} • ${rule?.classificacao || "Avaliada"}` : (na ? "Não aplicável" : "Pendente");
+            const statusClass = rated ? "bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300" : (na ? "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300");
+            const auditArg = `decodeURIComponent('${encodeInlineArgument(audit.id)}')`;
+            const questionArg = `decodeURIComponent('${encodeInlineArgument(question.id)}')`;
+            const lineArg = `decodeURIComponent('${encodeInlineArgument(line)}')`;
+            const ownerValue = occurrence?.responsavel || "";
+            const extraDescription = response.extraDescription || "";
+            return `<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 space-y-2">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="rounded-lg bg-slate-900 dark:bg-slate-700 text-white px-2 py-1 text-xs font-extrabold">Linha ${escapeHTML(line)}</span>
+                <span class="text-[11px] text-slate-500 dark:text-slate-400">${escapeHTML(lineArea)}</span>
+                <span class="ml-auto rounded-lg px-2 py-1 text-[11px] font-extrabold ${statusClass}">${escapeHTML(statusText)}</span>
+              </div>
+              ${rated ? `<p class="text-xs text-slate-700 dark:text-slate-300"><strong>Critério da nota:</strong> ${escapeHTML(criterion || "Não cadastrado")}</p>` : ""}
+              ${occurrence ? `<div class="rounded-lg bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900 p-2 space-y-2">
+                <div class="flex flex-wrap items-center gap-2"><span class="text-[11px] font-extrabold text-indigo-800 dark:text-indigo-200">${escapeHTML(occurrence.tipoProblema || "Ocorrência")}</span><span class="text-[11px] text-slate-500 dark:text-slate-400">${escapeHTML(occurrence.roteamento?.ruleLabel || "Classificação não registrada")}</span><span class="ml-auto text-[11px] font-bold text-slate-600 dark:text-slate-300">${escapeHTML(occurrence.roteamento?.priority?.label || "P3 • Normal")}</span></div>
+                <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
+                  <label class="block"><span class="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Responsável</span>
+                    ${isArchived ? `<input type="text" list="dl-responsaveis" value="${escapeHTML(ownerValue)}" onchange="RevisaoModule.onHistoryQuestionEdit(${auditArg}, ${questionArg}, ${lineArg}, 'responsavel', this.value)" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-2 text-sm font-semibold">` : `<span class="block rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-2 text-sm font-semibold">${escapeHTML(ownerValue || "Triagem manual")}</span>`}
+                  </label>
+                  <div class="text-[11px] text-slate-600 dark:text-slate-300 self-end">${occurrence.responsavelAutomatico ? "Responsável sugerido automaticamente pela análise do problema." : (occurrence.responsavelEditadoManualmente ? "Responsável definido manualmente." : "Responsável preservado do registro.")}</div>
+                </div>
+              </div>` : ""}
+              <label class="block"><span class="block text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1">Descrição complementar da questão</span>
+                ${isArchived ? `<textarea rows="2" onchange="RevisaoModule.onHistoryQuestionEdit(${auditArg}, ${questionArg}, ${lineArg}, 'extraDescription', this.value)" placeholder="Adicione contexto, detalhe o problema ou registre uma observação específica desta linha..." class="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2.5 py-2 text-sm">${escapeHTML(extraDescription)}</textarea>` : `<p class="text-xs text-slate-600 dark:text-slate-300">${escapeHTML(extraDescription || "Nenhuma descrição complementar.")}</p>`}
+              </label>
+            </div>`;
+          }).join("");
+          const answeredCount = (audit.linhas || []).filter(line => {
+            const response = audit.responses?.[question.id]?.[line];
+            return response && response.status !== "pending";
+          }).length;
+          return `<details class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 overflow-hidden" ${index === 0 ? "open" : ""}>
+            <summary class="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3.5 py-3 hover:bg-slate-100 dark:hover:bg-slate-800">
+              <span class="text-xs font-extrabold text-blue-700 dark:text-blue-300">${escapeHTML(question.codigo || `Q${index + 1}`)}</span>
+              <span class="text-sm font-bold text-slate-800 dark:text-slate-100 flex-1">${escapeHTML(question.pergunta)}</span>
+              <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">${answeredCount}/${audit.linhas.length} respondida(s)</span>
+            </summary>
+            <div class="border-t border-slate-200 dark:border-slate-700 p-3 grid grid-cols-1 xl:grid-cols-2 gap-2.5">${responseRows}</div>
+          </details>`;
+        }).join("");
+      },
+
+      /**
+       * Salva alterações feitas em uma auditoria arquivada sem alterar sua data original de expiração.
+       */
+      async onHistoryQuestionEdit(auditId, questionId, line, field, value) {
+        const audit = AppState.auditHistory.find(item => item.id === auditId && !isAuditArchiveExpired(item));
+        if (!audit) return App.showToast("Esta auditoria não está mais disponível para edição.", "error");
+        const response = audit.responses?.[questionId]?.[line];
+        if (!response) return App.showToast("Não foi possível localizar a resposta desta questão.", "error");
+
+        if (field === "extraDescription") {
+          response.extraDescription = String(value || "").trim();
+          AnomaliasModule.syncOccurrences(audit);
+        } else if (field === "responsavel") {
+          const occurrence = (audit.occurrences || []).find(item => item.internalKey === `${questionId}__${line}`);
+          if (!occurrence) return App.showToast("Esta questão não possui ocorrência para atribuir responsável.", "info");
+          const owner = String(value || "").trim();
+          occurrence.responsavel = owner;
+          occurrence.responsavelEditadoManualmente = Boolean(owner);
+          occurrence.responsavelAutomatico = !owner;
+          if (owner) {
+            occurrence.roteamento = {
+              ...(occurrence.roteamento || {}), assignedTo: owner, currentOwner: owner,
+              auto: false, needsManual: false, ownerPreserved: true,
+              ruleLabel: "Atribuição manual", reason: "Responsável definido manualmente na visualização da auditoria."
+            };
+          } else {
+            TicketRoutingModule.applyToOccurrence(occurrence, audit, [...AppState.auditHistory, audit], true);
+          }
+        } else {
+          return App.showToast("Campo de edição não reconhecido.", "error");
+        }
+
+        try {
+          const saved = await AuditHistoryStore.save(audit);
+          if (!saved) return App.showToast("O prazo desta auditoria expirou e o registro foi removido.", "info");
+          this.render();
+          App.showToast(field === "responsavel" ? "Responsável atualizado e salvo." : "Descrição complementar salva.", "success");
+        } catch (error) {
+          console.error("Falha ao salvar alterações da auditoria arquivada:", error);
+          App.showToast(`Não foi possível salvar a alteração: ${error.message}`, "error");
+        }
       },
 
       renderRoutingSummary(occurrences) {
@@ -3501,7 +3785,7 @@
                   <div class="rounded-lg bg-white dark:bg-slate-900 px-2.5 py-2"><p class="text-[10px] uppercase font-bold text-slate-400">Ocorrências</p><p class="text-base font-black text-rose-600 dark:text-rose-300">${(item.occurrences || []).length}</p></div>
                 </div>
                 <div class="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                  <button type="button" onclick="RevisaoModule.viewHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg ${viewing ? "bg-blue-700" : "bg-blue-600 hover:bg-blue-700"} text-white text-xs font-extrabold">${viewing ? "Visualizando" : "Visualizar"}</button>
+                  <button type="button" onclick="RevisaoModule.viewHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg ${viewing ? "bg-blue-700" : "bg-blue-600 hover:bg-blue-700"} text-white text-xs font-extrabold">${viewing ? "Detalhes abertos" : "Abrir detalhes / Editar"}</button>
                   <button type="button" onclick="RevisaoModule.exportHistoryExcel(${idArg})" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">Excel</button>
                   <button type="button" onclick="RevisaoModule.exportHistoryPDF(${idArg})" class="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold">PDF</button>
                   <button type="button" onclick="RevisaoModule.confirmDeleteHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-extrabold">Apagar</button>
