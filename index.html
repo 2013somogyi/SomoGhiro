@@ -196,8 +196,8 @@
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
           Gerenciar Linhas
         </button>
-        <button onclick="App.confirmResetSession()" class="px-3 py-1 rounded-lg bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 font-semibold hover:bg-rose-50 dark:hover:bg-slate-700 transition text-xs">
-          Encerrar
+        <button onclick="App.confirmFinishAudit()" class="px-3 py-1 rounded-lg bg-white dark:bg-slate-800 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400 font-semibold hover:bg-rose-50 dark:hover:bg-slate-700 transition text-xs">
+          Finalizar auditoria
         </button>
       </div>
     </div>
@@ -375,12 +375,38 @@
 
     <!-- ========== VIEW 2: REVISÃO ========== -->
     <section id="view-revisao" class="hidden space-y-5 animate-fade-in">
+      <!-- Histórico persistente de auditorias concluídas -->
+      <div id="rev-history-manager" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16M4 19h16"/></svg>
+              </span>
+              <div><h2 class="text-base sm:text-lg font-extrabold">Histórico de auditorias</h2><p id="rev-history-summary" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">As auditorias finalizadas ficam salvas neste navegador.</p></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto">
+            <button type="button" onclick="RevisaoModule.exportSelectedExcel()" class="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold transition">Exportar selecionadas</button>
+            <button type="button" onclick="RevisaoModule.exportAllExcel()" class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-extrabold transition">Exportar todas para Excel</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+          <label class="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300"><input id="rev-history-select-all" type="checkbox" class="h-4 w-4 rounded accent-blue-600" onchange="RevisaoModule.selectAllHistory(this.checked)"> Selecionar todas</label>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="rev-history-selected-count" class="text-xs text-slate-500 dark:text-slate-400">0 selecionadas</span>
+            <button type="button" onclick="RevisaoModule.clearHistorySelection()" class="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300">Limpar seleção</button>
+            <button type="button" id="rev-new-audit-btn" onclick="RevisaoModule.startNewAudit()" class="hidden px-3.5 py-2 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">+ Nova auditoria</button>
+          </div>
+        </div>
+        <div id="rev-history-list" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+      </div>
       <div id="revisao-empty-state" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-10 text-center max-w-xl mx-auto">
         <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
           <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
-        <h3 class="text-lg font-bold">Nenhuma auditoria ativa</h3>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Inicie e preencha uma auditoria para visualizar médias, anomalias e exportar relatórios.</p>
+        <h3 class="text-lg font-bold">Nenhuma auditoria selecionada</h3>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Inicie uma auditoria ou finalize uma sessão para criar seu histórico de auditorias.</p>
         <button onclick="App.navigate('auditoria')" class="mt-5 px-5 py-3 rounded-xl bg-blue-600 text-white text-base font-bold hover:bg-blue-700 transition">
           Configurar Nova Auditoria
         </button>
@@ -396,21 +422,11 @@
             <h2 class="text-xl sm:text-2xl font-extrabold mt-1" id="rev-header-title">Resumo da Auditoria</h2>
             <p class="text-sm text-slate-300 mt-0.5" id="rev-header-sub"></p>
           </div>
-          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            <button type="button" onclick="App.navigate('auditoria')"
-              class="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold border border-slate-700 transition text-center">
-              Voltar às Questões
-            </button>
-            <button type="button" onclick="ExportacaoModule.handlePdfClick()"
-              class="px-4 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-sm font-extrabold shadow-lg transition flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-              GERAR RELATÓRIO PDF
-            </button>
-            <button type="button" onclick="ExportacaoModule.handleExportClick()"
-              class="px-5 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-sm font-extrabold shadow-lg transition flex items-center justify-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-              EXPORTAR EXCEL
-            </button>
+          <div class="grid grid-cols-2 sm:flex sm:flex-row items-stretch sm:items-center gap-2">
+            <button id="rev-resume-btn" type="button" onclick="App.navigate('auditoria')" class="hidden px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm font-bold border border-slate-700 transition text-center">Retomar auditoria</button>
+            <button id="rev-finish-btn" type="button" onclick="App.confirmFinishAudit()" class="hidden px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-extrabold transition text-center">Finalizar e arquivar</button>
+            <button type="button" onclick="RevisaoModule.exportSelectedPDF()" class="px-3 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs sm:text-sm font-extrabold shadow-sm transition text-center">Gerar PDF</button>
+            <button type="button" onclick="RevisaoModule.exportCurrentExcel()" class="px-3 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs sm:text-sm font-extrabold shadow-sm transition text-center">Exportar Excel</button>
           </div>
         </div>
 
@@ -767,6 +783,87 @@
     };
 
     const CONFIG_STORAGE_KEY = "somoghiroaudit-imported-config-v1";
+    const AUDIT_HISTORY_DB = "somoghiroaudit-history-db";
+    const AUDIT_HISTORY_STORE = "audits";
+    const AUDIT_HISTORY_FALLBACK_KEY = "somoghiroaudit-history-fallback-v1";
+
+    // Histórico local: IndexedDB comporta mais auditorias que o localStorage.
+    // Um fallback localStorage é mantido para navegadores/ambientes sem IndexedDB.
+    const AuditHistoryStore = {
+      open() {
+        return new Promise((resolve, reject) => {
+          if (!window.indexedDB) return reject(new Error("IndexedDB indisponível"));
+          const request = window.indexedDB.open(AUDIT_HISTORY_DB, 1);
+          request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(AUDIT_HISTORY_STORE)) db.createObjectStore(AUDIT_HISTORY_STORE, { keyPath: "id" });
+          };
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error || new Error("Falha ao abrir o histórico"));
+          request.onblocked = () => reject(new Error("O histórico está bloqueado por outra aba"));
+        });
+      },
+      readFallback() {
+        try {
+          const raw = safeStorageGet(AUDIT_HISTORY_FALLBACK_KEY, "[]");
+          const parsed = JSON.parse(raw || "[]");
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) { console.warn("Histórico alternativo inválido:", error); return []; }
+      },
+      async list() {
+        try {
+          const db = await this.open();
+          const rows = await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_HISTORY_STORE, "readonly");
+            const req = tx.objectStore(AUDIT_HISTORY_STORE).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error || new Error("Falha ao ler histórico"));
+            tx.oncomplete = () => db.close();
+            tx.onerror = () => reject(tx.error || new Error("Falha na leitura do histórico"));
+          });
+          return rows.sort((a, b) => String(b.finalizadaEm || b.data || "").localeCompare(String(a.finalizadaEm || a.data || "")));
+        } catch (error) {
+          console.warn("Usando armazenamento alternativo para o histórico:", error);
+          return this.readFallback().sort((a, b) => String(b.finalizadaEm || b.data || "").localeCompare(String(a.finalizadaEm || a.data || "")));
+        }
+      },
+      async save(audit) {
+        const copy = JSON.parse(JSON.stringify(audit));
+        try {
+          const db = await this.open();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_HISTORY_STORE, "readwrite");
+            tx.objectStore(AUDIT_HISTORY_STORE).put(copy);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => reject(tx.error || new Error("Falha ao salvar auditoria"));
+            tx.onabort = () => reject(tx.error || new Error("Salvamento cancelado"));
+          });
+          return true;
+        } catch (error) {
+          console.warn("IndexedDB não pôde salvar; tentando localStorage:", error);
+          const rows = this.readFallback().filter(item => item.id !== copy.id);
+          rows.unshift(copy);
+          if (!safeStorageSet(AUDIT_HISTORY_FALLBACK_KEY, JSON.stringify(rows))) {
+            throw new Error("Não foi possível salvar o histórico neste navegador. Libere espaço de armazenamento e tente novamente.");
+          }
+          return true;
+        }
+      },
+      async remove(id) {
+        try {
+          const db = await this.open();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_HISTORY_STORE, "readwrite");
+            tx.objectStore(AUDIT_HISTORY_STORE).delete(id);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => reject(tx.error || new Error("Falha ao remover auditoria"));
+          });
+        } catch (error) {
+          const rows = this.readFallback().filter(item => item.id !== id);
+          safeStorageSet(AUDIT_HISTORY_FALLBACK_KEY, JSON.stringify(rows));
+        }
+      }
+    };
 
     function validateImportedConfig(config) {
       const errors = [];
@@ -850,6 +947,9 @@
     const AppState = {
       config: loadSavedConfig(),
       audit: null,
+      auditHistory: [],
+      reviewAuditId: null,
+      historySelectedIds: new Set(),
       theme: safeStorageGet("auditflow-theme", "light")
     };
 
@@ -1227,6 +1327,10 @@
 
       startAudit(event) {
         event.preventDefault();
+        if (AppState.audit) {
+          App.showToast("Finalize ou arquive a auditoria atual antes de iniciar outra.", "error");
+          return;
+        }
         const macroarea = this.selectedMacro;
         const tipo = this.selectedTipo;
         const data = document.getElementById("setup-data").value;
@@ -1279,6 +1383,7 @@
 
         const areaResumoNome = Array.from(areasEnvolvidasSet).join(" + ");
 
+        AppState.reviewAuditId = null;
         AppState.audit = {
           id: "AUD-" + Date.now(),
           configVersion: AppState.config.version,
@@ -1853,20 +1958,36 @@
 
     const RevisaoModule = {
       render() {
-        const audit = AppState.audit;
+        this.renderHistoryList();
         const emptyEl = document.getElementById("revisao-empty-state");
         const contentEl = document.getElementById("revisao-content");
-        if (!audit) {
-          emptyEl.classList.remove("hidden");
-          contentEl.classList.add("hidden");
-          return;
+        let selectedArchive = AppState.reviewAuditId
+          ? AppState.auditHistory.find(item => item.id === AppState.reviewAuditId)
+          : null;
+        if (!AppState.audit && !selectedArchive && AppState.auditHistory.length) {
+          selectedArchive = AppState.auditHistory[0];
+          AppState.reviewAuditId = selectedArchive.id;
         }
-        emptyEl.classList.add("hidden");
-        contentEl.classList.remove("hidden");
-        AnomaliasModule.syncOccurrences(audit);
+        const isArchived = !!selectedArchive;
+        const audit = selectedArchive || AppState.audit;
+        const hasAny = !!audit || AppState.auditHistory.length > 0;
+        emptyEl.classList.toggle("hidden", hasAny);
+        contentEl.classList.toggle("hidden", !audit);
+        const newBtn = document.getElementById("rev-new-audit-btn");
+        if (newBtn) newBtn.classList.toggle("hidden", !!AppState.audit);
+        if (!audit) return;
+
+        const resumeBtn = document.getElementById("rev-resume-btn");
+        const finishBtn = document.getElementById("rev-finish-btn");
+        if (resumeBtn) resumeBtn.classList.toggle("hidden", !AppState.audit || isArchived);
+        if (finishBtn) finishBtn.classList.toggle("hidden", !AppState.audit || isArchived);
+        const headerBadge = document.querySelector("#revisao-content .bg-blue-500\/20");
+        if (headerBadge) headerBadge.textContent = isArchived ? "Auditoria arquivada" : "Auditoria em andamento";
+
+        if (!isArchived) AnomaliasModule.syncOccurrences(audit);
         const metrics = CalculosModule.computeAuditMetrics(audit);
 
-        document.getElementById("rev-header-meta").textContent = `${CalculosModule.formatDateBR(audit.data)} • ${audit.turno}`;
+        document.getElementById("rev-header-meta").textContent = `${CalculosModule.formatDateBR(audit.data)} • ${audit.turno}${isArchived ? ` • Finalizada em ${audit.finalizadaEm ? new Date(audit.finalizadaEm).toLocaleString("pt-BR") : "data não registrada"}` : " • Em andamento"}`;
         document.getElementById("rev-header-title").textContent = `Auditoria de ${ChecklistsModule.getTipoName(audit.tipo)} — ${ChecklistsModule.getMacroareaName(audit.macroarea)}`;
         document.getElementById("rev-header-sub").textContent = `Áreas: ${audit.areaNome} | Linhas: ${audit.linhas.join(", ")} | Auditor: ${audit.auditor}`;
 
@@ -1913,7 +2034,142 @@
 
         document.getElementById("dl-responsaveis").innerHTML = AppState.config.sugestoesBase.responsaveis.map(r => `<option value="${r}">`).join("");
         document.getElementById("dl-observacoes").innerHTML = AppState.config.sugestoesBase.observacoes.map(o => `<option value="${o}">`).join("");
-        this.renderOccurrencesTable(audit.occurrences);
+        this.renderOccurrencesTable(audit.occurrences || [], isArchived);
+      },
+
+      historyEscape(value) {
+        return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      },
+
+      getAvailableAudits() {
+        // A listagem histórica contém auditorias finalizadas; a sessão em andamento
+        // continua acessível pelo resumo principal e não entra na exportação em lote.
+        return [...AppState.auditHistory];
+      },
+
+      renderHistoryList() {
+        const container = document.getElementById("rev-history-list");
+        if (!container) return;
+        const items = this.getAvailableAudits();
+        const summary = document.getElementById("rev-history-summary");
+        const count = document.getElementById("rev-history-selected-count");
+        const selectAll = document.getElementById("rev-history-select-all");
+        if (summary) summary.textContent = `${AppState.auditHistory.length} finalizada(s)${AppState.audit ? " • 1 em andamento" : ""}. Os dados ficam salvos neste navegador.`;
+        if (count) count.textContent = `${AppState.historySelectedIds.size} selecionada(s)`;
+        if (selectAll) selectAll.checked = items.length > 0 && items.every(item => AppState.historySelectedIds.has(item.id));
+        if (!items.length) {
+          container.innerHTML = `<div class="col-span-full rounded-xl border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center"><p class="text-sm font-bold text-slate-600 dark:text-slate-300">Ainda não há auditorias no histórico.</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Quando finalizar uma auditoria, ela aparecerá aqui para consulta e exportação.</p></div>`;
+          return;
+        }
+        container.innerHTML = items.map(item => {
+          const current = !!AppState.audit && item.id === AppState.audit.id;
+          let metrics = null;
+          try { metrics = CalculosModule.computeAuditMetrics(item); } catch (error) { console.warn("Não foi possível calcular resumo do histórico:", error); }
+          const selected = AppState.historySelectedIds.has(item.id);
+          const viewing = current ? !AppState.reviewAuditId : AppState.reviewAuditId === item.id;
+          const label = current ? "Em andamento" : "Finalizada";
+          const dateLabel = item.finalizadaEm ? new Date(item.finalizadaEm).toLocaleDateString("pt-BR") : CalculosModule.formatDateBR(item.data);
+          const idArg = `decodeURIComponent('${encodeURIComponent(item.id)}')`;
+          return `<article class="rounded-2xl border ${viewing ? "border-blue-400 dark:border-blue-600 ring-2 ring-blue-100 dark:ring-blue-950" : "border-slate-200 dark:border-slate-700"} bg-slate-50/70 dark:bg-slate-800/40 p-3.5 sm:p-4 min-w-0">
+            <div class="flex items-start gap-3">
+              <input type="checkbox" class="mt-1 h-4 w-4 rounded accent-blue-600 shrink-0" aria-label="Selecionar auditoria" ${selected ? "checked" : ""} onchange="RevisaoModule.toggleHistorySelection(${idArg},this.checked)">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${current ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200" : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"}">${label}</span>
+                  <span class="text-[11px] text-slate-500 dark:text-slate-400">${this.historyEscape(dateLabel)}</span>
+                </div>
+                <h3 class="mt-1.5 text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">${this.historyEscape(ChecklistsModule.getTipoName(item.tipo))} — ${this.historyEscape(ChecklistsModule.getMacroareaName(item.macroarea))}</h3>
+                <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">${this.historyEscape(item.areaNome)} • ${this.historyEscape((item.linhas || []).join(", "))}</p>
+                <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Auditor: ${this.historyEscape(item.auditor)} • Turno: ${this.historyEscape(item.turno)}</p>
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                  <div class="rounded-lg bg-white dark:bg-slate-900 px-2.5 py-2"><p class="text-[10px] uppercase font-bold text-slate-400">Média</p><p class="text-base font-black text-blue-700 dark:text-blue-300">${metrics?.generalAverage == null ? "—" : metrics.generalAverage.toFixed(2).replace(".", ",")}</p></div>
+                  <div class="rounded-lg bg-white dark:bg-slate-900 px-2.5 py-2"><p class="text-[10px] uppercase font-bold text-slate-400">Respondidas</p><p class="text-base font-black text-slate-800 dark:text-slate-100">${metrics ? `${metrics.totalAnswered}/${metrics.totalExpected}` : "—"}</p></div>
+                  <div class="rounded-lg bg-white dark:bg-slate-900 px-2.5 py-2"><p class="text-[10px] uppercase font-bold text-slate-400">Ocorrências</p><p class="text-base font-black text-rose-600 dark:text-rose-300">${(item.occurrences || []).length}</p></div>
+                </div>
+                <div class="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                  <button type="button" onclick="RevisaoModule.viewHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg ${viewing ? "bg-blue-700" : "bg-blue-600 hover:bg-blue-700"} text-white text-xs font-extrabold">${viewing ? "Visualizando" : "Visualizar"}</button>
+                  <button type="button" onclick="RevisaoModule.exportHistoryExcel(${idArg})" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">Excel</button>
+                  <button type="button" onclick="RevisaoModule.exportHistoryPDF(${idArg})" class="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold">PDF</button>
+                </div>
+              </div>
+            </div>
+          </article>`;
+        }).join("");
+      },
+
+      toggleHistorySelection(id, checked) {
+        if (checked) AppState.historySelectedIds.add(id); else AppState.historySelectedIds.delete(id);
+        this.renderHistoryList();
+      },
+
+      selectAllHistory(checked) {
+        AppState.historySelectedIds.clear();
+        if (checked) this.getAvailableAudits().forEach(item => AppState.historySelectedIds.add(item.id));
+        this.renderHistoryList();
+      },
+
+      clearHistorySelection() {
+        AppState.historySelectedIds.clear();
+        this.renderHistoryList();
+      },
+
+      viewHistoryAudit(id) {
+        AppState.reviewAuditId = AppState.audit && AppState.audit.id === id ? null : id;
+        this.render();
+      },
+
+      getAuditById(id) {
+        if (AppState.audit && AppState.audit.id === id) return AppState.audit;
+        return AppState.auditHistory.find(item => item.id === id) || null;
+      },
+
+      getSelectedAudit() {
+        if (AppState.reviewAuditId) return this.getAuditById(AppState.reviewAuditId);
+        return AppState.audit || (AppState.auditHistory[0] || null);
+      },
+
+      exportCurrentExcel() {
+        const audit = this.getSelectedAudit();
+        if (!audit) return App.showToast("Não há auditoria selecionada para exportar.", "error");
+        ExportacaoModule.handleExportClick(audit);
+      },
+
+      exportSelectedPDF() {
+        const audit = this.getSelectedAudit();
+        if (!audit) return App.showToast("Não há auditoria selecionada para exportar.", "error");
+        ExportacaoModule.handlePdfClick(audit);
+      },
+
+      exportHistoryExcel(id) {
+        const audit = this.getAuditById(id);
+        if (audit) ExportacaoModule.handleExportClick(audit);
+      },
+
+      exportHistoryPDF(id) {
+        const audit = this.getAuditById(id);
+        if (audit) ExportacaoModule.handlePdfClick(audit);
+      },
+
+      exportSelectedExcel() {
+        const ids = AppState.historySelectedIds;
+        const audits = this.getAvailableAudits().filter(item => ids.has(item.id));
+        if (!audits.length) return App.showToast("Selecione ao menos uma auditoria no histórico.", "error");
+        ExportacaoModule.generateMultipleExcel(audits);
+      },
+
+      exportAllExcel() {
+        const audits = this.getAvailableAudits();
+        if (!audits.length) return App.showToast("Ainda não há auditorias para exportar.", "error");
+        ExportacaoModule.generateMultipleExcel(audits);
+      },
+
+      startNewAudit() {
+        if (AppState.audit) {
+          App.showToast("Finalize a auditoria em andamento antes de iniciar outra.", "info");
+          return;
+        }
+        AppState.reviewAuditId = null;
+        App.navigate("auditoria");
       },
 
       renderValidationWarnings(audit, metrics) {
@@ -1927,7 +2183,7 @@
         box.innerHTML = `<p class="font-extrabold">Atenção antes de exportar:</p><ul class="list-disc pl-5 space-y-1">${warnings.map(w => `<li>${w}</li>`).join("")}</ul>`;
       },
 
-      renderOccurrencesTable(occurrences) {
+      renderOccurrencesTable(occurrences, readOnly = false) {
         const countBadge = document.getElementById("rev-occurrences-count");
         const container = document.getElementById("rev-anomalias-container");
         countBadge.textContent = `${occurrences.length} ocorrência(s)`;
@@ -1937,6 +2193,19 @@
               <p class="text-emerald-900 dark:text-emerald-100 font-bold text-base">Nenhuma anomalia ou melhoria identificada!</p>
               <p class="text-emerald-700 dark:text-emerald-300 text-sm mt-1">Todas as questões receberam notas de conformidade (4 ou 5).</p>
             </div>`;
+          return;
+        }
+        if (readOnly) {
+          container.innerHTML = `<div class="space-y-3">${occurrences.map(occ => {
+            const kind = occ.tipoProblema === "Anomalia" ? "bg-rose-600 text-white" : "bg-amber-500 text-slate-950";
+            const status = this.historyEscape(occ.status || CalculosModule.calculateOccurrenceStatus(occ.prazo, occ.dataConclusao));
+            return `<article class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 p-3.5 space-y-2">
+              <div class="flex flex-wrap items-center gap-2"><span class="rounded-lg px-2 py-1 text-xs font-extrabold ${kind}">${this.historyEscape(occ.tipoProblema || "Ocorrência")}</span><strong class="text-sm">Linha ${this.historyEscape(occ.linha)} • Ponto ${this.historyEscape(occ.ponto)}</strong><span class="ml-auto rounded-full px-2 py-1 text-[11px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">${status}</span></div>
+              <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">${this.historyEscape(occ.descricao || "Sem descrição registrada")}</p>
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-500 dark:text-slate-400"><span>Responsável: ${this.historyEscape(occ.responsavel || "—")}</span><span>Prazo: ${this.historyEscape(CalculosModule.formatDateBR(occ.prazo) || "—")}</span><span>Conclusão: ${this.historyEscape(CalculosModule.formatDateBR(occ.dataConclusao) || "—")}</span></div>
+              ${occ.observacao ? `<p class="text-xs text-slate-600 dark:text-slate-300">Observação: ${this.historyEscape(occ.observacao)}</p>` : ""}
+            </article>`;
+          }).join("")}</div>`;
           return;
         }
         const statusBadge = (status) => {
@@ -2067,16 +2336,18 @@
         return true;
       },
 
-      handleExportClick() {
-        if (this.validateBeforeExport("ExportacaoModule.generateExcel")) {
-          this.generateExcel();
-        }
+      handleExportClick(auditOverride = null) {
+        const audit = auditOverride || AppState.audit;
+        if (!audit) return App.showToast("Não há auditoria selecionada para exportar.", "error");
+        if (audit !== AppState.audit) return this.generateExcel(audit);
+        if (this.validateBeforeExport("ExportacaoModule.generateExcel")) this.generateExcel(audit);
       },
 
-      handlePdfClick() {
-        if (this.validateBeforeExport("ExportacaoModule.generatePDF")) {
-          this.generatePDF();
-        }
+      handlePdfClick(auditOverride = null) {
+        const audit = auditOverride || AppState.audit;
+        if (!audit) return App.showToast("Não há auditoria selecionada para exportar.", "error");
+        if (audit !== AppState.audit) return this.generatePDF(audit);
+        if (this.validateBeforeExport("ExportacaoModule.generatePDF")) this.generatePDF(audit);
       },
 
       toExcelDateCell(isoStr) {
@@ -2087,13 +2358,15 @@
         return isNaN(d.getTime()) ? isoStr : d;
       },
 
-      generateExcel() {
+      generateExcel(auditOverride = AppState.audit, options = {}) {
         try {
-          const audit = AppState.audit;
-          AnomaliasModule.syncOccurrences(audit);
+          const audit = auditOverride;
+          if (!audit) throw new Error("Nenhuma auditoria selecionada.");
+          if (audit === AppState.audit) AnomaliasModule.syncOccurrences(audit);
           const activeQuestions = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot);
           const rules = ChecklistsModule.getRatingRules(audit.checklistSnapshot);
-          const wb = XLSX.utils.book_new();
+          const wb = options.workbook || XLSX.utils.book_new();
+          const sheetName = base => `${options.prefix || ""}${base}`.slice(0, 31);
 
           const tipoNome = ChecklistsModule.getTipoName(audit.tipo);
           const macroNome = ChecklistsModule.getMacroareaName(audit.macroarea);
@@ -2163,7 +2436,7 @@
           wsRelatorios["!autofilter"] = { ref: `A1:M${rowsRelatorios.length}` };
           wsRelatorios["!freeze"] = { xSplit: 0, ySplit: 1 };
           applyDateFormat(wsRelatorios, rowsRelatorios.length, [0, 6, 8]);
-          XLSX.utils.book_append_sheet(wb, wsRelatorios, "RELATÓRIOS");
+          XLSX.utils.book_append_sheet(wb, wsRelatorios, sheetName("RELATÓRIOS"));
 
           const pontosHeader = activeQuestions.map(q => q.codigo);
           const rowsNotasPorLinha = [["linhas", ...pontosHeader]];
@@ -2189,7 +2462,7 @@
           wsNotasPorLinha["!cols"] = [{ wch: 16 }, ...pontosHeader.map(() => ({ wch: 8 }))];
           wsNotasPorLinha["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(pontosHeader.length)}${rowsNotasPorLinha.length}` };
           wsNotasPorLinha["!freeze"] = { xSplit: 1, ySplit: 1 };
-          XLSX.utils.book_append_sheet(wb, wsNotasPorLinha, "NOTAS POR LINHA");
+          XLSX.utils.book_append_sheet(wb, wsNotasPorLinha, sheetName("NOTAS POR LINHA"));
 
           const headersRespostas = [
             "Data", "Turno", "Tipo de Auditoria", "Auditor", "Área", "Linha",
@@ -2241,18 +2514,42 @@
           wsRespostas["!autofilter"] = { ref: `A1:L${rowsRespostas.length}` };
           wsRespostas["!freeze"] = { xSplit: 0, ySplit: 1 };
           applyDateFormat(wsRespostas, rowsRespostas.length, [0]);
-          XLSX.utils.book_append_sheet(wb, wsRespostas, "RESPOSTAS DETALHADAS");
+          XLSX.utils.book_append_sheet(wb, wsRespostas, sheetName("RESPOSTAS DETALHADAS"));
 
+          if (options.workbook) return true;
           const cleanStr = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "");
           const fileName = `Auditoria_${cleanStr(tipoNome)}_${cleanStr(macroNome)}_${audit.data}.xlsx`;
           XLSX.writeFile(wb, fileName);
           App.showToast(`Planilha "${fileName}" exportada com sucesso!`, "success");
         } catch (err) {
-          App.showToast("Erro ao exportar Excel: " + err.message, "error");
+          console.error("Erro ao montar planilha da auditoria:", err);
+          if (!options.workbook) App.showToast("Erro ao exportar Excel: " + err.message, "error");
+          return false;
         }
       },
 
-      generatePDF() {
+      generateMultipleExcel(audits) {
+        try {
+          if (!window.XLSX) throw new Error("Biblioteca Excel não carregada. Verifique sua conexão.");
+          const validAudits = (audits || []).filter(Boolean);
+          if (!validAudits.length) throw new Error("Não há auditorias para exportar.");
+          const wb = XLSX.utils.book_new();
+          validAudits.forEach((audit, index) => {
+            const prefix = `A${String(index + 1).padStart(2, "0")}_`;
+            const appended = this.generateExcel(audit, { workbook: wb, prefix });
+            if (appended !== true) throw new Error(`Falha ao adicionar a auditoria ${audit.id || index + 1} à planilha.`);
+          });
+          if (!wb.SheetNames || !wb.SheetNames.length) throw new Error("Nenhuma aba foi criada para exportação.");
+          const stamp = new Date().toISOString().slice(0, 10);
+          const fileName = `Historico_Auditorias_${validAudits.length}_registros_${stamp}.xlsx`;
+          XLSX.writeFile(wb, fileName);
+          App.showToast(`${validAudits.length} auditoria(s) exportada(s) em uma única planilha.`, "success");
+        } catch (error) {
+          console.error("Erro ao exportar histórico de auditorias:", error);
+          App.showToast("Erro ao exportar auditorias: " + error.message, "error");
+        }
+      },
+      generatePDF(auditOverride = AppState.audit) {
         try {
           if (!window.jspdf || !window.jspdf.jsPDF) {
             App.showToast("Biblioteca PDF não carregada. Verifique sua conexão.", "error");
@@ -2260,8 +2557,9 @@
           }
           const { jsPDF } = window.jspdf;
           const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-          const audit = AppState.audit;
-          AnomaliasModule.syncOccurrences(audit);
+          const audit = auditOverride;
+          if (!audit) throw new Error("Nenhuma auditoria selecionada.");
+          if (audit === AppState.audit) AnomaliasModule.syncOccurrences(audit);
           const metrics = CalculosModule.computeAuditMetrics(audit);
 
           const pageW = doc.internal.pageSize.getWidth();
@@ -2810,11 +3108,16 @@
     const App = {
       currentView: "auditoria",
 
-      init() {
+      async init() {
         this.applyTheme(AppState.theme);
+        AppState.auditHistory = await AuditHistoryStore.list();
         AuditoriaModule.initSetupForm();
         ConfiguracoesModule.render();
         this.navigate("auditoria");
+        if (AppState.auditHistory.length) {
+          const badge = document.getElementById("nav-badge-anomalias");
+          if (badge && !AppState.audit) badge.classList.add("hidden");
+        }
       },
 
       openDrawer() {
@@ -2907,23 +3210,59 @@
       },
 
       confirmResetSession() {
+        return this.confirmFinishAudit();
+      },
+
+      confirmFinishAudit() {
+        const audit = AppState.audit;
+        if (!audit) return App.showToast("Não há auditoria em andamento para finalizar.", "info");
+        AnomaliasModule.syncOccurrences(audit);
+        const metrics = CalculosModule.computeAuditMetrics(audit);
+        const missingDesc = (audit.occurrences || []).filter(item => !item.descricao || !item.descricao.trim()).length;
+        const notices = [];
+        if (metrics.totalPending > 0) notices.push(`<li><strong>${metrics.totalPending}</strong> avaliação(ões) ainda pendentes; não entram nas médias.</li>`);
+        if (missingDesc > 0) notices.push(`<li><strong>${missingDesc}</strong> ocorrência(s) sem descrição completa.</li>`);
         this.openModal(`
           <div class="space-y-4">
-            <h3 class="text-lg font-extrabold">Encerrar auditoria atual?</h3>
-            <p class="text-base text-slate-600 dark:text-slate-300">Dados não exportados serão descartados. Recomendamos exportar o Excel ou PDF antes de encerrar.</p>
-            <div class="flex justify-end gap-2 pt-2">
-              <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-base font-bold">Cancelar</button>
-              <button onclick="App.resetSession()" class="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-base font-bold">Encerrar</button>
+            <div><span class="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">Salvar no histórico</span><h3 class="text-lg font-extrabold mt-1">Finalizar esta auditoria?</h3></div>
+            <p class="text-sm text-slate-600 dark:text-slate-300">A auditoria será arquivada neste navegador. Você poderá iniciar outra sem perder esta, consultar o histórico e exportar os registros individualmente ou em conjunto.</p>
+            ${notices.length ? `<div class="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-100"><p class="font-bold mb-1">Antes de finalizar:</p><ul class="list-disc pl-5 space-y-1">${notices.join("")}</ul><p class="mt-2 text-xs">Você pode continuar mesmo assim; as informações serão preservadas como estão.</p></div>` : `<p class="text-sm text-emerald-700 dark:text-emerald-300">Todas as avaliações foram preenchidas.</p>`}
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+              <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Continuar auditando</button>
+              <button onclick="App.finishAudit()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold">Finalizar e arquivar</button>
             </div>
           </div>`);
       },
 
+      async finishAudit() {
+        const audit = AppState.audit;
+        if (!audit) return;
+        try {
+          AnomaliasModule.syncOccurrences(audit);
+          const archived = JSON.parse(JSON.stringify(audit));
+          archived.status = "finalizada";
+          archived.finalizadaEm = new Date().toISOString();
+          await AuditHistoryStore.save(archived);
+          AppState.auditHistory = [archived, ...AppState.auditHistory.filter(item => item.id !== archived.id)]
+            .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
+          AppState.reviewAuditId = archived.id;
+          AppState.audit = null;
+          AppState.historySelectedIds.clear();
+          const sessionBar = document.getElementById("session-bar");
+          if (sessionBar) sessionBar.classList.add("hidden");
+          AnomaliasModule.updateNavBadge();
+          this.closeModal();
+          this.navigate("revisao");
+          this.showToast("Auditoria finalizada e salva no histórico. Você já pode iniciar outra.", "success");
+        } catch (error) {
+          console.error("Erro ao arquivar auditoria:", error);
+          this.showToast("Não foi possível arquivar a auditoria: " + error.message, "error");
+        }
+      },
+
       resetSession() {
-        AppState.audit = null;
-        AnomaliasModule.updateNavBadge();
-        this.closeModal();
-        this.navigate("auditoria");
-        this.showToast("Sessão encerrada.", "info");
+        // Compatibilidade com versões anteriores: encerrar agora significa arquivar.
+        return this.finishAudit();
       }
     };
 
