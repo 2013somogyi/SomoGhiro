@@ -487,9 +487,13 @@
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 class="text-xl font-extrabold">Configurações dos Checklists e Regras</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gerencie perguntas, critérios e limites de conformidade.</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Edite perguntas e critérios. As alterações são salvas automaticamente neste navegador e aplicadas às próximas auditorias.</p>
+            <p id="cfg-save-status" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">Configuração pronta para edição.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="ConfiguracoesModule.exportConfigJSON()" class="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition">
+              Exportar configuração (.JSON)
+            </button>
             <button type="button" onclick="ConfiguracoesModule.confirmRestoreDefaults()"
               class="px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-sm font-bold transition">
               Restaurar Padrão
@@ -806,6 +810,44 @@
     };
 
     const CONFIG_STORAGE_KEY = "somoghiroaudit-imported-config-v1";
+    // Revisão de clareza dos critérios (v2.2.0).
+    // A migração só substitui o texto original do sistema; critérios personalizados pelo usuário são preservados.
+    const CRITERIA_LEGACY_BASELINE = {"FS_1.1":{"1":"Equipamento exposto em área de operação","3":"Equipamento exposto em área sem risco","5":"Motores e esteiras protegidas"},"FS_1.2":{"1":"Não abriram Olhar Seguro","5":"Abriram Olhar Seguro"},"FS_1.3":{"1":"Mangueiras ou Paletes gerando risco","5":"Sem riscos de queda"},"FS_1.4":{"1":"Materiais apoiados sobre motor/painel ","2":"Materiais encostando ou muito perto de áreas quentes/móveis","5":"Nada próximo; área completamente livre"},"FS_1.5":{"1":"Acesso difícil OU validade vencida","2":"Acesso parcialmente obstruído OU validade quase vencendo","5":"Livre acesso, validade em dia"},"FS_2.1":{"1":"Não funciona ou impossível de acessar","2":"Sinalização desbotada/ Não identificável","4":"Sinalização levemente desgastada","5":"Visíveis, livres e funcionando"},"FS_2.2":{"1":"Não funcionam","5":"Funcionam bem"},"FS_2.3":{"1":"Removidas/faltando/quebradas","2":"Folga moderada ou peças começando a deformar.","4":"Leve desgaste ou pequena folga","5":"Fixas, íntegras e firmes"},"FS_2.4":{"1":"Sem placas obrigatórias","3":"Placas levemente desgastadas ou desbotadas","5":"Todas visíveis e legíveis"},"FS_2.5":{"1":"Painél aberto","5":"Painéis fechados e com cadeado (se houver)"},"FS_3.1":{"1":"Eletricidade exposta","3":"Fiação ressecada / mal isolada","5":"Fiação no padrão"},"FS_3.2":{"1":"Caminho bloqueado","2":"Obstrução significativa","5":"Caminho livre e demarcado"},"FS_3.3":{"1":"Chão molhado com risco imediato de queda","3":"Umidade no chão","5":"Piso totalmente seco"},"FS_3.4":{"1":"Poeira aérea densa","3":"Poeira aérea","5":"Vazamento sem riscos"},"FS_3.5":{"1":"Vazamento afetando sensores ou partes elétricas","4":"Vazamento muito leve (pontos isolados).","5":"Sem vazamentos."},"FS_4.1":{"1":"Instáveis ou inseguras","3":"Desgaste moderado","5":"Firmes e limpas"},"FS_4.2":{"1":"Estrutura solta sem parafusos","3":"Alguns parafusos faltando","5":"Parafusos e rebites presentes"},"FS_4.3":{"1":"Ajustes proibidos ","3":"Pequeno ajuste não crítico","5":"Segue integralmente"},"FS_4.4":{"1":"Vários EPIs faltando","2":"1 EPI faltando","4":"Ajuste incorreto leve (máscara abaixada, luva mal colocada)","5":"Usando tudo corretamente"},"FS_4.5":{"1":"Equipamento impactando o operador","3":"Equipamentos necessitando de reparo","5":"Equipamentos OK"},"FQ_1.1":{"1":"Superfície crítica, ferrugem ou descascando muito","4":"Pequeno desgaste","5":"Superfície perfeita, sem defeitos"},"FQ_1.2":{"1":"Vazamento claro ou vedação quebrada","5":"Tudo vedado e íntegro"},"FQ_1.3":{"1":"Vazamento acumulando no chão","3":"Vazamento controlado","5":"Sem vazamento"},"FQ_1.4":{"1":"Área molhada","3":"Pequeno acúmulo","5":"Sem sinals de umidade"},"FQ_1.5":{"1":"Paletes debilitados","3":"Paletes velhos mas utilizaveis","5":"Paletes ok"},"FQ_2.1":{"1":"Não identificados","2":"Alguns identificados","5":"Identificados"},"FQ_2.2":{"1":"Sobrepeso ou peso baixo","5":"Peso ok"},"FQ_2.3":{"1":"Contaminação evidente","3":"Risco de Contaminação","5":"Limpo"},"FQ_2.4":{"1":"Muitos itens pessoais sendo utilizados","2":"Alguns itens pessoais","5":"Sem itens pessoais"},"FQ_2.5":{"1":"Sujas","3":"Levemente sujas","5":"Limpas"},"FQ_3.1":{"1":"Embalagem ruim","3":"Algumas ruins","5":"Embalagem ok"},"FQ_3.2":{"1":"Não corresponde","5":"Corresponde"},"FQ_3.3":{"1":"Resíduo antigo","5":"Sem resíduo antigo"},"FQ_3.4":{"1":"Contaminação evidente","2":"Materiais muito perto, risco alto (dentro da máquina)","3":"Itens próximos ao produto","4":"Pequeno item próximo, mas sem risco real","5":"Nada próximo que possa contaminar"},"FQ_3.5":{"1":"Alguns objetos estranhos","5":"Sem objetos estranhos"},"FQ_4.1":{"1":"Corpos de prova não disponíveis","5":"Corpos de prova disponíveis / ou não necessários"},"FQ_4.2":{"1":"Controles feitos parcialmente ou com erros; registros incompletos","2":"Controles executados, porém com imprecisões; registros adequados, mas com falhas","5":"Operador executa todos os controles corretamente e registra tudo de forma correta"},"FQ_4.3":{"1":"Grande acúmulo de retrabalho","3":"Acúmulo relevante","5":"Nenhum / somente o necessário"},"FQ_4.4":{"1":"Sacaria para fora","2":"Sacaria trocada","3":"Resíduo na lixeira errada","5":"Tudo ok"},"FQ_4.5":{"1":"Mais de 1 ponto","3":"1 ponto","5":"Nenhum ponto"},"F5S_1.1":{"1":"Ilegíveis, rasgados ou quebrados","2":"Muito sujos, riscados ou quase ilegíveis","3":"Desgaste moderado ou legibilidade reduzida","4":"Leve desgaste (leve sujeira, arranhão pequeno)","5":"Tudo limpo, legível e sem danos"},"F5S_1.2":{"1":"Mais de um item faltando","3":"1 item faltando","5":"Todos os intens presentes"},"F5S_1.3":{"1":"Local inadequado","3":"Alguns itens fora de lugar","5":"Tudo em seus devidos lugares"},"F5S_1.4":{"1":"Improvisos graves substituindo soluções adequadas","2":"Vários improvisos evidentes","3":"1 ou 2 improvisos moderados","5":"Nenhuma gambiarra"},"F5S_1.5":{"1":"Posto muito sujo e bagunçado","3":"Acúmulo moderado perceptível","4":"Acúmulo mínimo ocasional","5":"Sempre limpo, zero acúmulo"},"F5S_2.1":{"1":"Acúmulo pesado","2":"Poeira visível em vários pontos","5":"Totalmente limpos"},"F5S_2.2":{"1":"Sujeira crítica acumulada","2":"Poeira acumulada","4":"Poeira leve","5":"Sem sujeira nos locais escondidos"},"F5S_2.3":{"1":"Inutilizáveis","2":"Desorganizados","3":"Desgastadas ou sujas","5":"Perfeito estado"},"F5S_2.4":{"1":"Sujos, quebrados, jogados ou ausentes","2":"Alguns itens desorganizados","5":"Organizados, íntegros, guardados corretamente"},"F5S_2.5":{"1":"Sujeira acumulada","3":"Poeira leve","5":"Bancada limpa"},"F5S_3.1":{"1":"Sem demarcação e tudo fora do lugar","2":"Demarcação ruim ou não visível","3":"Alguns fora do local","4":"1 item fora do lugar","5":"Tudo no lugar certo e claramente demarcado"},"F5S_3.2":{"1":"Quase nenhum alinhado","2":"Sem  marcação","3":"Vários fora","4":"1 fora","5":"Todos dentro da faixa"},"F5S_3.3":{"1":"Ferramentas debilitadas","2":"Ferramentas modificadas","3":"Ferramentas não identificadas ou gastas","5":"Ferramentas em boas condições de 5S"},"F5S_3.4":{"1":"Muitos itens de outra linha","2":"1 item isolado","5":"Nenhum item estranho"},"F5S_3.5":{"1":"Item sobre a máquina e fora do suporte","2":"Item apoiado na máquina mas sem suporte","5":"Nenhum item sobre a máquina"},"F5S_4.1":{"1":"Sujos ou com marcas","2":"Desorganizados ou espalhados","5":"Organizados e Limpos"},"F5S_4.2":{"1":"Sujeira acumulada","3":"Sujeira moderada","5":"Máquina limpa"},"F5S_4.3":{"1":"Área com equipamentos fora de uso ou equipamentos quebrados","2":"Muitos itens sem uso","5":"Nada quebrado presente"},"F5S_4.4":{"1":"Ausentes ou quebradas","3":"Danificadas ou sem identificação","5":"Lixeiras e coletores"},"F5S_4.5":{"1":"Fita substituindo soluções adequadas","3":"Pedaços de fita espalhados","5":"Sem fitas na área"},"MS_1.1":{"1":"Obstruído totalmente ou sem sinalização crítica","2":"Obstrução parcial que exige mover itens para acessar","3":"Algum objeto próximo que pode atrapalhar em emergência","4":"Desobstruído, mas sinalização parcialmente desgastada","5":"Totalmente desobstruído e sinalizado corretamente"},"MS_1.2":{"1":"Não funciona ou não está acessível","4":"Pequeno desgaste na sinalização ou leve sujeira","5":"Funciona, visível, sinalizado e livre"},"MS_1.3":{"1":"Sinalização muito fraca ou obstrução parcial séria","2":"Leve obstrução que exige mover itens","4":"Pequeno desgaste (adesivos velhos, pintura gasta)","5":"Livre, selo e sinalização perfeitos"},"MS_1.4":{"1":"Acesso difícil","3":"Rota parcialmente estreita ou com objetos de passagem","5":"Totalmente livres e demarcadas"},"MS_1.5":{"1":"Caminho bloqueado","2":"Obstrução significativa","3":"Itens que estreitam parcialmente o caminho","4":"1 item fora do lugar que não bloqueia passagem","5":"Caminho livre e demarcado"},"MS_2.1":{"1":"Buracos críticos","2":"Buracos que geram risco real de tombamento","3":"Rachos, ondulações ou buracos leves que influenciam operação","4":"Pequena irregularidade que NÃO afeta paleteira","5":"Sem buracos, nivelado"},"MS_2.2":{"1":"Risco eminente","3":"Risco progressivo","5":"Funcionamento sem riscos"},"MS_2.3":{"1":"Difícil identificar ou obstruída","3":"Faixa parcialmente apagada ou passagem parcialmente ocupada","4":"Desgaste visível da pintura","5":"Faixa totalmente pintada e livre"},"MS_2.4":{"1":"Poeira em excesso com risco claro","3":"Poeira mais intensa em áreas pontuais","5":"Piso totalmente limpo"},"MS_2.5":{"1":"Múltiplos EPIs ausentes","2":"1 EPI ausente","4":"Ajuste incorreto ou 1 EPI usado de forma inadequada","5":"Todos com EPI completo e correto"},"MS_3.1":{"1":"Pontas vivas ou áreas cortantes","3":"Ferrugem moderada que pode virar risco","4":"Pequena corrosão superficial","5":"Sem ferrugem e sem danos"},"MS_3.2":{"1":"Vazamento visível / risco de rompimento","2":"Remendos presentes (mesmo sem vazamento)","5":"Integridade total"},"MS_3.3":{"1":"Poças de água","3":"Água ligeiramente acumulada","5":"Escoamento OK, sem poças"},"MS_3.4":{"1":"Materiais quebrados ou ausentes","2":"Materiais remendados","5":"Materiais íntegros"},"MS_3.5":{"1":"Grelhas faltando","3":"Grelha torta","5":"Grelha íntegra"},"MS_4.1":{"1":"Destrancado","2":"Trancado com solução improvisada","4":"Trava com leve folga","5":"Trancados corretamente"},"MS_4.2":{"1":"Manípulos rasgados ou quebrados","2":"Manípulos remendados","5":"Manípulos funcionando"},"MS_4.3":{"1":"Fios expostos ou isolamento ruim","3":"Fiação improvisada, mesmo sem risco imediato","4":"Leve desgaste","5":"Fiação perfeita"},"MS_4.4":{"1":"Quase inoperante","3":"Eficiência reduzida","5":"Funcionando perfeitamente"},"MS_4.5":{"1":"Pregos expostos ou partes quebradas","3":"Pequenas lascas, sem risco imediato","5":"Excelente estado"},"MQ_1.1":{"1":"Ralo entupido / água parada evidente","2":"Odor forte ou água acumulada moderadamente","5":"Ralo limpo, sem odor, fluxo perfeito, sem água acumulada"},"MQ_1.2":{"1":"Piso crítico, risco de acidente ou contaminação","2":"Buraco significativo","3":"Buraco leve","4":"Pequena fissura, sem risco","5":"Piso íntegro"},"MQ_1.3":{"1":"Acúmulo pesado / Descascamento","2":"Sujeira evidente ou quina danificada","5":"Íntegras e limpas"},"MQ_1.4":{"1":"Crostas espessas / risco de queda no produto","4":"Poeira leve","5":"Totalmente limpos e sem resíduos"},"MQ_1.5":{"1":"Múltiplos sinais claros de pragas","5":"Nenhum indício"},"MQ_2.1":{"1":"Sujeira crítica / camadas grossas","2":"Acúmulo pesado","3":"Acúmulo moderado","5":"Zero acúmulo"},"MQ_2.2":{"1":"Vazamento relevante criando acúmulo","3":"Vazamento perceptível","4":"Pequeno pó no entorno","5":"Zero vazamento, vedação perfeita"},"MQ_2.3":{"1":"Mais de 1 carrinho com resíduos","3":"1 carrinho com resíduos de lote anterior","4":"1 carrinho com sujeira leve","5":"Todos 5 carrinhos limpos, secos e sem resíduos"},"MQ_2.4":{"1":"Vazamento visível","3":"Pequena fissura, sem risco","5":"Sem vazamento"},"MQ_2.5":{"1":"Furos / peças improvisadas relevantes","2":"Gambiarras simples (fita / cola)","4":"Sinal leve de improviso","5":"Tudo íntegro"},"MQ_3.1":{"1":"Soltas / risco de cair na mistura","2":"Cabo frouxo ou lâmina desgastada","5":"Presas, limpas, íntegras, cabo firme"},"MQ_3.2":{"1":"Quebrados / contaminados","3":"Desgaste perceptível","5":"Limpos e íntegros"},"MQ_3.3":{"1":"Rachadura ou resíduos","5":"Perfeitamente limpos e íntegros"},"MQ_3.4":{"1":"Múltiplos objetos","5":"Área totalmente limpa, zero objetos"},"MQ_3.5":{"1":"Muita sujeira","2":"Poeira acumulada","4":"Poeira discreta","5":"Limpas"},"MQ_4.1":{"1":"Nenhuma indicação de status; identificação ilegível, incorreta ou ausente","3":"Status presente, porém com falhas de visibilidade ou identificação","5":"Status visível e legível"},"MQ_4.2":{"1":"Registros ausentes, incorretos ou sem padrão.","2":"Registros completos e corretos, com pequenas falhas pontuais.","5":"Todos os registros completos, corretos, padronizados e sem erros."},"MQ_4.3":{"1":"Multiplas sacarias rasgadas","2":"Apenas 1 sacaria com risco de contaminação grave","5":"Bem fechados, sem rasgos, sem exposição"},"MQ_4.4":{"1":"Sacaria para fora","2":"Transbordando","5":"Limpa, tampada, organizada"},"MQ_4.5":{"1":"Adornos / risco crítico de contaminação","2":"Máscara ou capacete ausentes","4":"Ajuste imperfeito","5":"Total conformidade (touca cobrindo 100% do cabelo, máscara correta)"},"M5S_1.1":{"1":"Total desorganização","3":"Mais de um item fora do suporte","5":"Organizados em seus suportes"},"M5S_1.2":{"1":"Acúmulo perceptível","2":"Pequeno agrupamento","4":"1 sacaria isolada","5":"Nenhuma sacaria no setor"},"M5S_1.3":{"1":"Acúmulo crítico","2":"Alguns itens sem função clara","5":"Zero itens desnecessários"},"M5S_1.4":{"1":"Itens ausentes ou sem local demarcado","2":"Vários fora da marcação","3":"Mais de 1 fora da marcação","4":"1 item ligeiramente fora","5":"Todos em seus locais"},"M5S_1.5":{"1":"Caderno ausente","3":"Caderno distante","5":"Caderno próximo"},"M5S_2.1":{"1":"Poucos na marcação","2":"Vários desalinhados","4":"1 desalinhado","5":"Todos na marcação"},"M5S_2.2":{"1":"Caderno sem preenchimento","2":"Caderno com atrasos","5":"Caderno preenchido"},"M5S_2.3":{"1":"Danificadas e mal guardadas","2":"Jogadas no chão","3":"Enroladas de maneira irregular","5":"Guardadas no suporte"},"M5S_2.4":{"1":"Ferramentas fora de condições","2":"Ferramentas gastas","5":"Ferramentas íntegras e limpas"},"M5S_2.5":{"1":"Totalmente desorganizadas","2":"Objetos pendurados ou sujeira relevante","3":"Pequenos itens sobre as escadas","4":"Sujeira leve","5":"Alinhadas, limpas, nada pendurado"},"M5S_3.1":{"1":"Equipamentos quebrados","3":"Equipamentos gastos ","5":"Equipamentos íntegros"},"M5S_3.2":{"1":"Soltas ou ausentes","2":"Danos relevantes","4":"Pequeno amassado","5":"Firmes e conservadas"},"M5S_3.3":{"1":"Vazamentos / infiltração crítica","2":"Infiltração leve ou batidas fortes","3":"Marcas moderadas","4":"Poucas manchas leves","5":"Totalmente limpas, sem marcas"},"M5S_3.4":{"1":"Itens pessoais ou itens estranhos","5":"Sem itens pessoais ou estranhos"},"M5S_3.5":{"1":"Sacaria pra fora","2":"Sacaria trocada","5":"Descarte adequado"},"M5S_4.1":{"1":"Piso crítico","2":"Sujeira impregnada","3":"Manchas moderadas","5":"Impecável"},"M5S_4.2":{"1":"Danificados e sujos","2":"Mal armazenados","4":"Pequeno desgaste","5":"Guardados, íntegros, limpos"},"M5S_4.3":{"1":"Mofo/lodo","5":"Zero mofo/zero respingos"},"M5S_4.4":{"1":"Acúmulo pesado","2":"Acúmulo relevante","4":"Sujeira leve","5":"Totalmente limpos"},"M5S_4.5":{"1":"Rachaduras, ferrugem, crostas","2":"Sujeira forte ou danos visíveis","3":"Poeira moderada ","4":"Poeira leve","5":"Íntegras e limpas"}};
+    const CRITERIA_CONTEXT_LABELS = {"FS_1.1":"Proteção de motores e esteiras","FS_1.2":"Registro de Olhar Seguro","FS_1.3":"Riscos de tropeço na linha","FS_1.4":"Materiais próximos a motores e painéis","FS_1.5":"Acesso e inspeção de extintores e hidrantes","FS_2.1":"Botão de parada de emergência","FS_2.2":"Sensores de bloqueio de energia","FS_2.3":"Proteções físicas da máquina","FS_2.4":"Placas de advertência das máquinas","FS_2.5":"Portas e travas dos painéis elétricos","FS_3.1":"Fiação elétrica e isolamento","FS_3.2":"Rotas e áreas de circulação","FS_3.3":"Piso próximo à máquina","FS_3.4":"Vazamentos e exposição dos operadores","FS_3.5":"Pallets e carrinhos nas faixas de sinalização","FS_4.1":"Plataformas de trabalho","FS_4.2":"Parafusos e rebites das estruturas","FS_4.3":"Cumprimento do procedimento operacional","FS_4.4":"Uso de EPIs e EPCs","FS_4.5":"Condições dos equipamentos de apoio ao operador","FQ_1.1":"Superfícies dos equipamentos","FQ_1.2":"Conexões, portas e vedação dos equipamentos","FQ_1.3":"Vazamentos de pó, produto ou óleo","FQ_1.4":"Umidade da área","FQ_1.5":"Condição e limpeza dos paletes","FQ_2.1":"Identificação dos produtos químicos","FQ_2.2":"Peso do produto e calibração","FQ_2.3":"Limpeza das embalagens de insumos","FQ_2.4":"Itens pessoais na linha","FQ_2.5":"Limpeza das ferramentas de trabalho","FQ_3.1":"Integridade da embalagem e da selagem","FQ_3.2":"Correspondência do código de barras","FQ_3.3":"Resíduos de produtos anteriores na máquina","FQ_3.4":"Risco de contaminação cruzada","FQ_3.5":"Objetos estranhos sobre máquinas e bancadas","FQ_4.1":"Disponibilidade dos corpos de prova","FQ_4.2":"Controles, monitoramentos e registros do operador","FQ_4.3":"Volume de retrabalho","FQ_4.4":"Separação e descarte de resíduos","FQ_4.5":"Boas Práticas de Fabricação (BPF)","F5S_1.1":"Marcações, etiquetas e quadros do posto","F5S_1.2":"Itens de trabalho disponíveis na linha","F5S_1.3":"Facas, vidros e objetos pontiagudos","F5S_1.4":"Improvisos e soluções provisórias no posto","F5S_1.5":"Organização contínua do posto","F5S_2.1":"Poeira e resíduos no piso, paredes e teto","F5S_2.2":"Poeira e resíduos nas partes inferiores e escondidas das máquinas","F5S_2.3":"Limpeza, organização e integridade das ferramentas","F5S_2.4":"Organização e integridade dos utensílios de limpeza","F5S_2.5":"Limpeza das bancadas de trabalho","F5S_3.1":"Locais fixos e identificação dos utensílios da linha","F5S_3.2":"Poeira ou cola dentro das máquinas e sobre componentes quentes ou elétricos","F5S_3.3":"Condição e padronização das ferramentas","F5S_3.4":"Itens de outras linhas sobre a área","F5S_3.5":"Materiais e itens pessoais sobre ou dentro da máquina","F5S_4.1":"Limpeza e armazenamento de pás e vassouras","F5S_4.2":"Limpeza da máquina","F5S_4.3":"Retirada de equipamentos quebrados ou fora de uso","F5S_4.4":"Integridade e identificação das lixeiras e bandejas coletoras","F5S_4.5":"Uso de fitas improvisadas na área","MS_1.1":"Quadros de energia e chaves gerais","MS_1.2":"Botão de parada de emergência","MS_1.3":"Extintores, hidrantes e sinalização de solo","MS_1.4":"Passagens e saídas de emergência","MS_1.5":"Caminhos e áreas de circulação","MS_2.1":"Nivelamento e integridade do piso para paleteiras","MS_2.2":"Segurança dos equipamentos durante a operação","MS_2.3":"Faixa de circulação no solo","MS_2.4":"Pó no piso e risco de escorregamento","MS_2.5":"Uso dos EPIs nas áreas obrigatórias","MS_3.1":"Integridade das estruturas metálicas e pontas cortantes","MS_3.2":"Mangueiras de alta pressão","MS_3.3":"Escoamento de água e formação de poças","MS_3.4":"Cabos de rodos, escovas e ferramentas de lavagem","MS_3.5":"Grelhas de escoamento","MS_4.1":"Fechamento e travamento dos painéis elétricos","MS_4.2":"Manípulos de movimentação de sacarias","MS_4.3":"Fiação exposta ou com isolamento improvisado","MS_4.4":"Amortecedores dos equipamentos","MS_4.5":"Integridade dos pallets e pregos expostos","MQ_1.1":"Ralos, escoamento e água parada","MQ_1.2":"Piso e encaixe dos carrinhos","MQ_1.3":"Quinas entre paredes e piso","MQ_1.4":"Cabos e conduítes sobre o misturador","MQ_1.5":"Sinais de pragas nas estruturas e cantos","MQ_2.1":"Pó e sujeira no piso sob as juntas e saídas da máquina","MQ_2.2":"Vedação do acoplamento durante a descarga","MQ_2.3":"Limpeza interna dos carrinhos","MQ_2.4":"Vedação das conexões de descarga","MQ_2.5":"Integridade da carcaça e dos tubos do misturador","MQ_3.1":"Facas de abertura de sacaria e cabos de segurança","MQ_3.2":"Higiene e integridade de vassouras e rodos","MQ_3.3":"Integridade e limpeza de baldes e conchas","MQ_3.4":"Objetos sobre o misturador","MQ_3.5":"Limpeza das escadas de acesso ao topo","MQ_4.1":"Identificação do status e do produto no misturador","MQ_4.2":"Registros dos controles e monitoramentos","MQ_4.3":"Fechamento e proteção das sacarias de ingredientes","MQ_4.4":"Tampas e capacidade das lixeiras","MQ_4.5":"Uso correto de touca, máscara e ausência de adornos","M5S_1.1":"Organização dos materiais de limpeza","M5S_1.2":"Descarte de sacarias vazias","M5S_1.3":"Retirada de itens obsoletos e ferramentas quebradas","M5S_1.4":"Demarcação e localização dos utensílios móveis","M5S_1.5":"Disponibilidade e acesso aos cadernos de apontamento","M5S_2.1":"Estacionamento dos carrinhos nas demarcações","M5S_2.2":"Preenchimento do caderno de apontamento","M5S_2.3":"Integridade e armazenamento das mangueiras","M5S_2.4":"Integridade e limpeza das ferramentas","M5S_2.5":"Organização e limpeza das escadas","M5S_3.1":"Retirada de equipamentos quebrados ou fora de uso","M5S_3.2":"Integridade das proteções contra impacto de carrinhos","M5S_3.3":"Limpeza e integridade de paredes e estruturas","M5S_3.4":"Objetos pessoais ou estranhos sobre máquinas e bancadas","M5S_3.5":"Descarte de resíduos e sobras","M5S_4.1":"Limpeza do piso da área de trabalho","M5S_4.2":"Integridade, limpeza e armazenamento dos escovões e materiais de lavagem","M5S_4.3":"Mofo, lodo e respingos nas paredes e no teto da lavagem","M5S_4.4":"Limpeza de cantos e locais de difícil acesso","M5S_4.5":"Integridade e limpeza das estruturas e partes metálicas dos equipamentos"};
+    const CRITERIA_WORDING_OVERRIDES = {"FS_1.2":{"1":"Nenhum operador abriu um registro de Olhar Seguro no último mês.","5":"Os operadores abriram registros de Olhar Seguro no último mês."},"FS_3.4":{"1":"Há vazamento ou poeira suspensa em grande quantidade, expondo os operadores a risco à saúde.","3":"Há vazamento ou poeira suspensa em quantidade moderada, com possibilidade de exposição dos operadores.","5":"Não há vazamentos nem exposição que represente risco à saúde dos operadores."},"FS_3.5":{"1":"Pallets ou carrinhos estão fora das faixas de sinalização e bloqueiam a circulação ou criam risco de acidente.","4":"Um pallet ou carrinho está ligeiramente fora da faixa de sinalização, sem bloquear a passagem.","5":"Todos os pallets e carrinhos estão posicionados dentro das faixas de sinalização."},"FQ_1.4":{"1":"A área apresenta umidade intensa, com acúmulo de água ou piso molhado.","3":"Há pequenos pontos de umidade acumulada na área.","5":"A área está seca, sem sinais de umidade."},"FQ_1.5":{"1":"Paletes estão quebrados, deformados ou sem condições seguras de uso.","3":"Paletes apresentam desgaste, mas ainda podem ser utilizados com segurança.","5":"Todos os paletes estão limpos e em boas condições de uso."},"FQ_2.3":{"1":"Embalagens de insumos apresentam sujeira ou contaminação visível.","3":"Algumas embalagens apresentam resíduos ou sinais de contaminação que exigem limpeza.","5":"Embalagens de insumos estão limpas e sem sinais de contaminação."},"FQ_4.4":{"1":"Resíduos ou sacarias foram deixados fora do recipiente de descarte.","2":"Sacaria ou recipiente de descarte foi trocado, misturando resíduos de tipos diferentes.","3":"Pelo menos um resíduo foi depositado na lixeira incorreta.","5":"Todos os resíduos foram descartados nos recipientes corretos, seguindo as boas práticas."},"FQ_4.5":{"1":"Mais de um desvio de Boas Práticas de Fabricação (BPF) foi identificado no posto.","3":"Foi identificado um desvio pontual de Boas Práticas de Fabricação (BPF).","5":"Nenhum desvio de Boas Práticas de Fabricação (BPF) foi identificado."},"F5S_1.2":{"1":"Mais de um item necessário para o trabalho está faltando na linha.","3":"Um item necessário para o trabalho está faltando na linha.","5":"Todos os itens necessários para o trabalho estão presentes na linha."},"F5S_1.3":{"1":"Facas, vidros quebrados ou objetos pontiagudos estão espalhados ou guardados em local inadequado.","3":"Algumas facas ou objetos pontiagudos estão fora do local de armazenamento definido.","5":"Facas e objetos pontiagudos estão guardados corretamente, sem itens espalhados na área."},"F5S_3.2":{"1":"Há grande acúmulo de poeira ou cola dentro da máquina ou sobre componentes quentes/elétricos.","2":"Há acúmulo visível de poeira ou cola em vários pontos internos da máquina.","3":"Há acúmulo moderado de poeira ou cola em alguns pontos internos da máquina.","4":"Há pequena quantidade de poeira ou cola em um ponto isolado, sem acúmulo relevante.","5":"O interior da máquina e os componentes quentes/elétricos estão sem acúmulo de poeira ou cola."},"F5S_4.4":{"1":"Lixeiras ou bandejas coletoras estão ausentes ou quebradas.","3":"Lixeiras ou bandejas coletoras estão danificadas ou sem identificação.","5":"Todas as lixeiras e bandejas coletoras estão íntegras e identificadas."},"MS_1.3":{"1":"Extintores ou hidrantes estão bloqueados, ou a sinalização de solo está ausente ou ilegível.","2":"Há obstáculos próximos aos extintores/hidrantes ou a sinalização de solo está parcialmente obstruída.","4":"Acesso está livre, mas a pintura ou as placas de sinalização apresentam desgaste leve.","5":"Extintores e hidrantes estão acessíveis, lacres/selo de inspeção íntegros e sinalização de solo visível."},"MS_2.1":{"1":"Há buracos ou desníveis críticos no piso, com risco de tombamento da paleteira ou da carga.","2":"Há buracos no piso que geram risco real de tombamento da paleteira ou da carga.","3":"Há rachaduras, ondulações ou buracos leves que dificultam a movimentação da paleteira.","4":"Há pequena irregularidade no piso, sem afetar o deslocamento da paleteira.","5":"O piso está nivelado e sem buracos que ofereçam risco à paleteira ou à carga."},"MS_2.2":{"1":"Um equipamento apresenta risco imediato durante o funcionamento ou o procedimento de segurança não está sendo seguido, com perigo de acidente.","3":"Há condição de risco em evolução no equipamento ou falha no procedimento que pode se agravar se não for corrigida.","5":"Equipamentos funcionam sem riscos identificados e os operadores seguem os procedimentos de segurança."},"MS_3.4":{"1":"Cabos de rodos, escovas ou ferramentas de lavagem estão quebrados ou ausentes.","2":"Cabos de rodos, escovas ou ferramentas de lavagem apresentam remendos ou improvisos.","5":"Cabos de rodos, escovas e ferramentas de lavagem estão íntegros, sem remendos ou improvisos."},"M5S_3.5":{"1":"Sacarias ou resíduos estão fora do recipiente ou local de descarte definido.","2":"Sacarias foram colocadas no recipiente ou fluxo de descarte incorreto.","5":"Resíduos e sobras são descartados corretamente, conforme o manual de boas práticas."},"M5S_4.1":{"1":"O piso da área de trabalho apresenta sujeira intensa ou manchas críticas.","2":"Há sujeira impregnada no piso da área de trabalho, exigindo limpeza.","3":"Há manchas moderadas no piso da área de trabalho.","5":"O piso da área de trabalho está limpo, sem manchas ou sujeira impregnada."}};
+    const QUESTION_WORDING_OVERRIDES = {"MS_3.4":{"old":"Os cabos de rodos, escovas e demais ferramentas de lavagem estão íntegros e sem \"gambiarras","new":"Os cabos de rodos, escovas e demais ferramentas de lavagem estão íntegros e sem improvisos (\"gambiarras\")?"},"MQ_4.5":{"old":"Os operadores estão com toca/máscara corretas e sem adornos?","new":"Os operadores estão usando touca e máscara corretamente e sem adornos?"}};
+
+    function upgradeCriteriaClarity(config) {
+      if (!config || !config.checklists) return false;
+      let changed = false;
+      Object.values(config.checklists).forEach(checklist => {
+        (checklist.questoes || []).forEach(question => {
+          const baseline = CRITERIA_LEGACY_BASELINE[question.id];
+          const context = CRITERIA_CONTEXT_LABELS[question.id];
+          if (!baseline || !context) return;
+          question.criterios = question.criterios || {};
+          [1,2,3,4,5].forEach(score => {
+            const oldText = baseline[String(score)];
+            const currentText = question.criterios[score];
+            if (!oldText || typeof currentText !== "string" || currentText.trim() !== oldText.trim()) return;
+            const override = CRITERIA_WORDING_OVERRIDES[question.id] && CRITERIA_WORDING_OVERRIDES[question.id][score];
+            const rawText = oldText.trim().replace(/\s+/g, " ");
+            const cleanText = rawText.charAt(0).toLocaleLowerCase("pt-BR") + rawText.slice(1);
+            const sentence = cleanText.endsWith(".") || cleanText.endsWith("!") || cleanText.endsWith("?") ? cleanText : cleanText + ".";
+            question.criterios[score] = override || `${context}: ${sentence}`;
+            changed = true;
+          });
+          const questionFix = QUESTION_WORDING_OVERRIDES[question.id];
+          if (questionFix && question.pergunta === questionFix.old) {
+            question.pergunta = questionFix.new;
+            changed = true;
+          }
+        });
+      });
+      if (changed) config.version = "2.2.0";
+      return changed;
+    }
+
     const AUDIT_HISTORY_DB = "somoghiroaudit-history-db";
     const AUDIT_HISTORY_DB_VERSION = 2;
     const AUDIT_HISTORY_STORE = "audits";
@@ -1028,13 +1070,19 @@
       return { valid: true, config: normalized, totalQuestions };
     }
 
+    // Atualiza os critérios originais usados quando ainda não existe configuração salva.
+    upgradeCriteriaClarity(DEFAULT_CONFIG);
+
     function loadSavedConfig() {
       const saved = safeStorageGet(CONFIG_STORAGE_KEY);
       if (!saved) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       try {
         const parsed = JSON.parse(saved);
         const result = validateImportedConfig(parsed);
-        return result.valid ? result.config : JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        if (!result.valid) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        const upgraded = upgradeCriteriaClarity(result.config);
+        if (upgraded) safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
+        return result.config;
       } catch (error) {
         console.warn("Configuração importada anteriormente não pôde ser carregada:", error);
         return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
@@ -3090,6 +3138,49 @@
     const ConfiguracoesModule = {
       selectedChecklistId: "Fabrica_Seguranca",
 
+      persistConfigStatusOnly() {
+        const status = document.getElementById("cfg-save-status");
+        if (status && safeStorageGet(CONFIG_STORAGE_KEY)) {
+          status.textContent = "Alterações salvas automaticamente neste navegador.";
+          status.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1";
+        }
+      },
+
+      persistConfig(showToast = false) {
+        const saved = safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(AppState.config));
+        const status = document.getElementById("cfg-save-status");
+        if (status) {
+          status.textContent = saved
+            ? `Salvo automaticamente neste navegador às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`
+            : "Não foi possível salvar. Exporte a configuração para não perder as alterações.";
+          status.className = saved
+            ? "text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1"
+            : "text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1";
+        }
+        if (!saved) App.showToast("Não foi possível salvar a configuração neste navegador. Exporte o JSON para guardar as alterações.", "error");
+        else if (showToast) App.showToast("Critérios e perguntas salvos. As próximas auditorias usarão esta configuração.", "success");
+        return saved;
+      },
+
+      exportConfigJSON() {
+        try {
+          const payload = JSON.stringify(AppState.config, null, 2);
+          const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `SomoGhiro_Checklists_${new Date().toISOString().slice(0,10)}.json`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+          App.showToast("Configuração atual exportada em JSON.", "success");
+        } catch (error) {
+          console.error("Erro ao exportar configuração:", error);
+          App.showToast("Não foi possível exportar a configuração: " + error.message, "error");
+        }
+      },
+
       render() {
         const select = document.getElementById("cfg-checklist-select");
         const keys = Object.keys(AppState.config.checklists);
@@ -3099,6 +3190,7 @@
         }).join("");
         const chk = AppState.config.checklists[this.selectedChecklistId];
         if (!chk) return;
+        this.persistConfigStatusOnly();
         document.getElementById("cfg-pass-threshold").value = chk.limiteMediaConforme;
         this.renderRatingRules(chk);
         this.renderQuestionsList(chk);
@@ -3113,6 +3205,7 @@
         const val = parseFloat(document.getElementById("cfg-pass-threshold").value);
         if (!isNaN(val) && val >= 1 && val <= 5) {
           AppState.config.checklists[this.selectedChecklistId].limiteMediaConforme = val;
+          this.persistConfig();
           App.showToast("Meta de média atualizada.", "success");
           AuditoriaModule.updateChecklistPreview();
         }
@@ -3152,6 +3245,7 @@
         if (field === "gerarRegistro" && value && !chk.regrasNotas[nota].tipoRegistro) {
           chk.regrasNotas[nota].tipoRegistro = nota <= 2 ? "Anomalia" : "Melhoria";
         }
+        this.persistConfig();
         App.showToast(`Regra da nota ${nota} atualizada.`, "info");
       },
 
@@ -3196,18 +3290,21 @@
         const temp = chk.questoes[index];
         chk.questoes[index] = chk.questoes[target];
         chk.questoes[target] = temp;
+        this.persistConfig();
         this.render();
       },
 
       toggleQuestionActive(index) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
         chk.questoes[index].ativa = chk.questoes[index].ativa === false ? true : false;
+        this.persistConfig();
         this.render();
       },
 
       deleteQuestion(index) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
         chk.questoes.splice(index, 1);
+        this.persistConfig();
         this.render();
         AuditoriaModule.updateChecklistPreview();
         App.showToast("Questão removida.", "info");
@@ -3271,9 +3368,10 @@
           chk.questoes.push({ id: `${this.selectedChecklistId}_${Date.now()}`, codigo, grupo, pergunta, ativa: true, criterios });
         }
         App.closeModal();
+        this.persistConfig();
         this.render();
         AuditoriaModule.updateChecklistPreview();
-        App.showToast("Questão salva!", "success");
+        App.showToast("Questão, pergunta e critérios salvos automaticamente!", "success");
       },
 
       confirmRestoreDefaults() {
@@ -3290,7 +3388,7 @@
 
       restoreDefaults() {
         AppState.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        try { window.localStorage.removeItem(CONFIG_STORAGE_KEY); } catch (error) { console.warn("Não foi possível limpar a configuração salva:", error); }
+        this.persistConfig();
         App.closeModal();
         this.render();
         AuditoriaModule.initSetupForm();
@@ -3308,6 +3406,7 @@
           content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
           const parsed = JSON.parse(content);
           const result = validateImportedConfig(parsed);
+          if (result.valid) upgradeCriteriaClarity(result.config);
           if (!result.valid) {
             App.showToast("Arquivo inválido: " + result.errors.slice(0, 2).join(" "), "error");
             if (result.errors.length > 2) console.error("Erros na configuração importada:", result.errors);
@@ -3323,7 +3422,7 @@
           if (!confirmed) return;
 
           AppState.config = result.config;
-          const saved = safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
+          const saved = ConfiguracoesModule.persistConfig();
           ConfiguracoesModule.selectedChecklistId = null;
           ConfiguracoesModule.render();
           if (!AppState.audit) AuditoriaModule.initSetupForm();
