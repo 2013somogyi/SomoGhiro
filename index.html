@@ -429,17 +429,34 @@
           <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
         <h3 class="text-lg font-bold">Nenhuma auditoria no histórico</h3>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Finalize uma auditoria para que ela seja arquivada e fique disponível aqui por 15 minutos.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Ao finalizar uma auditoria, ela será arquivada automaticamente e ficará disponível aqui por 15 minutos.</p>
         <button onclick="App.navigate('auditoria')" class="mt-5 px-5 py-3 rounded-xl bg-blue-600 text-white text-base font-bold hover:bg-blue-700 transition">
           Configurar Nova Auditoria
         </button>
       </div>
-      <div id="rev-profile-prompt" class="hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center">
-        <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100">Selecione uma auditoria para abrir seu perfil</h3>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Use “Abrir perfil” no cartão da auditoria para consultar questões, respostas, responsáveis, métricas e editar as informações.</p>
+      <div id="rev-profile-prompt" class="hidden rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-6 text-center space-y-3">
+        <div>
+          <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100">Auditoria em andamento</h3>
+          <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">A sessão continua salva automaticamente. Você pode consultar seu perfil sem finalizar.</p>
+        </div>
+        <button id="rev-current-audit-profile-btn" type="button" onclick="RevisaoModule.viewCurrentAudit()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold">Abrir perfil da auditoria em andamento</button>
       </div>
 
-      <div id="revisao-content" class="hidden space-y-5">
+
+    </section>
+
+
+    <!-- ========== TELA INDEPENDENTE: PERFIL DA AUDITORIA ========== -->
+    <section id="view-perfil-auditoria" class="hidden space-y-5 animate-fade-in">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <button type="button" onclick="App.navigate('revisao')" class="inline-flex items-center justify-center gap-2 self-start px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-extrabold shadow-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+          Voltar às auditorias arquivadas
+        </button>
+        <span id="rev-profile-back-label" class="text-xs text-slate-500 dark:text-slate-400">Perfil individual • análise completa • edição dos registros</span>
+      </div>
+      <div id="rev-profile-error" class="hidden rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/30 p-4 text-sm text-rose-800 dark:text-rose-200" role="alert" aria-live="polite"></div>
+      <div id="revisao-content" class="space-y-5">
         <div class="bg-slate-900 dark:bg-slate-800 text-white rounded-2xl p-5 sm:p-6 shadow-lg flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
@@ -451,7 +468,7 @@
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button id="rev-resume-btn" type="button" onclick="App.navigate('auditoria')" class="hidden px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm font-bold border border-slate-700 transition text-center">Retomar auditoria</button>
-            <button id="rev-finish-btn" type="button" onclick="App.confirmFinishAudit()" class="hidden px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-extrabold transition text-center">Finalizar e arquivar</button>
+            <button id="rev-finish-btn" type="button" onclick="App.confirmFinishAudit()" class="hidden px-3 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-extrabold transition text-center">Finalizar auditoria</button>
           </div>
         </div>
 
@@ -1991,23 +2008,132 @@
      * Recupera o checklist associado à auditoria, inclusive em arquivos antigos sem snapshot completo.
      * Prioriza o snapshot original; usa os IDs das respostas e a configuração atual somente como contingência.
      */
+    /** Retorna o mapa de respostas mesmo quando o registro veio de uma versão anterior. */
+    function getAuditResponseMap(audit) {
+      const candidates = [audit?.responses, audit?.respostas, audit?.answers];
+      return candidates.find(value => value && typeof value === "object" && Object.keys(value).length) || {};
+    }
+
+    /** Recupera as linhas registradas, inclusive quando um arquivo antigo só preservou o mapa de respostas. */
+    function getAuditLines(audit) {
+      if (Array.isArray(audit?.linhas) && audit.linhas.length) return [...new Set(audit.linhas.map(String))];
+
+      const responseMap = getAuditResponseMap(audit);
+      const stored = audit?.checklistSnapshot || {};
+      const configured = AppState.config?.checklists?.[`${audit?.macroarea}_${audit?.tipo}`] || {};
+      const knownQuestionIds = new Set([
+        ...(Array.isArray(stored.questoes) ? stored.questoes : []),
+        ...(Array.isArray(configured.questoes) ? configured.questoes : [])
+      ].map(question => String(question?.id || "")).filter(Boolean));
+
+      const responseKeys = Object.keys(responseMap || {});
+      const nestedLineKeys = new Set();
+      responseKeys.forEach(key => {
+        const nested = responseMap[key];
+        if (!nested || typeof nested !== "object" || Array.isArray(nested)) return;
+        if (knownQuestionIds.has(String(key))) Object.keys(nested).forEach(line => nestedLineKeys.add(String(line)));
+      });
+      if (nestedLineKeys.size) return [...nestedLineKeys];
+
+      // Formato legado invertido: linha -> questão -> resposta.
+      const reverseQuestionKeys = new Set();
+      responseKeys.forEach(line => {
+        const nested = responseMap[line];
+        if (!nested || typeof nested !== "object" || Array.isArray(nested)) return;
+        Object.keys(nested).forEach(questionId => {
+          if (knownQuestionIds.has(String(questionId))) reverseQuestionKeys.add(String(line));
+        });
+      });
+      if (reverseQuestionKeys.size) return [...reverseQuestionKeys];
+      return [];
+    }
+
+    /** Lê uma resposta nos formatos atual e legado, sem alterar os dados persistidos. */
+    function getAuditResponse(audit, questionId, line) {
+      const responseMap = getAuditResponseMap(audit);
+      const direct = responseMap?.[questionId]?.[line];
+      const reverse = responseMap?.[line]?.[questionId];
+      const response = direct ?? reverse ?? null;
+      if (response == null) return null;
+      if (typeof response === "number" || (typeof response === "string" && /^\d+(?:[.,]\d+)?$/.test(response.trim()))) {
+        const score = Number(String(response).replace(",", "."));
+        return Number.isFinite(score) ? { status: "rated", nota: score } : null;
+      }
+      if (typeof response !== "object") return null;
+      const normalized = { ...response };
+      const scoreValue = normalized.nota ?? normalized.score ?? normalized.value;
+      const score = Number(String(scoreValue ?? "").replace(",", "."));
+      if ((!normalized.status || normalized.status === "pending") && Number.isFinite(score) && score >= 1 && score <= 5) {
+        normalized.status = "rated";
+        normalized.nota = score;
+      }
+      if (normalized.status === "not_applicable" || normalized.status === "N/A") normalized.status = "na";
+      return normalized;
+    }
+
+    /** Converte respostas de versões anteriores para o formato atual questão -> linha -> resposta. */
+    function normalizeAuditResponses(audit) {
+      const checklist = getAuditChecklistSnapshot(audit);
+      const questions = ChecklistsModule.getActiveQuestions(checklist);
+      const lines = getAuditLines(audit);
+      if (!questions.length || !lines.length) return getAuditResponseMap(audit);
+
+      const normalized = {};
+      questions.forEach(question => {
+        normalized[question.id] = {};
+        lines.forEach(line => {
+          const response = getAuditResponse(audit, question.id, line);
+          normalized[question.id][line] = response
+            ? JSON.parse(JSON.stringify(response))
+            : { status: "pending", nota: null, manualDescription: "" };
+        });
+      });
+      return normalized;
+    }
+
+    /**
+     * Recupera o checklist original da auditoria, inclusive em arquivos antigos sem snapshot completo.
+     * A ordem de preferência é: snapshot arquivado, IDs das questões salvas, configuração atual.
+     */
     function getAuditChecklistSnapshot(audit) {
       if (!audit) return null;
       const stored = audit.checklistSnapshot && typeof audit.checklistSnapshot === "object"
         ? audit.checklistSnapshot
         : {};
-      const storedQuestions = Array.isArray(stored.questoes) ? stored.questoes : [];
-      const responseIds = Object.keys(audit.responses || {});
+      const storedQuestions = Array.isArray(stored.questoes)
+        ? stored.questoes
+        : (Array.isArray(stored.questions) ? stored.questions : []);
       const currentKey = `${audit.macroarea}_${audit.tipo}`;
       const configured = AppState.config?.checklists?.[currentKey] || {};
       const configuredQuestions = Array.isArray(configured.questoes) ? configured.questoes : [];
+      const responses = getAuditResponseMap(audit);
+      const configuredIds = new Set(configuredQuestions.map(question => String(question?.id || "")).filter(Boolean));
+      const storedIds = new Set(storedQuestions.map(question => String(question?.id || "")).filter(Boolean));
+
+      let questionIds = Array.isArray(audit.questionIds) ? audit.questionIds.map(String) : [];
+      if (!questionIds.length) {
+        const responseKeys = Object.keys(responses || {});
+        const directIds = responseKeys.filter(key => storedIds.has(String(key)) || configuredIds.has(String(key)));
+        if (directIds.length) questionIds = directIds;
+        else {
+          const reversedIds = new Set();
+          responseKeys.forEach(line => {
+            const nested = responses[line];
+            if (!nested || typeof nested !== "object" || Array.isArray(nested)) return;
+            Object.keys(nested).forEach(key => {
+              if (storedIds.has(String(key)) || configuredIds.has(String(key))) reversedIds.add(String(key));
+            });
+          });
+          questionIds = [...reversedIds];
+        }
+      }
+
       const storedById = new Map(storedQuestions.filter(question => question?.id).map(question => [String(question.id), question]));
       const configuredById = new Map(configuredQuestions.filter(question => question?.id).map(question => [String(question.id), question]));
-
-      // As chaves de resposta são a fonte mais confiável para descobrir quais questões participaram da sessão.
       let questions;
-      if (responseIds.length) {
-        questions = responseIds.map(id => {
+
+      if (questionIds.length) {
+        questions = questionIds.map(id => {
           const question = storedById.get(String(id)) || configuredById.get(String(id));
           if (question) return { ...question, ativa: true };
           return {
@@ -2064,16 +2190,17 @@
         const checklist = getAuditChecklistSnapshot(audit);
         const questions = ChecklistsModule.getActiveQuestions(checklist);
         const rules = ChecklistsModule.getRatingRules(checklist);
+        const lines = getAuditLines(audit);
         const threshold = Number(checklist.limiteMediaConforme) || 4.8;
-        let totalExpected = questions.length * audit.linhas.length;
+        let totalExpected = questions.length * lines.length;
         let totalAnswered = 0, totalNA = 0, totalPending = 0;
         let conformidades = 0, naoConformidades = 0, melhorias = 0;
 
-        const lineStats = audit.linhas.map(linha => {
+        const lineStats = lines.map(linha => {
           const areaLinha = audit.lineAreaMap?.[linha] || LineDirectory.getAreaForLine(linha, audit.macroarea);
           let sum = 0, countRated = 0, lineNA = 0, linePending = 0, lineConf = 0, lineNC = 0, lineMelh = 0;
           questions.forEach(q => {
-            const resp = audit.responses?.[q.id]?.[linha];
+            const resp = getAuditResponse(audit, q.id, linha);
             if (!resp || resp.status === "pending") { linePending++; totalPending++; }
             else if (resp.status === "na") { lineNA++; totalNA++; totalAnswered++; }
             else if (resp.status === "rated" && resp.nota >= 1 && resp.nota <= 5) {
@@ -2096,8 +2223,8 @@
         const groupMap = {};
         questions.forEach(q => {
           if (!groupMap[q.grupo]) groupMap[q.grupo] = { grupo: q.grupo, sum: 0, count: 0 };
-          audit.linhas.forEach(linha => {
-            const resp = audit.responses?.[q.id]?.[linha];
+          lines.forEach(linha => {
+            const resp = getAuditResponse(audit, q.id, linha);
             if (resp && resp.status === "rated" && resp.nota >= 1 && resp.nota <= 5) {
               groupMap[q.grupo].sum += Number(resp.nota);
               groupMap[q.grupo].count++;
@@ -2886,7 +3013,7 @@
       startAudit(event) {
         event.preventDefault();
         if (AppState.audit) {
-          App.showToast("Finalize ou arquive a auditoria atual antes de iniciar outra.", "error");
+          App.showToast("Finalize a auditoria atual antes de iniciar outra; o arquivamento será automático.", "error");
           return;
         }
         const macroarea = this.selectedMacro;
@@ -2955,6 +3082,7 @@
           lineAreaMap,
           linhas: selectedLinhas,
           checklistSnapshot,
+          questionIds: activeQuestions.map(question => String(question.id)),
           responses,
           occurrences: []
         };
@@ -3526,117 +3654,166 @@
     };
 
     const RevisaoModule = {
+      /** Renderiza somente a tela de auditorias arquivadas. */
       render() {
         const availableAudits = this.getAvailableAudits();
         this.renderHistoryList();
+
         const emptyEl = document.getElementById("revisao-empty-state");
-        const contentEl = document.getElementById("revisao-content");
         const promptEl = document.getElementById("rev-profile-prompt");
-
-        let selectedArchive = AppState.reviewAuditId
-          ? availableAudits.find(item => item.id === AppState.reviewAuditId) || null
-          : null;
-        if (AppState.reviewAuditId && !selectedArchive) AppState.reviewAuditId = null;
-
-        const isArchived = !!selectedArchive;
-        const audit = selectedArchive || AppState.audit || null;
         const hasHistory = availableAudits.length > 0;
+        const hasActiveAudit = !!AppState.audit;
 
-        if (emptyEl) emptyEl.classList.toggle("hidden", !!audit || hasHistory);
-        if (contentEl) contentEl.classList.toggle("hidden", !audit);
-        if (promptEl) promptEl.classList.toggle("hidden", !!audit || !hasHistory);
+        if (emptyEl) emptyEl.classList.toggle("hidden", hasHistory || hasActiveAudit);
+        if (promptEl) promptEl.classList.toggle("hidden", !hasActiveAudit);
+
+        const activeButton = document.getElementById("rev-current-audit-profile-btn");
+        if (activeButton) activeButton.classList.toggle("hidden", !hasActiveAudit);
 
         const newBtn = document.getElementById("rev-new-audit-btn");
-        if (newBtn) newBtn.classList.toggle("hidden", !!AppState.audit);
-        if (!audit) return;
-
-        const resumeBtn = document.getElementById("rev-resume-btn");
-        const finishBtn = document.getElementById("rev-finish-btn");
-        if (resumeBtn) resumeBtn.classList.toggle("hidden", !AppState.audit || isArchived);
-        if (finishBtn) finishBtn.classList.toggle("hidden", !AppState.audit || isArchived);
-
-        const headerBadge = document.querySelector("#revisao-content .bg-blue-500\/20");
-        if (headerBadge) headerBadge.textContent = isArchived ? "Perfil arquivado" : "Auditoria em andamento";
-
-        // A leitura de uma auditoria arquivada não deve reexecutar classificação nem alterar seus dados.
-        if (!isArchived) AnomaliasModule.syncOccurrences(audit);
-
-        const resolvedChecklist = getAuditChecklistSnapshot(audit);
-        const originalQuestionCount = Array.isArray(audit.checklistSnapshot?.questoes)
-          ? audit.checklistSnapshot.questoes.length
-          : 0;
-        if (resolvedChecklist && (!audit.checklistSnapshot || originalQuestionCount === 0)) {
-          audit.checklistSnapshot = resolvedChecklist;
-          if (isArchived) {
-            AuditHistoryStore.save(audit).catch(error => console.warn("Não foi possível completar o snapshot da auditoria arquivada:", error));
-          }
-        }
-
-        const metrics = CalculosModule.computeAuditMetrics(audit);
-        const lines = Array.isArray(audit.linhas) ? audit.linhas : [];
-
-        document.getElementById("rev-header-meta").textContent = `${CalculosModule.formatDateBR(audit.data)} • ${audit.turno || "Turno não informado"}${isArchived ? ` • Finalizada em ${audit.finalizadaEm ? new Date(audit.finalizadaEm).toLocaleString("pt-BR") : "data não registrada"}` : " • Em andamento"}`;
-        document.getElementById("rev-header-title").textContent = `Perfil: ${ChecklistsModule.getTipoName(audit.tipo)} — ${ChecklistsModule.getMacroareaName(audit.macroarea)}`;
-        document.getElementById("rev-header-sub").textContent = `Área(s): ${audit.areaNome || "Não informada"} | Linhas: ${lines.join(", ") || "Não informadas"} | Auditor: ${audit.auditor || "Não informado"}`;
-
-        this.renderValidationWarnings(audit, metrics);
-
-        const kpiContainer = document.getElementById("rev-kpi-cards");
-        const kpis = [
-          { label: "Média Geral", value: metrics.generalAverage !== null ? metrics.generalAverage.toFixed(2).replace(".", ",") : "—", color: "text-blue-700 dark:text-blue-400" },
-          { label: "Respondidas", value: `${metrics.totalAnswered}/${metrics.totalExpected}`, color: "text-slate-900 dark:text-slate-100" },
-          { label: "Pendentes", value: metrics.totalPending, color: metrics.totalPending > 0 ? "text-amber-600 dark:text-amber-400" : "text-slate-400" },
-          { label: "Conformidades", value: metrics.conformidades, color: "text-emerald-600 dark:text-emerald-400" },
-          { label: "Não Conformidades", value: metrics.naoConformidades, color: "text-rose-600 dark:text-rose-400" },
-          { label: "Melhorias", value: metrics.melhorias, color: "text-amber-600 dark:text-amber-400" }
-        ];
-        kpiContainer.innerHTML = kpis.map(k => `
-          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">${k.label}</p>
-            <p class="text-2xl font-black mt-1 ${k.color}">${k.value}</p>
-          </div>`).join("");
-
-        document.getElementById("rev-threshold-info").textContent =
-          `Meta Conforme: ≥ ${metrics.threshold.toFixed(1).replace(".", ",")} | Melhoria: ≥ 3,0 | NC: < 3,0`;
-
-        this.renderAuditCharts(audit, metrics);
-        this.renderQuestionDetails(audit, isArchived);
-
-        const linesContainer = document.getElementById("rev-lines-cards");
-        linesContainer.innerHTML = metrics.lineStats.map(ls => `
-          <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col justify-between gap-2">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <span class="font-extrabold text-base">Linha ${escapeHTML(ls.linha)}</span>
-                <span class="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">${escapeHTML(ls.area)}</span>
-              </div>
-              <span class="px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-bold border ${ls.classification.badgeClass}">${escapeHTML(ls.classification.label)}</span>
-            </div>
-            <div class="flex items-baseline justify-between mt-1">
-              <div>
-                <span class="text-2xl font-black">${ls.average !== null ? ls.average.toFixed(2).replace(".", ",") : "—"}</span>
-                <span class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 ml-1">média (${ls.countRated} avaliadas${ls.lineNA > 0 ? `, ${ls.lineNA} N/A` : ""})</span>
-              </div>
-              <div class="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300">
-                <span class="text-rose-600 dark:text-rose-400">${ls.lineNC} NC</span> • <span class="text-amber-600 dark:text-amber-400">${ls.lineMelh} Melh.</span>
-              </div>
-            </div>
-          </div>`).join("");
-
-        document.getElementById("dl-responsaveis").innerHTML = AppState.config.sugestoesBase.responsaveis.map(responsavel =>
-          `<option value="${escapeHTML(responsavel)}">`
-        ).join("");
-        document.getElementById("dl-observacoes").innerHTML = AppState.config.sugestoesBase.observacoes.map(observacao =>
-          `<option value="${escapeHTML(observacao)}">`
-        ).join("");
-        this.renderOccurrencesTable(audit.occurrences || [], isArchived);
-        this.renderRoutingSummary(audit.occurrences || []);
+        if (newBtn) newBtn.classList.toggle("hidden", hasActiveAudit);
       },
 
       /**
-       * Renderiza gráficos simples e isolados para a auditoria atualmente selecionada.
-       * Os valores vêm exclusivamente de computeAuditMetrics(audit).
+       * Abre e monta o perfil completo em uma tela independente.
+       * Falhas isoladas de gráficos ou ocorrências não impedem a renderização das questões.
        */
+      renderProfile() {
+        const errorBox = document.getElementById("rev-profile-error");
+        if (errorBox) {
+          errorBox.classList.add("hidden");
+          errorBox.textContent = "";
+        }
+
+        const isArchived = Boolean(AppState.reviewAuditId);
+        const audit = isArchived ? this.getAuditById(AppState.reviewAuditId) : AppState.audit;
+        if (!audit) {
+          AppState.reviewAuditId = null;
+          App.navigate("revisao");
+          App.showToast("A auditoria não está mais disponível. O histórico foi atualizado.", "info");
+          return;
+        }
+
+        try {
+          // O registro arquivado mantém o snapshot original mesmo se o checklist atual for alterado depois.
+          if (!isArchived) AnomaliasModule.syncOccurrences(audit);
+          const resolvedChecklist = getAuditChecklistSnapshot(audit);
+          const activeQuestions = ChecklistsModule.getActiveQuestions(resolvedChecklist);
+          const lines = getAuditLines(audit);
+          const originalQuestions = Array.isArray(audit.checklistSnapshot?.questoes)
+            ? audit.checklistSnapshot.questoes.length
+            : 0;
+          let snapshotChanged = false;
+
+          if (!audit.checklistSnapshot || originalQuestions === 0 || !Array.isArray(audit.questionIds) || !audit.questionIds.length) {
+            audit.checklistSnapshot = JSON.parse(JSON.stringify(resolvedChecklist));
+            audit.questionIds = activeQuestions.map(question => String(question.id));
+            snapshotChanged = true;
+          }
+          if ((!Array.isArray(audit.linhas) || !audit.linhas.length) && lines.length) {
+            audit.linhas = lines;
+            snapshotChanged = true;
+          }
+          const normalizedResponses = normalizeAuditResponses(audit);
+          if (normalizedResponses && Object.keys(normalizedResponses).length) {
+            const currentResponsesJSON = JSON.stringify(audit.responses || {});
+            audit.responses = normalizedResponses;
+            if (currentResponsesJSON !== JSON.stringify(normalizedResponses)) snapshotChanged = true;
+          } else if (!audit.responses || typeof audit.responses !== "object") {
+            audit.responses = {};
+            snapshotChanged = true;
+          }
+
+          // Completa respostas ausentes como pendentes, mantendo notas e informações já registradas.
+          activeQuestions.forEach(question => {
+            if (!audit.responses[question.id] || typeof audit.responses[question.id] !== "object") {
+              audit.responses[question.id] = {};
+              snapshotChanged = true;
+            }
+            (audit.linhas || lines).forEach(line => {
+              if (audit.responses[question.id][line] === undefined) {
+                audit.responses[question.id][line] = { status: "pending", nota: null, manualDescription: "" };
+                snapshotChanged = true;
+              }
+            });
+          });
+
+          if (isArchived && snapshotChanged) {
+            AuditHistoryStore.save(audit).catch(error => console.warn("Não foi possível atualizar os dados recuperados do perfil:", error));
+          }
+
+          const profileLines = Array.isArray(audit.linhas) ? audit.linhas : lines;
+          this.renderQuestionDetails(audit, isArchived);
+          const metrics = CalculosModule.computeAuditMetrics(audit);
+          const headerBadge = document.querySelector("#revisao-content .bg-blue-500\\/20");
+          if (headerBadge) headerBadge.textContent = isArchived ? "Auditoria arquivada automaticamente" : "Auditoria em andamento";
+
+          const resumeBtn = document.getElementById("rev-resume-btn");
+          const finishBtn = document.getElementById("rev-finish-btn");
+          if (resumeBtn) resumeBtn.classList.toggle("hidden", !AppState.audit || isArchived);
+          if (finishBtn) finishBtn.classList.toggle("hidden", !AppState.audit || isArchived);
+          const profileBackLabel = document.getElementById("rev-profile-back-label");
+          if (profileBackLabel) profileBackLabel.textContent = isArchived ? "Auditoria arquivada" : "Auditoria em andamento";
+
+          document.getElementById("rev-header-meta").textContent = `${CalculosModule.formatDateBR(audit.data)} • ${audit.turno || "Turno não informado"}${isArchived ? ` • Finalizada em ${audit.finalizadaEm ? new Date(audit.finalizadaEm).toLocaleString("pt-BR") : "data não registrada"}` : " • Em andamento"}`;
+          document.getElementById("rev-header-title").textContent = `Perfil: ${ChecklistsModule.getTipoName(audit.tipo)} — ${ChecklistsModule.getMacroareaName(audit.macroarea)}`;
+          document.getElementById("rev-header-sub").textContent = `Área(s): ${audit.areaNome || "Não informada"} | Linhas: ${profileLines.join(", ") || "Não informadas"} | Auditor: ${audit.auditor || "Não informado"}`;
+
+          this.renderValidationWarnings(audit, metrics);
+          const kpiContainer = document.getElementById("rev-kpi-cards");
+          const kpis = [
+            { label: "Média Geral", value: metrics.generalAverage !== null ? metrics.generalAverage.toFixed(2).replace(".", ",") : "—", color: "text-blue-700 dark:text-blue-400" },
+            { label: "Respondidas", value: `${metrics.totalAnswered}/${metrics.totalExpected}`, color: "text-slate-900 dark:text-slate-100" },
+            { label: "Pendentes", value: metrics.totalPending, color: metrics.totalPending > 0 ? "text-amber-600 dark:text-amber-400" : "text-slate-400" },
+            { label: "Conformidades", value: metrics.conformidades, color: "text-emerald-600 dark:text-emerald-400" },
+            { label: "Não Conformidades", value: metrics.naoConformidades, color: "text-rose-600 dark:text-rose-400" },
+            { label: "Melhorias", value: metrics.melhorias, color: "text-amber-600 dark:text-amber-400" }
+          ];
+          if (kpiContainer) kpiContainer.innerHTML = kpis.map(k => `
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+              <p class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">${k.label}</p>
+              <p class="text-2xl font-black mt-1 ${k.color}">${k.value}</p>
+            </div>`).join("");
+
+          const thresholdInfo = document.getElementById("rev-threshold-info");
+          if (thresholdInfo) thresholdInfo.textContent = `Meta Conforme: ≥ ${metrics.threshold.toFixed(1).replace(".", ",")} | Melhoria: ≥ 3,0 | NC: < 3,0`;
+
+          const linesContainer = document.getElementById("rev-lines-cards");
+          if (linesContainer) linesContainer.innerHTML = metrics.lineStats.map(item => `
+            <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col justify-between gap-2">
+              <div class="flex items-center justify-between gap-2">
+                <div><span class="font-extrabold text-base">Linha ${escapeHTML(item.linha)}</span><span class="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">${escapeHTML(item.area)}</span></div>
+                <span class="px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-bold border ${item.classification.badgeClass}">${escapeHTML(item.classification.label)}</span>
+              </div>
+              <div class="flex items-baseline justify-between mt-1">
+                <div><span class="text-2xl font-black">${item.average !== null ? item.average.toFixed(2).replace(".", ",") : "—"}</span><span class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 ml-1">média (${item.countRated} avaliadas${item.lineNA > 0 ? `, ${item.lineNA} N/A` : ""})</span></div>
+                <div class="text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300"><span class="text-rose-600 dark:text-rose-400">${item.lineNC} NC</span> • <span class="text-amber-600 dark:text-amber-400">${item.lineMelh} Melh.</span></div>
+              </div>
+            </div>`).join("");
+
+          const responsaveisList = document.getElementById("dl-responsaveis");
+          if (responsaveisList) responsaveisList.innerHTML = (AppState.config.sugestoesBase?.responsaveis || []).map(name => `<option value="${escapeHTML(name)}">`).join("");
+          const observationsList = document.getElementById("dl-observacoes");
+          if (observationsList) observationsList.innerHTML = (AppState.config.sugestoesBase?.observacoes || []).map(value => `<option value="${escapeHTML(value)}">`).join("");
+
+          this.renderAuditCharts(audit, metrics);
+          this.renderOccurrencesTable(audit.occurrences || [], isArchived);
+          this.renderRoutingSummary(audit.occurrences || []);
+
+          if (errorBox) errorBox.classList.add("hidden");
+        } catch (error) {
+          console.error("Falha ao montar o perfil completo da auditoria:", error);
+          if (errorBox) {
+            errorBox.textContent = `Não foi possível montar parte da análise: ${error.message}. As respostas originais permanecem salvas; retorne ao histórico e tente abrir novamente.`;
+            errorBox.classList.remove("hidden");
+          }
+          const detailContainer = document.getElementById("rev-question-details");
+          if (detailContainer && !detailContainer.innerHTML.trim()) {
+            detailContainer.innerHTML = `<div class="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 text-sm text-amber-900 dark:text-amber-100">A lista de questões não pôde ser montada. Detalhe técnico: ${escapeHTML(error.message || "Erro não identificado")}.</div>`;
+          }
+        }
+      },
+
       renderAuditCharts(audit, metrics) {
         const container = document.getElementById("rev-audit-charts");
         if (!container) return;
@@ -3676,16 +3853,20 @@
         const checklist = getAuditChecklistSnapshot(audit);
         const questions = ChecklistsModule.getActiveQuestions(checklist);
         const rules = ChecklistsModule.getRatingRules(checklist);
-        if (count) count.textContent = `${questions.length} questões • ${(audit.linhas || []).length} linha(s)`;
+        const lines = getAuditLines(audit);
+        if (count) count.textContent = `${questions.length} questões • ${lines.length} linha(s)`;
         if (!questions.length) {
-          container.innerHTML = `<p class="text-sm text-slate-500 dark:text-slate-400">O snapshot desta auditoria não contém questões.</p>`;
+          const responseKeys = Object.keys(getAuditResponseMap(audit) || {});
+          container.innerHTML = `<div class="rounded-xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 p-4 space-y-1"><p class="text-sm font-extrabold text-amber-900 dark:text-amber-100">As questões originais não foram encontradas neste arquivo de auditoria.</p><p class="text-xs text-amber-800 dark:text-amber-200">Respostas registradas: ${responseKeys.length} chave(s). Checklist: ${escapeHTML(`${audit.macroarea || "?"}_${audit.tipo || "?"}`)}. O sistema tentou recuperar as questões da configuração atual; não foi possível localizar os IDs correspondentes.</p></div>`;
           return;
         }
 
         container.innerHTML = questions.map((question, index) => {
-          const responseRows = (audit.linhas || []).map(line => {
-            const response = audit.responses?.[question.id]?.[line] || { status: "pending", nota: null };
-            const occurrence = (audit.occurrences || []).find(item => item.internalKey === `${question.id}__${line}`);
+          const responseRows = lines.map(line => {
+            const response = getAuditResponse(audit, question.id, line) || { status: "pending", nota: null };
+            const occurrence = (audit.occurrences || []).find(item =>
+              item.internalKey === `${question.id}__${line}` || (String(item.questionId || "") === String(question.id) && String(item.linha || "") === String(line))
+            );
             const lineArea = audit.lineAreaMap?.[line] || LineDirectory.getAreaForLine(line, audit.macroarea);
             const rated = response.status === "rated" && Number(response.nota) >= 1 && Number(response.nota) <= 5;
             const na = response.status === "na";
@@ -3697,7 +3878,7 @@
             const questionArg = `decodeURIComponent('${encodeInlineArgument(question.id)}')`;
             const lineArg = `decodeURIComponent('${encodeInlineArgument(line)}')`;
             const ownerValue = occurrence?.responsavel || "";
-            const extraDescription = response.extraDescription || "";
+            const extraDescription = response.extraDescription || response.manualDescription || "";
             return `<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 space-y-2">
               <div class="flex flex-wrap items-center gap-2">
                 <span class="rounded-lg bg-slate-900 dark:bg-slate-700 text-white px-2 py-1 text-xs font-extrabold">Linha ${escapeHTML(line)}</span>
@@ -3719,15 +3900,16 @@
               </label>
             </div>`;
           }).join("");
-          const answeredCount = (audit.linhas || []).filter(line => {
-            const response = audit.responses?.[question.id]?.[line];
+          const answeredCount = lines.filter(line => {
+            const response = getAuditResponse(audit, question.id, line);
             return response && response.status !== "pending";
           }).length;
           return `<details class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 overflow-hidden" ${index === 0 ? "open" : ""}>
             <summary class="cursor-pointer list-none flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 px-3.5 py-3 hover:bg-slate-100 dark:hover:bg-slate-800">
               <span class="text-xs font-extrabold text-blue-700 dark:text-blue-300">${escapeHTML(question.codigo || `Q${index + 1}`)}</span>
-              <span class="text-sm font-bold text-slate-800 dark:text-slate-100 flex-1">${escapeHTML(question.pergunta)}</span>
-              <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">${answeredCount}/${audit.linhas.length} respondida(s)</span>
+              <span class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">${escapeHTML(question.grupo || "Sem grupo")}</span>
+              <span class="text-sm font-bold text-slate-800 dark:text-slate-100 flex-1">${escapeHTML(question.pergunta || "Questão sem enunciado no snapshot")}</span>
+              <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">${answeredCount}/${lines.length} respondida(s)</span>
             </summary>
             <div class="border-t border-slate-200 dark:border-slate-700 p-3 grid grid-cols-1 xl:grid-cols-2 gap-2.5">${responseRows}</div>
           </details>`;
@@ -3740,14 +3922,17 @@
       async onHistoryQuestionEdit(auditId, questionId, line, field, value) {
         const audit = AppState.auditHistory.find(item => item.id === auditId && !isAuditArchiveExpired(item));
         if (!audit) return App.showToast("Esta auditoria não está mais disponível para edição.", "error");
-        const response = audit.responses?.[questionId]?.[line];
+        audit.responses = normalizeAuditResponses(audit);
+        const response = getAuditResponse(audit, questionId, line);
         if (!response) return App.showToast("Não foi possível localizar a resposta desta questão.", "error");
 
         if (field === "extraDescription") {
           response.extraDescription = String(value || "").trim();
           AnomaliasModule.syncOccurrences(audit);
         } else if (field === "responsavel") {
-          const occurrence = (audit.occurrences || []).find(item => item.internalKey === `${questionId}__${line}`);
+          const occurrence = (audit.occurrences || []).find(item =>
+            item.internalKey === `${questionId}__${line}` || (String(item.questionId || "") === String(questionId) && String(item.linha || "") === String(line))
+          );
           if (!occurrence) return App.showToast("Esta questão não possui ocorrência para atribuir responsável.", "info");
           const owner = String(value || "").trim();
           occurrence.responsavel = owner;
@@ -3769,7 +3954,7 @@
         try {
           const saved = await AuditHistoryStore.save(audit);
           if (!saved) return App.showToast("O prazo desta auditoria expirou e o registro foi removido.", "info");
-          this.render();
+          this.renderProfile();
           App.showToast(field === "responsavel" ? "Responsável atualizado e salvo." : "Descrição complementar salva.", "success");
         } catch (error) {
           console.error("Falha ao salvar alterações da auditoria arquivada:", error);
@@ -3829,7 +4014,7 @@
           let metrics = null;
           try { metrics = CalculosModule.computeAuditMetrics(item); } catch (error) { console.warn("Não foi possível calcular resumo do histórico:", error); }
           const selected = AppState.historySelectedIds.has(item.id);
-          const viewing = current ? !AppState.reviewAuditId : AppState.reviewAuditId === item.id;
+          const viewing = AppState.reviewAuditId === item.id;
           const label = current ? "Em andamento" : "Finalizada";
           const dateLabel = item.finalizadaEm ? new Date(item.finalizadaEm).toLocaleDateString("pt-BR") : CalculosModule.formatDateBR(item.data);
           const idArg = `decodeURIComponent('${encodeInlineArgument(item.id)}')`;
@@ -3850,7 +4035,7 @@
                   <div class="rounded-lg bg-white dark:bg-slate-900 px-2.5 py-2"><p class="text-[10px] uppercase font-bold text-slate-400">Ocorrências</p><p class="text-base font-black text-rose-600 dark:text-rose-300">${(item.occurrences || []).length}</p></div>
                 </div>
                 <div class="mt-3 grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                  <button type="button" onclick="RevisaoModule.viewHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg ${viewing ? "bg-blue-700" : "bg-blue-600 hover:bg-blue-700"} text-white text-xs font-extrabold">${viewing ? "Perfil aberto" : "Abrir perfil / Editar"}</button>
+                  <button type="button" onclick="RevisaoModule.viewHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg ${viewing ? "bg-blue-700" : "bg-blue-600 hover:bg-blue-700"} text-white text-xs font-extrabold">${viewing ? "Abrir perfil novamente" : "Abrir perfil / Editar"}</button>
                   <button type="button" onclick="RevisaoModule.confirmDeleteHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-extrabold">Apagar</button>
                 </div>
               </div>
@@ -3909,10 +4094,12 @@
           await AuditHistoryStore.removePermanently(id);
           AppState.auditHistory = AppState.auditHistory.filter(item => item.id !== id);
           AppState.historySelectedIds.delete(id);
-          if (AppState.reviewAuditId === id) AppState.reviewAuditId = null;
+          const wasOpen = AppState.reviewAuditId === id;
+          if (wasOpen) AppState.reviewAuditId = null;
 
           App.closeModal();
-          this.render();
+          if (wasOpen) App.navigate("revisao");
+          else this.render();
           App.scheduleArchiveRetentionCleanup();
           App.showToast("Auditoria apagada permanentemente do histórico.", "success");
         } catch (error) {
@@ -3940,11 +4127,14 @@
       viewHistoryAudit(id) {
         const audit = this.getAuditById(id);
         if (!audit) return App.showToast("Esta auditoria não está mais disponível no histórico.", "error");
-        AppState.reviewAuditId = AppState.reviewAuditId === id ? null : id;
-        this.render();
-        if (AppState.reviewAuditId) {
-          requestAnimationFrame(() => document.getElementById("revisao-content")?.scrollIntoView({ behavior: "smooth", block: "start" }));
-        }
+        AppState.reviewAuditId = id;
+        App.navigate("perfil-auditoria");
+      },
+
+      viewCurrentAudit() {
+        if (!AppState.audit) return App.showToast("Não há auditoria em andamento para abrir.", "info");
+        AppState.reviewAuditId = null;
+        App.navigate("perfil-auditoria");
       },
 
       getAuditById(id) {
@@ -3954,7 +4144,7 @@
 
       getSelectedAudit() {
         if (AppState.reviewAuditId) return this.getAuditById(AppState.reviewAuditId);
-        return AppState.audit || (AppState.auditHistory[0] || null);
+        return AppState.audit || null;
       },
 
       exportCurrentExcel() {
@@ -4136,7 +4326,7 @@
         occurrence.responsavelAutomatico = true;
         TicketRoutingModule.rerouteOccurrence(occurrence, audit);
         AuditAutosave.schedule(0);
-        this.render();
+        this.renderProfile();
         App.showToast(occurrence.responsavel ? `Chamado reclassificado para ${occurrence.responsavel}.` : "Nenhuma regra correspondeu com segurança. Encaminhado para triagem manual.", occurrence.responsavel ? "success" : "info");
       },
 
@@ -5180,13 +5370,13 @@
           AppState.historySelectedIds.forEach(id => {
             if (!retainedIds.has(id)) AppState.historySelectedIds.delete(id);
           });
-          if (AppState.reviewAuditId && !retainedIds.has(AppState.reviewAuditId)) {
-            AppState.reviewAuditId = null;
-          }
+          const openedAuditExpired = Boolean(AppState.reviewAuditId && !retainedIds.has(AppState.reviewAuditId));
+          if (openedAuditExpired) AppState.reviewAuditId = null;
 
           const historyChanged = previousIds.size !== retainedIds.size ||
             [...previousIds].some(id => !retainedIds.has(id));
-          if (historyChanged) RevisaoModule.render();
+          if (openedAuditExpired && this.currentView === "perfil-auditoria") App.navigate("revisao");
+          else if (historyChanged && this.currentView === "revisao") RevisaoModule.render();
         } catch (error) {
           console.warn("Não foi possível atualizar a retenção do histórico:", error);
         } finally {
@@ -5267,29 +5457,24 @@
       },
 
       navigate(viewName) {
-        this.currentView = viewName;
-        ["auditoria", "revisao", "configuracoes"].forEach(v => {
-          const section = document.getElementById(`view-${v}`);
-          const navBtns = document.querySelectorAll(`[data-nav="${v}"]`);
-          if (v === viewName) {
-            section.classList.remove("hidden");
-            navBtns.forEach(btn => {
-              if (btn.classList.contains("nav-drawer-btn")) {
-                btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition bg-blue-600 text-white";
-              }
-            });
-          } else {
-            section.classList.add("hidden");
-            navBtns.forEach(btn => {
-              if (btn.classList.contains("nav-drawer-btn")) {
-                btn.className = "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800";
-              }
-            });
-          }
+        const validViews = ["auditoria", "revisao", "perfil-auditoria", "configuracoes"];
+        const targetView = validViews.includes(viewName) ? viewName : "auditoria";
+        this.currentView = targetView;
+        validViews.forEach(view => {
+          const section = document.getElementById(`view-${view}`);
+          if (section) section.classList.toggle("hidden", view !== targetView);
+          const navBtns = document.querySelectorAll(`[data-nav="${view}"]`);
+          navBtns.forEach(btn => {
+            if (!btn.classList.contains("nav-drawer-btn")) return;
+            btn.className = view === targetView
+              ? "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition bg-blue-600 text-white"
+              : "nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800";
+          });
         });
-        if (viewName === "revisao") RevisaoModule.render();
-        else if (viewName === "configuracoes") ConfiguracoesModule.render();
-        else if (viewName === "auditoria") AuditoriaModule.showExecutionUI();
+        if (targetView === "revisao") RevisaoModule.render();
+        else if (targetView === "perfil-auditoria") RevisaoModule.renderProfile();
+        else if (targetView === "configuracoes") ConfiguracoesModule.render();
+        else if (targetView === "auditoria") AuditoriaModule.showExecutionUI();
         window.scrollTo({ top: 0, behavior: "smooth" });
       },
 
@@ -5335,12 +5520,12 @@
         if (missingDesc > 0) notices.push(`<li><strong>${missingDesc}</strong> ocorrência(s) sem descrição completa.</li>`);
         this.openModal(`
           <div class="space-y-4">
-            <div><span class="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">Salvar no histórico</span><h3 class="text-lg font-extrabold mt-1">Finalizar esta auditoria?</h3></div>
-            <p class="text-sm text-slate-600 dark:text-slate-300">Após a finalização, esta auditoria ficará disponível no histórico por 15 minutos para consulta e exportação. Durante a execução, a sessão ativa continuará salva automaticamente.</p>
+            <div><span class="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">Arquivamento automático</span><h3 class="text-lg font-extrabold mt-1">Finalizar esta auditoria?</h3></div>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Ao confirmar, a sessão será arquivada automaticamente e o sistema abrirá o perfil completo desta auditoria. O registro ficará disponível na aba de auditorias arquivadas por 15 minutos, sem precisar realizar outra ação.</p>
             ${notices.length ? `<div class="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-100"><p class="font-bold mb-1">Antes de finalizar:</p><ul class="list-disc pl-5 space-y-1">${notices.join("")}</ul><p class="mt-2 text-xs">Você pode continuar mesmo assim; as informações serão preservadas como estão.</p></div>` : `<p class="text-sm text-emerald-700 dark:text-emerald-300">Todas as avaliações foram preenchidas.</p>`}
             <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
               <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Continuar auditando</button>
-              <button onclick="App.finishAudit()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold">Finalizar e arquivar</button>
+              <button onclick="App.finishAudit()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-extrabold">Finalizar auditoria</button>
             </div>
           </div>`);
       },
@@ -5351,6 +5536,11 @@
         try {
           AnomaliasModule.syncOccurrences(audit);
           const archived = JSON.parse(JSON.stringify(audit));
+          const archivedChecklist = getAuditChecklistSnapshot(archived);
+          archived.checklistSnapshot = JSON.parse(JSON.stringify(archivedChecklist || {}));
+          archived.questionIds = ChecklistsModule.getActiveQuestions(archivedChecklist).map(question => String(question.id));
+          archived.linhas = getAuditLines(archived);
+          archived.responses = normalizeAuditResponses(archived);
           archived.status = "finalizada";
           const finalizedAt = new Date();
           archived.finalizadaEm = finalizedAt.toISOString();
@@ -5358,7 +5548,12 @@
           const archivedSuccessfully = await AuditHistoryStore.save(archived);
           if (!archivedSuccessfully) throw new Error("O prazo de retenção desta auditoria já terminou.");
           // A auditoria já está no histórico; remove o rascunho para não restaurá-la como ativa.
-          await AuditDraftStore.remove();
+          try {
+            await AuditDraftStore.remove();
+          } catch (draftError) {
+            // O histórico arquivado prevalece; na próxima abertura, o rascunho duplicado será removido pela verificação de IDs.
+            console.warn("O rascunho não pôde ser removido imediatamente após a finalização:", draftError);
+          }
           AppState.auditHistory = [archived, ...AppState.auditHistory.filter(item => item.id !== archived.id)]
             .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
           AppState.reviewAuditId = archived.id;
@@ -5369,8 +5564,8 @@
           if (sessionBar) sessionBar.classList.add("hidden");
           AnomaliasModule.updateNavBadge();
           this.closeModal();
-          this.navigate("revisao");
-          this.showToast("Auditoria finalizada. O histórico ficará disponível por 15 minutos.", "success");
+          this.navigate("perfil-auditoria");
+          this.showToast("Auditoria finalizada e arquivada automaticamente. O perfil completo está disponível por 15 minutos.", "success");
           this.scheduleArchiveRetentionCleanup();
         } catch (error) {
           console.error("Erro ao arquivar auditoria:", error);
