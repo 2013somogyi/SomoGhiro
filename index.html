@@ -65,7 +65,7 @@
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
     .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-    /* Report Generator Visual Enhancements & Print Media Queries */
+    /* Aprimoramentos visuais do gerador de relatórios e regras de impressão */
     .rg-card {
       transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s ease, border-color 0.18s ease;
     }
@@ -406,7 +406,7 @@
               <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16M4 19h16"/></svg>
               </span>
-              <div><h2 class="text-base sm:text-lg font-extrabold">Histórico de auditorias</h2><p id="rev-history-summary" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">As auditorias finalizadas ficam salvas neste navegador.</p></div>
+              <div><h2 class="text-base sm:text-lg font-extrabold">Histórico de auditorias</h2><p id="rev-history-summary" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">As auditorias finalizadas ficam disponíveis por 15 minutos após o encerramento.</p></div>
             </div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto">
@@ -477,6 +477,7 @@
           <datalist id="dl-responsaveis"></datalist>
           <datalist id="dl-observacoes"></datalist>
           <div id="rev-anomalias-container"></div>
+          <div id="rev-routing-summary"></div>
         </div>
       </div>
     </section>
@@ -532,6 +533,7 @@
         </div>
 
         <div class="mt-6 space-y-3" id="cfg-questions-list"></div>
+        <div class="mt-6" id="itsm-routing-settings"></div>
       </div>
     </section>
   </main>
@@ -563,7 +565,7 @@
           nome: "Envase",
           macroarea: "Fabrica",
           requerLinha: true,
-          linhas: ["11A", "11B", "18", "27", "28", "31", "32", "33", "35", "36", "37", "39", "40", "41"]
+          linhas: ["11A", "11B", "Eclusa", "18", "27", "28", "31", "32", "33", "35", "36", "37", "39", "40", "41"]
         },
         {
           id: "cha",
@@ -789,6 +791,22 @@
       }
     };
 
+    /**
+     * Converte valores externos em texto seguro para inserção em conteúdo HTML.
+     * Deve ser usado apenas nos pontos em que a interface é montada por template.
+     */
+    const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[char]));
+
+    /**
+     * Codifica um argumento antes de inseri-lo em um manipulador HTML legado.
+     * A decodificação ocorre no próprio atributo, mantendo valores com acentos e símbolos.
+     */
+    const encodeInlineArgument = value => encodeURIComponent(String(value ?? "")).replace(/[!'()*]/g, char =>
+      `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+    );
+
     const safeStorageGet = (key, fallback = null) => {
       try {
         const value = window.localStorage.getItem(key);
@@ -810,6 +828,7 @@
     };
 
     const CONFIG_STORAGE_KEY = "somoghiroaudit-imported-config-v1";
+    const ROUTING_STORAGE_KEY = "somoghiroaudit-itsm-routing-v1";
     // Revisão de clareza dos critérios (v2.2.0).
     // A migração só substitui o texto original do sistema; critérios personalizados pelo usuário são preservados.
     const CRITERIA_LEGACY_BASELINE = {"FS_1.1":{"1":"Equipamento exposto em área de operação","3":"Equipamento exposto em área sem risco","5":"Motores e esteiras protegidas"},"FS_1.2":{"1":"Não abriram Olhar Seguro","5":"Abriram Olhar Seguro"},"FS_1.3":{"1":"Mangueiras ou Paletes gerando risco","5":"Sem riscos de queda"},"FS_1.4":{"1":"Materiais apoiados sobre motor/painel ","2":"Materiais encostando ou muito perto de áreas quentes/móveis","5":"Nada próximo; área completamente livre"},"FS_1.5":{"1":"Acesso difícil OU validade vencida","2":"Acesso parcialmente obstruído OU validade quase vencendo","5":"Livre acesso, validade em dia"},"FS_2.1":{"1":"Não funciona ou impossível de acessar","2":"Sinalização desbotada/ Não identificável","4":"Sinalização levemente desgastada","5":"Visíveis, livres e funcionando"},"FS_2.2":{"1":"Não funcionam","5":"Funcionam bem"},"FS_2.3":{"1":"Removidas/faltando/quebradas","2":"Folga moderada ou peças começando a deformar.","4":"Leve desgaste ou pequena folga","5":"Fixas, íntegras e firmes"},"FS_2.4":{"1":"Sem placas obrigatórias","3":"Placas levemente desgastadas ou desbotadas","5":"Todas visíveis e legíveis"},"FS_2.5":{"1":"Painél aberto","5":"Painéis fechados e com cadeado (se houver)"},"FS_3.1":{"1":"Eletricidade exposta","3":"Fiação ressecada / mal isolada","5":"Fiação no padrão"},"FS_3.2":{"1":"Caminho bloqueado","2":"Obstrução significativa","5":"Caminho livre e demarcado"},"FS_3.3":{"1":"Chão molhado com risco imediato de queda","3":"Umidade no chão","5":"Piso totalmente seco"},"FS_3.4":{"1":"Poeira aérea densa","3":"Poeira aérea","5":"Vazamento sem riscos"},"FS_3.5":{"1":"Vazamento afetando sensores ou partes elétricas","4":"Vazamento muito leve (pontos isolados).","5":"Sem vazamentos."},"FS_4.1":{"1":"Instáveis ou inseguras","3":"Desgaste moderado","5":"Firmes e limpas"},"FS_4.2":{"1":"Estrutura solta sem parafusos","3":"Alguns parafusos faltando","5":"Parafusos e rebites presentes"},"FS_4.3":{"1":"Ajustes proibidos ","3":"Pequeno ajuste não crítico","5":"Segue integralmente"},"FS_4.4":{"1":"Vários EPIs faltando","2":"1 EPI faltando","4":"Ajuste incorreto leve (máscara abaixada, luva mal colocada)","5":"Usando tudo corretamente"},"FS_4.5":{"1":"Equipamento impactando o operador","3":"Equipamentos necessitando de reparo","5":"Equipamentos OK"},"FQ_1.1":{"1":"Superfície crítica, ferrugem ou descascando muito","4":"Pequeno desgaste","5":"Superfície perfeita, sem defeitos"},"FQ_1.2":{"1":"Vazamento claro ou vedação quebrada","5":"Tudo vedado e íntegro"},"FQ_1.3":{"1":"Vazamento acumulando no chão","3":"Vazamento controlado","5":"Sem vazamento"},"FQ_1.4":{"1":"Área molhada","3":"Pequeno acúmulo","5":"Sem sinals de umidade"},"FQ_1.5":{"1":"Paletes debilitados","3":"Paletes velhos mas utilizaveis","5":"Paletes ok"},"FQ_2.1":{"1":"Não identificados","2":"Alguns identificados","5":"Identificados"},"FQ_2.2":{"1":"Sobrepeso ou peso baixo","5":"Peso ok"},"FQ_2.3":{"1":"Contaminação evidente","3":"Risco de Contaminação","5":"Limpo"},"FQ_2.4":{"1":"Muitos itens pessoais sendo utilizados","2":"Alguns itens pessoais","5":"Sem itens pessoais"},"FQ_2.5":{"1":"Sujas","3":"Levemente sujas","5":"Limpas"},"FQ_3.1":{"1":"Embalagem ruim","3":"Algumas ruins","5":"Embalagem ok"},"FQ_3.2":{"1":"Não corresponde","5":"Corresponde"},"FQ_3.3":{"1":"Resíduo antigo","5":"Sem resíduo antigo"},"FQ_3.4":{"1":"Contaminação evidente","2":"Materiais muito perto, risco alto (dentro da máquina)","3":"Itens próximos ao produto","4":"Pequeno item próximo, mas sem risco real","5":"Nada próximo que possa contaminar"},"FQ_3.5":{"1":"Alguns objetos estranhos","5":"Sem objetos estranhos"},"FQ_4.1":{"1":"Corpos de prova não disponíveis","5":"Corpos de prova disponíveis / ou não necessários"},"FQ_4.2":{"1":"Controles feitos parcialmente ou com erros; registros incompletos","2":"Controles executados, porém com imprecisões; registros adequados, mas com falhas","5":"Operador executa todos os controles corretamente e registra tudo de forma correta"},"FQ_4.3":{"1":"Grande acúmulo de retrabalho","3":"Acúmulo relevante","5":"Nenhum / somente o necessário"},"FQ_4.4":{"1":"Sacaria para fora","2":"Sacaria trocada","3":"Resíduo na lixeira errada","5":"Tudo ok"},"FQ_4.5":{"1":"Mais de 1 ponto","3":"1 ponto","5":"Nenhum ponto"},"F5S_1.1":{"1":"Ilegíveis, rasgados ou quebrados","2":"Muito sujos, riscados ou quase ilegíveis","3":"Desgaste moderado ou legibilidade reduzida","4":"Leve desgaste (leve sujeira, arranhão pequeno)","5":"Tudo limpo, legível e sem danos"},"F5S_1.2":{"1":"Mais de um item faltando","3":"1 item faltando","5":"Todos os intens presentes"},"F5S_1.3":{"1":"Local inadequado","3":"Alguns itens fora de lugar","5":"Tudo em seus devidos lugares"},"F5S_1.4":{"1":"Improvisos graves substituindo soluções adequadas","2":"Vários improvisos evidentes","3":"1 ou 2 improvisos moderados","5":"Nenhuma gambiarra"},"F5S_1.5":{"1":"Posto muito sujo e bagunçado","3":"Acúmulo moderado perceptível","4":"Acúmulo mínimo ocasional","5":"Sempre limpo, zero acúmulo"},"F5S_2.1":{"1":"Acúmulo pesado","2":"Poeira visível em vários pontos","5":"Totalmente limpos"},"F5S_2.2":{"1":"Sujeira crítica acumulada","2":"Poeira acumulada","4":"Poeira leve","5":"Sem sujeira nos locais escondidos"},"F5S_2.3":{"1":"Inutilizáveis","2":"Desorganizados","3":"Desgastadas ou sujas","5":"Perfeito estado"},"F5S_2.4":{"1":"Sujos, quebrados, jogados ou ausentes","2":"Alguns itens desorganizados","5":"Organizados, íntegros, guardados corretamente"},"F5S_2.5":{"1":"Sujeira acumulada","3":"Poeira leve","5":"Bancada limpa"},"F5S_3.1":{"1":"Sem demarcação e tudo fora do lugar","2":"Demarcação ruim ou não visível","3":"Alguns fora do local","4":"1 item fora do lugar","5":"Tudo no lugar certo e claramente demarcado"},"F5S_3.2":{"1":"Quase nenhum alinhado","2":"Sem  marcação","3":"Vários fora","4":"1 fora","5":"Todos dentro da faixa"},"F5S_3.3":{"1":"Ferramentas debilitadas","2":"Ferramentas modificadas","3":"Ferramentas não identificadas ou gastas","5":"Ferramentas em boas condições de 5S"},"F5S_3.4":{"1":"Muitos itens de outra linha","2":"1 item isolado","5":"Nenhum item estranho"},"F5S_3.5":{"1":"Item sobre a máquina e fora do suporte","2":"Item apoiado na máquina mas sem suporte","5":"Nenhum item sobre a máquina"},"F5S_4.1":{"1":"Sujos ou com marcas","2":"Desorganizados ou espalhados","5":"Organizados e Limpos"},"F5S_4.2":{"1":"Sujeira acumulada","3":"Sujeira moderada","5":"Máquina limpa"},"F5S_4.3":{"1":"Área com equipamentos fora de uso ou equipamentos quebrados","2":"Muitos itens sem uso","5":"Nada quebrado presente"},"F5S_4.4":{"1":"Ausentes ou quebradas","3":"Danificadas ou sem identificação","5":"Lixeiras e coletores"},"F5S_4.5":{"1":"Fita substituindo soluções adequadas","3":"Pedaços de fita espalhados","5":"Sem fitas na área"},"MS_1.1":{"1":"Obstruído totalmente ou sem sinalização crítica","2":"Obstrução parcial que exige mover itens para acessar","3":"Algum objeto próximo que pode atrapalhar em emergência","4":"Desobstruído, mas sinalização parcialmente desgastada","5":"Totalmente desobstruído e sinalizado corretamente"},"MS_1.2":{"1":"Não funciona ou não está acessível","4":"Pequeno desgaste na sinalização ou leve sujeira","5":"Funciona, visível, sinalizado e livre"},"MS_1.3":{"1":"Sinalização muito fraca ou obstrução parcial séria","2":"Leve obstrução que exige mover itens","4":"Pequeno desgaste (adesivos velhos, pintura gasta)","5":"Livre, selo e sinalização perfeitos"},"MS_1.4":{"1":"Acesso difícil","3":"Rota parcialmente estreita ou com objetos de passagem","5":"Totalmente livres e demarcadas"},"MS_1.5":{"1":"Caminho bloqueado","2":"Obstrução significativa","3":"Itens que estreitam parcialmente o caminho","4":"1 item fora do lugar que não bloqueia passagem","5":"Caminho livre e demarcado"},"MS_2.1":{"1":"Buracos críticos","2":"Buracos que geram risco real de tombamento","3":"Rachos, ondulações ou buracos leves que influenciam operação","4":"Pequena irregularidade que NÃO afeta paleteira","5":"Sem buracos, nivelado"},"MS_2.2":{"1":"Risco eminente","3":"Risco progressivo","5":"Funcionamento sem riscos"},"MS_2.3":{"1":"Difícil identificar ou obstruída","3":"Faixa parcialmente apagada ou passagem parcialmente ocupada","4":"Desgaste visível da pintura","5":"Faixa totalmente pintada e livre"},"MS_2.4":{"1":"Poeira em excesso com risco claro","3":"Poeira mais intensa em áreas pontuais","5":"Piso totalmente limpo"},"MS_2.5":{"1":"Múltiplos EPIs ausentes","2":"1 EPI ausente","4":"Ajuste incorreto ou 1 EPI usado de forma inadequada","5":"Todos com EPI completo e correto"},"MS_3.1":{"1":"Pontas vivas ou áreas cortantes","3":"Ferrugem moderada que pode virar risco","4":"Pequena corrosão superficial","5":"Sem ferrugem e sem danos"},"MS_3.2":{"1":"Vazamento visível / risco de rompimento","2":"Remendos presentes (mesmo sem vazamento)","5":"Integridade total"},"MS_3.3":{"1":"Poças de água","3":"Água ligeiramente acumulada","5":"Escoamento OK, sem poças"},"MS_3.4":{"1":"Materiais quebrados ou ausentes","2":"Materiais remendados","5":"Materiais íntegros"},"MS_3.5":{"1":"Grelhas faltando","3":"Grelha torta","5":"Grelha íntegra"},"MS_4.1":{"1":"Destrancado","2":"Trancado com solução improvisada","4":"Trava com leve folga","5":"Trancados corretamente"},"MS_4.2":{"1":"Manípulos rasgados ou quebrados","2":"Manípulos remendados","5":"Manípulos funcionando"},"MS_4.3":{"1":"Fios expostos ou isolamento ruim","3":"Fiação improvisada, mesmo sem risco imediato","4":"Leve desgaste","5":"Fiação perfeita"},"MS_4.4":{"1":"Quase inoperante","3":"Eficiência reduzida","5":"Funcionando perfeitamente"},"MS_4.5":{"1":"Pregos expostos ou partes quebradas","3":"Pequenas lascas, sem risco imediato","5":"Excelente estado"},"MQ_1.1":{"1":"Ralo entupido / água parada evidente","2":"Odor forte ou água acumulada moderadamente","5":"Ralo limpo, sem odor, fluxo perfeito, sem água acumulada"},"MQ_1.2":{"1":"Piso crítico, risco de acidente ou contaminação","2":"Buraco significativo","3":"Buraco leve","4":"Pequena fissura, sem risco","5":"Piso íntegro"},"MQ_1.3":{"1":"Acúmulo pesado / Descascamento","2":"Sujeira evidente ou quina danificada","5":"Íntegras e limpas"},"MQ_1.4":{"1":"Crostas espessas / risco de queda no produto","4":"Poeira leve","5":"Totalmente limpos e sem resíduos"},"MQ_1.5":{"1":"Múltiplos sinais claros de pragas","5":"Nenhum indício"},"MQ_2.1":{"1":"Sujeira crítica / camadas grossas","2":"Acúmulo pesado","3":"Acúmulo moderado","5":"Zero acúmulo"},"MQ_2.2":{"1":"Vazamento relevante criando acúmulo","3":"Vazamento perceptível","4":"Pequeno pó no entorno","5":"Zero vazamento, vedação perfeita"},"MQ_2.3":{"1":"Mais de 1 carrinho com resíduos","3":"1 carrinho com resíduos de lote anterior","4":"1 carrinho com sujeira leve","5":"Todos 5 carrinhos limpos, secos e sem resíduos"},"MQ_2.4":{"1":"Vazamento visível","3":"Pequena fissura, sem risco","5":"Sem vazamento"},"MQ_2.5":{"1":"Furos / peças improvisadas relevantes","2":"Gambiarras simples (fita / cola)","4":"Sinal leve de improviso","5":"Tudo íntegro"},"MQ_3.1":{"1":"Soltas / risco de cair na mistura","2":"Cabo frouxo ou lâmina desgastada","5":"Presas, limpas, íntegras, cabo firme"},"MQ_3.2":{"1":"Quebrados / contaminados","3":"Desgaste perceptível","5":"Limpos e íntegros"},"MQ_3.3":{"1":"Rachadura ou resíduos","5":"Perfeitamente limpos e íntegros"},"MQ_3.4":{"1":"Múltiplos objetos","5":"Área totalmente limpa, zero objetos"},"MQ_3.5":{"1":"Muita sujeira","2":"Poeira acumulada","4":"Poeira discreta","5":"Limpas"},"MQ_4.1":{"1":"Nenhuma indicação de status; identificação ilegível, incorreta ou ausente","3":"Status presente, porém com falhas de visibilidade ou identificação","5":"Status visível e legível"},"MQ_4.2":{"1":"Registros ausentes, incorretos ou sem padrão.","2":"Registros completos e corretos, com pequenas falhas pontuais.","5":"Todos os registros completos, corretos, padronizados e sem erros."},"MQ_4.3":{"1":"Multiplas sacarias rasgadas","2":"Apenas 1 sacaria com risco de contaminação grave","5":"Bem fechados, sem rasgos, sem exposição"},"MQ_4.4":{"1":"Sacaria para fora","2":"Transbordando","5":"Limpa, tampada, organizada"},"MQ_4.5":{"1":"Adornos / risco crítico de contaminação","2":"Máscara ou capacete ausentes","4":"Ajuste imperfeito","5":"Total conformidade (touca cobrindo 100% do cabelo, máscara correta)"},"M5S_1.1":{"1":"Total desorganização","3":"Mais de um item fora do suporte","5":"Organizados em seus suportes"},"M5S_1.2":{"1":"Acúmulo perceptível","2":"Pequeno agrupamento","4":"1 sacaria isolada","5":"Nenhuma sacaria no setor"},"M5S_1.3":{"1":"Acúmulo crítico","2":"Alguns itens sem função clara","5":"Zero itens desnecessários"},"M5S_1.4":{"1":"Itens ausentes ou sem local demarcado","2":"Vários fora da marcação","3":"Mais de 1 fora da marcação","4":"1 item ligeiramente fora","5":"Todos em seus locais"},"M5S_1.5":{"1":"Caderno ausente","3":"Caderno distante","5":"Caderno próximo"},"M5S_2.1":{"1":"Poucos na marcação","2":"Vários desalinhados","4":"1 desalinhado","5":"Todos na marcação"},"M5S_2.2":{"1":"Caderno sem preenchimento","2":"Caderno com atrasos","5":"Caderno preenchido"},"M5S_2.3":{"1":"Danificadas e mal guardadas","2":"Jogadas no chão","3":"Enroladas de maneira irregular","5":"Guardadas no suporte"},"M5S_2.4":{"1":"Ferramentas fora de condições","2":"Ferramentas gastas","5":"Ferramentas íntegras e limpas"},"M5S_2.5":{"1":"Totalmente desorganizadas","2":"Objetos pendurados ou sujeira relevante","3":"Pequenos itens sobre as escadas","4":"Sujeira leve","5":"Alinhadas, limpas, nada pendurado"},"M5S_3.1":{"1":"Equipamentos quebrados","3":"Equipamentos gastos ","5":"Equipamentos íntegros"},"M5S_3.2":{"1":"Soltas ou ausentes","2":"Danos relevantes","4":"Pequeno amassado","5":"Firmes e conservadas"},"M5S_3.3":{"1":"Vazamentos / infiltração crítica","2":"Infiltração leve ou batidas fortes","3":"Marcas moderadas","4":"Poucas manchas leves","5":"Totalmente limpas, sem marcas"},"M5S_3.4":{"1":"Itens pessoais ou itens estranhos","5":"Sem itens pessoais ou estranhos"},"M5S_3.5":{"1":"Sacaria pra fora","2":"Sacaria trocada","5":"Descarte adequado"},"M5S_4.1":{"1":"Piso crítico","2":"Sujeira impregnada","3":"Manchas moderadas","5":"Impecável"},"M5S_4.2":{"1":"Danificados e sujos","2":"Mal armazenados","4":"Pequeno desgaste","5":"Guardados, íntegros, limpos"},"M5S_4.3":{"1":"Mofo/lodo","5":"Zero mofo/zero respingos"},"M5S_4.4":{"1":"Acúmulo pesado","2":"Acúmulo relevante","4":"Sujeira leve","5":"Totalmente limpos"},"M5S_4.5":{"1":"Rachaduras, ferrugem, crostas","2":"Sujeira forte ou danos visíveis","3":"Poeira moderada ","4":"Poeira leve","5":"Íntegras e limpas"}};
@@ -854,9 +873,32 @@
     const AUDIT_DRAFT_STORE = "drafts";
     const AUDIT_HISTORY_FALLBACK_KEY = "somoghiroaudit-history-fallback-v1";
     const AUDIT_DRAFT_FALLBACK_KEY = "somoghiroaudit-active-draft-v1";
+    const AUDIT_ARCHIVE_RETENTION_MS = 15 * 60 * 1000;
 
-    // Histórico local: IndexedDB comporta mais auditorias que o localStorage.
-    // Um fallback localStorage é mantido para navegadores/ambientes sem IndexedDB.
+    /**
+     * Calcula o limite de retenção de uma auditoria finalizada.
+     * O prazo sempre parte do encerramento original e nunca é renovado por consultas ou alterações.
+     * Registros antigos sem data de finalização são considerados expirados para evitar retenção indefinida.
+     */
+    function getAuditArchiveExpiration(audit) {
+      const finalizedAt = Date.parse(audit?.finalizadaEm || "");
+      if (!Number.isFinite(finalizedAt)) return 0;
+
+      const maximumExpiration = finalizedAt + AUDIT_ARCHIVE_RETENTION_MS;
+      const storedExpiration = Date.parse(audit?.expiraEm || "");
+      return Number.isFinite(storedExpiration)
+        ? Math.min(storedExpiration, maximumExpiration)
+        : maximumExpiration;
+    }
+
+    /** Indica se uma auditoria arquivada já ultrapassou os 15 minutos de retenção. */
+    function isAuditArchiveExpired(audit, now = Date.now()) {
+      const expiration = getAuditArchiveExpiration(audit);
+      return !expiration || expiration <= now;
+    }
+
+    // O histórico fica no IndexedDB e usa localStorage somente como alternativa.
+    // Os dois locais são limpos quando o prazo de retenção termina.
     const AuditHistoryStore = {
       open() {
         return new Promise((resolve, reject) => {
@@ -872,32 +914,103 @@
           request.onblocked = () => reject(new Error("O histórico está bloqueado por outra aba"));
         });
       },
+
       readFallback() {
         try {
           const raw = safeStorageGet(AUDIT_HISTORY_FALLBACK_KEY, "[]");
           const parsed = JSON.parse(raw || "[]");
           return Array.isArray(parsed) ? parsed : [];
-        } catch (error) { console.warn("Histórico alternativo inválido:", error); return []; }
+        } catch (error) {
+          console.warn("Histórico alternativo inválido:", error);
+          return [];
+        }
       },
+
+      writeFallback(rows) {
+        return safeStorageSet(AUDIT_HISTORY_FALLBACK_KEY, JSON.stringify(rows));
+      },
+
+      removeFallbackById(id) {
+        const rows = this.readFallback();
+        const retained = rows.filter(item => item.id !== id);
+        if (retained.length !== rows.length) this.writeFallback(retained);
+      },
+
+      /**
+       * Exclui registros vencidos do IndexedDB e da cópia alternativa.
+       * A limpeza é executada na inicialização, nas consultas e pelo agendador enquanto o app estiver aberto.
+       */
+      async cleanupExpired() {
+        const removedIds = new Set();
+
+        try {
+          const db = await this.open();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_HISTORY_STORE, "readwrite");
+            const store = tx.objectStore(AUDIT_HISTORY_STORE);
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+              (request.result || []).forEach(audit => {
+                if (!isAuditArchiveExpired(audit)) return;
+                removedIds.add(audit.id);
+                store.delete(audit.id);
+              });
+            };
+            request.onerror = () => reject(request.error || new Error("Falha ao verificar expiração do histórico"));
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => reject(tx.error || new Error("Falha ao limpar histórico expirado"));
+            tx.onabort = () => reject(tx.error || new Error("Limpeza do histórico cancelada"));
+          });
+        } catch (error) {
+          console.warn("Não foi possível limpar o histórico no IndexedDB:", error);
+        }
+
+        const fallbackRows = this.readFallback();
+        const retainedFallback = fallbackRows.filter(audit => {
+          if (!isAuditArchiveExpired(audit)) return true;
+          removedIds.add(audit.id);
+          return false;
+        });
+        if (retainedFallback.length !== fallbackRows.length) this.writeFallback(retainedFallback);
+
+        return removedIds;
+      },
+
       async list() {
+        await this.cleanupExpired();
         try {
           const db = await this.open();
           const rows = await new Promise((resolve, reject) => {
             const tx = db.transaction(AUDIT_HISTORY_STORE, "readonly");
-            const req = tx.objectStore(AUDIT_HISTORY_STORE).getAll();
-            req.onsuccess = () => resolve(req.result || []);
-            req.onerror = () => reject(req.error || new Error("Falha ao ler histórico"));
+            const request = tx.objectStore(AUDIT_HISTORY_STORE).getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => reject(request.error || new Error("Falha ao ler histórico"));
             tx.oncomplete = () => db.close();
             tx.onerror = () => reject(tx.error || new Error("Falha na leitura do histórico"));
           });
-          return rows.sort((a, b) => String(b.finalizadaEm || b.data || "").localeCompare(String(a.finalizadaEm || a.data || "")));
+          return rows
+            .filter(audit => !isAuditArchiveExpired(audit))
+            .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
         } catch (error) {
           console.warn("Usando armazenamento alternativo para o histórico:", error);
-          return this.readFallback().sort((a, b) => String(b.finalizadaEm || b.data || "").localeCompare(String(a.finalizadaEm || a.data || "")));
+          return this.readFallback()
+            .filter(audit => !isAuditArchiveExpired(audit))
+            .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
         }
       },
+
       async save(audit) {
         const copy = JSON.parse(JSON.stringify(audit));
+        const expiration = getAuditArchiveExpiration(copy);
+
+        // Não permite que uma atualização posterior prolongue a vida de um registro arquivado.
+        if (!expiration || expiration <= Date.now()) {
+          await this.remove(copy.id);
+          return false;
+        }
+        copy.expiraEm = new Date(expiration).toISOString();
+
         try {
           const db = await this.open();
           await new Promise((resolve, reject) => {
@@ -907,17 +1020,19 @@
             tx.onerror = () => reject(tx.error || new Error("Falha ao salvar auditoria"));
             tx.onabort = () => reject(tx.error || new Error("Salvamento cancelado"));
           });
+          this.removeFallbackById(copy.id);
           return true;
         } catch (error) {
           console.warn("IndexedDB não pôde salvar; tentando localStorage:", error);
-          const rows = this.readFallback().filter(item => item.id !== copy.id);
+          const rows = this.readFallback().filter(item => item.id !== copy.id && !isAuditArchiveExpired(item));
           rows.unshift(copy);
-          if (!safeStorageSet(AUDIT_HISTORY_FALLBACK_KEY, JSON.stringify(rows))) {
+          if (!this.writeFallback(rows)) {
             throw new Error("Não foi possível salvar o histórico neste navegador. Libere espaço de armazenamento e tente novamente.");
           }
           return true;
         }
       },
+
       async remove(id) {
         try {
           const db = await this.open();
@@ -928,9 +1043,11 @@
             tx.onerror = () => reject(tx.error || new Error("Falha ao remover auditoria"));
           });
         } catch (error) {
-          const rows = this.readFallback().filter(item => item.id !== id);
-          safeStorageSet(AUDIT_HISTORY_FALLBACK_KEY, JSON.stringify(rows));
+          console.warn("Não foi possível remover a auditoria do IndexedDB:", error);
         }
+
+        // A cópia alternativa também é removida, mesmo quando o IndexedDB está funcionando.
+        this.removeFallbackById(id);
       }
     };
 
@@ -1070,6 +1187,25 @@
       return { valid: true, config: normalized, totalQuestions };
     }
 
+    /**
+     * Mantém a linha Eclusa disponível no cadastro operacional do Envase,
+     * inclusive em configurações antigas já gravadas ou importadas pelo usuário.
+     */
+    function ensureEclusaLine(config) {
+      const areas = Array.isArray(config?.areasOperacionais) ? config.areasOperacionais : [];
+      const envaseArea = areas.find(area => String(area?.id || "").trim().toLowerCase() === "envase") ||
+        areas.find(area => String(area?.nome || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === "envase");
+      if (!envaseArea || !Array.isArray(envaseArea.linhas)) return false;
+
+      const alreadyExists = envaseArea.linhas.some(line =>
+        String(line ?? "").trim().toLocaleLowerCase("pt-BR") === "eclusa"
+      );
+      if (alreadyExists) return false;
+
+      envaseArea.linhas.push("Eclusa");
+      return true;
+    }
+
     // Atualiza os critérios originais usados quando ainda não existe configuração salva.
     upgradeCriteriaClarity(DEFAULT_CONFIG);
 
@@ -1081,11 +1217,585 @@
         const result = validateImportedConfig(parsed);
         if (!result.valid) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
         const upgraded = upgradeCriteriaClarity(result.config);
-        if (upgraded) safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
+        const addedEclusa = ensureEclusaLine(result.config);
+        if (upgraded || addedEclusa) safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
         return result.config;
       } catch (error) {
         console.warn("Configuração importada anteriormente não pôde ser carregada:", error);
         return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      }
+    }
+
+    // Regras determinísticas de encaminhamento ITSM, derivadas do histórico da aba RELATÓRIOS.
+    // As regras podem ser exportadas/importadas na tela de Configurações.
+    const DEFAULT_ROUTING_CONFIG = {
+  "schema_version": "1.0.0",
+  "language": "pt-BR",
+  "source": {
+    "file": "Banco_Sistema(2).xlsx",
+    "sheet": "RELATÓRIOS",
+    "rows": 1916,
+    "period": "2026-01-06/2026-11-23"
+  },
+  "text_fields": [
+    "Descrição",
+    "Observação"
+  ],
+  "context_fields": [
+    "Área",
+    "Linha",
+    "Tipo de Auditoria",
+    "Tipo de problema",
+    "Status",
+    "Prazo"
+  ],
+  "normalization": [
+    "lowercase",
+    "trim",
+    "NFD_remove_diacritics",
+    "collapse_whitespace"
+  ],
+  "rules_are_ordered": true,
+  "roles": {
+    "Cesar": "IT Support & Supplies",
+    "Bruno": "Maintenance",
+    "Supervisores": "Daily Operations Leaders",
+    "Eduardo": "Production Manager",
+    "Lucas": "Administrative Apprentice"
+  },
+  "data_quality": {
+    "invalid_owner_values": {
+      "blank": 95,
+      "literal_55": 53,
+      "action": "Do not train on these labels; send new unclassified records to TRIAGEM_MANUAL."
+    },
+    "invalid_audit_type": {
+      "value": "Chá",
+      "count": 6,
+      "action": "Flag and correct source; audit type is not a routing trigger."
+    }
+  },
+  "systemic_escalation": {
+    "lookback_days": 30,
+    "min_records": 3,
+    "min_distinct_lines": 3,
+    "rule": "Route to Eduardo only if issue requires a shared production standard, layout, schedule or resource decision AND appears on at least 3 distinct lines or in at least 2 areas in the lookback window. Technical repair, procurement/IT, and administrative-document rules retain their specialist owner."
+  },
+  "decision_order": [
+    {
+      "id": "IT_SUPPORT",
+      "assign_to": "Cesar",
+      "any_pt": [
+        "computador",
+        "pc",
+        "notebook",
+        "impressora",
+        "rede",
+        "wifi",
+        "wi-fi",
+        "internet",
+        "sem conexão",
+        "login",
+        "senha",
+        "acesso ao sistema",
+        "software",
+        "aplicativo",
+        "e-mail",
+        "email",
+        "conta de usuário",
+        "teclado",
+        "mouse",
+        "monitor",
+        "servidor",
+        "cabo de rede",
+        "permissão de acesso",
+        "recuperar senha"
+      ],
+      "any_en": [
+        "computer",
+        "laptop",
+        "desktop",
+        "printer",
+        "network",
+        "wifi",
+        "internet",
+        "login",
+        "password",
+        "software",
+        "application",
+        "email",
+        "keyboard",
+        "mouse",
+        "monitor",
+        "server",
+        "network cable",
+        "access permission"
+      ],
+      "exclude": [
+        "datador",
+        "esteira",
+        "motor",
+        "tubulação",
+        "mangueira de alta pressão",
+        "proteção da máquina",
+        "painel de energia"
+      ],
+      "evidence_note": "IT terms are role-derived. The historical Relatórios rows contain almost no explicit computer/network/software requests."
+    },
+    {
+      "id": "TECHNICAL_MAINTENANCE",
+      "assign_to": "Bruno",
+      "any_pt": [
+        "estrutura da máquina debilitada",
+        "proteção quebrada",
+        "proteção da esteira",
+        "tampa de proteção",
+        "motor rotativo exposto",
+        "fiação mal fixada",
+        "fiação exposta",
+        "painel de energia entreaberto",
+        "painel de energia fechado com durex",
+        "proteção do painel soltando",
+        "esteira do datador",
+        "datador quebrado",
+        "caixa de expulsão quebrada",
+        "dobradiça solta",
+        "parafusos faltando",
+        "tubulação com fita",
+        "mangueira com vazamento",
+        "mangueira de alta pressão remendada",
+        "vazamento de tinta",
+        "vazamento de produto",
+        "risco de rompimento",
+        "infiltração",
+        "goteiras",
+        "piso quebrado",
+        "rachaduras",
+        "rodapés",
+        "antiderrapante gasto",
+        "manômetro quebrado",
+        "válvula quebrada",
+        "pistola de cola quebrada",
+        "cadeira com ajuste quebrado",
+        "cadeira quebrada",
+        "equipamento danificado",
+        "equipamentos mal fixados",
+        "faca comprometida",
+        "porta com trava quebrada",
+        "porta de emergência quebrada",
+        "botão de emergência quebrado",
+        "grelha torta",
+        "amortecedor cansado",
+        "realizar o reparo",
+        "fixação do componente",
+        "revestir fiação",
+        "suporte fixo quebrado",
+        "suporte instalado quebrado",
+        "suporte quebrado",
+        "suporte fixo solto",
+        "painel elétrico quebrado",
+        "painel elétrico danificado",
+        "quadro elétrico danificado"
+      ],
+      "any_en": [
+        "machine structure damaged",
+        "broken guard",
+        "exposed motor",
+        "loose wiring",
+        "electrical panel fault",
+        "conveyor fault",
+        "date coder fault",
+        "broken hinge",
+        "loose bolts",
+        "pipe leak",
+        "high-pressure hose leak",
+        "ink leak",
+        "product leak",
+        "risk of rupture",
+        "water infiltration",
+        "roof leak",
+        "cracked floor",
+        "broken valve",
+        "broken equipment",
+        "mechanical repair",
+        "electrical repair"
+      ],
+      "exclude": [
+        "imprimir etiqueta",
+        "etiqueta de identificação",
+        "etiqueta de segurança debilitada",
+        "material de limpeza sem identificação",
+        "ferramenta faltando",
+        "vassouras faltando",
+        "reposição de estoque",
+        "comprar material",
+        "orientar colaboradores",
+        "itens pessoais na linha",
+        "caderno não preenchido"
+      ]
+    },
+    {
+      "id": "ADMIN_DOCUMENTATION",
+      "assign_to": "Lucas",
+      "any_pt": [
+        "etiquetas de segurança debilitadas",
+        "troca das etiquetas de segurança",
+        "etiquetas de identificação gastas",
+        "imprimir etiquetas de identificação",
+        "etiquetas ilegíveis",
+        "material de limpeza sem identificação",
+        "utensílios não identificados",
+        "carrinho sem identificação",
+        "lixeira não identificada",
+        "extintor vencido",
+        "validade do extintor",
+        "registro de inspeção",
+        "controle de validade",
+        "formulário",
+        "documento",
+        "documentação",
+        "atualizar cadastro",
+        "imprimir formulário",
+        "controle documental",
+        "agendar controle de pragas",
+        "sinais de praga",
+        "etiqueta de segurança debilitada",
+        "etiqueta de segurança ilegível",
+        "troca da etiqueta de segurança",
+        "etiqueta de identificação gasta"
+      ],
+      "any_en": [
+        "safety label",
+        "identification label",
+        "label printing",
+        "illegible label",
+        "expired fire extinguisher",
+        "validity tracking",
+        "inspection record",
+        "form",
+        "document",
+        "update register",
+        "document control",
+        "pest-control scheduling"
+      ],
+      "exclude": [
+        "painel elétrico quebrado",
+        "fiação exposta",
+        "caderno não preenchido pelo operador",
+        "orientar operador",
+        "repor material de limpeza",
+        "comprar utensílio"
+      ]
+    },
+    {
+      "id": "SUPPLIES_AND_PROCUREMENT",
+      "assign_to": "Cesar",
+      "any_pt": [
+        "falta de material",
+        "material faltando",
+        "repor material",
+        "reposição de material",
+        "sem estoque",
+        "estoque baixo",
+        "solicitar compra",
+        "comprar material",
+        "solicitar suprimento",
+        "ferramentas faltando na linha",
+        "vassouras faltando",
+        "escovinhas faltando",
+        "espátula faltando",
+        "itens de limpeza faltando",
+        "sem suporte de vassouras",
+        "sem suporte de escovões",
+        "sem suporte para o esfregão",
+        "elaborar suporte",
+        "elaborar suporte/mesa",
+        "mesa de apoiar sacaria",
+        "reposição de equipamento",
+        "aquisição",
+        "repor cola",
+        "falta de epi no estoque",
+        "epi faltando no estoque",
+        "sem estoque de epi",
+        "reposição de epi",
+        "repor epi",
+        "luvas faltando no estoque",
+        "máscaras faltando no estoque"
+      ],
+      "any_en": [
+        "out of stock",
+        "missing supplies",
+        "replenish supplies",
+        "purchase request",
+        "procurement",
+        "missing tools",
+        "missing broom",
+        "missing cleaning supplies",
+        "missing holder",
+        "new support rack",
+        "workbench",
+        "consumables",
+        "equipment replenishment"
+      ],
+      "exclude": [
+        "quebrado",
+        "trincado",
+        "vazamento",
+        "fiação",
+        "motor",
+        "proteção da máquina",
+        "reparo",
+        "manutenção",
+        "etiqueta ilegível",
+        "imprimir etiqueta",
+        "itens fora do lugar",
+        "ferramentas espalhadas"
+      ]
+    },
+    {
+      "id": "SYSTEMIC_PRODUCTION_STANDARD",
+      "assign_to": "Eduardo",
+      "any_pt": [
+        "sem local demarcado para utensílios",
+        "colocar quadro sombra nas linhas",
+        "quadro sombra nas linhas",
+        "estabelecer cronograma de limpeza",
+        "cronograma de limpeza da linha",
+        "padronização",
+        "padronizar",
+        "definir padrão",
+        "alterar layout",
+        "rever layout",
+        "reorganizar fluxo de produção",
+        "planejamento de produção",
+        "capacidade produtiva",
+        "dimensionar recursos",
+        "processo de limpeza",
+        "padrão operacional",
+        "acúmulo recorrente de resíduo",
+        "resíduo acumulado em várias linhas",
+        "recorrência de resíduo"
+      ],
+      "any_en": [
+        "production standardization",
+        "define standard",
+        "shadow board rollout",
+        "designated storage location",
+        "production layout",
+        "production flow",
+        "production planning",
+        "production capacity",
+        "resource allocation",
+        "cleaning schedule",
+        "operating standard"
+      ],
+      "requires": [
+        "Exact match in always_if_exact_pt -> assign Eduardo",
+        "Otherwise require explicit standard/planning action OR same issue on at least 3 distinct lines in 30 days OR same issue in at least 2 areas in 30 days"
+      ],
+      "exclude": [
+        "estrutura da máquina quebrada",
+        "fiação exposta",
+        "vazamento por falha técnica",
+        "motor quebrado",
+        "comprar material",
+        "repor estoque",
+        "imprimir etiqueta",
+        "limpeza pontual",
+        "reparo de componente"
+      ],
+      "always_if_exact_pt": [
+        "sem local demarcado para utensílios",
+        "colocar quadro sombra nas linhas",
+        "quadro sombra nas linhas",
+        "estabelecer cronograma de limpeza da linha"
+      ]
+    },
+    {
+      "id": "DAILY_OPERATIONS",
+      "assign_to": "Supervisores",
+      "any_pt": [
+        "orientar colaboradores",
+        "orientar operador",
+        "itens pessoais na linha",
+        "epi ausente",
+        "epi faltando",
+        "epi mal ajustado",
+        "operador com máscara ausente",
+        "caderno não preenchido corretamente",
+        "caderno com atraso",
+        "sacaria de lixo fora do latão",
+        "sacaria trocada",
+        "resíduo na lixeira errada",
+        "itens de limpeza espalhados",
+        "ferramentas em cima da máquina",
+        "ferramentas espalhadas",
+        "ferramentas desorganizadas",
+        "vassoura fora do suporte",
+        "vassouras encostadas na máquina",
+        "utensílios mal guardados",
+        "pallets fora da marcação",
+        "pallet obstruindo a passagem",
+        "passagem obstruída",
+        "lixo obstruindo a passagem",
+        "piso molhado não sinalizado",
+        "água acumulada",
+        "posto muito sujo",
+        "sujeira acumulada",
+        "poeira acumulada",
+        "limpeza pontual",
+        "materiais em cima da máquina",
+        "materiais perto da alta tensão",
+        "sacaria pendurada",
+        "comunicar o colaborador",
+        "corrigir na hora",
+        "epi não utilizado",
+        "operador sem epi",
+        "colaborador sem epi",
+        "uso incorreto de epi",
+        "item pessoal na linha",
+        "itens pessoais sobre a máquina",
+        "piso molhado",
+        "saída de emergência obstruída",
+        "porta de emergência obstruída",
+        "porta de emergência bloqueada",
+        "acúmulo recorrente de resíduo"
+      ],
+      "any_en": [
+        "personal items on production line",
+        "PPE missing",
+        "PPE incorrectly worn",
+        "operator not wearing mask",
+        "logbook not completed",
+        "waste bag outside bin",
+        "wrong waste segregation",
+        "cleaning tools scattered",
+        "tools left on machine",
+        "broom not stored",
+        "pallet blocking aisle",
+        "blocked passage",
+        "wet floor not marked",
+        "standing water",
+        "dirty workstation",
+        "immediate operator coaching",
+        "daily housekeeping",
+        "personal item on production line"
+      ],
+      "exclude": [
+        "reposição de estoque",
+        "comprar material",
+        "fiação exposta",
+        "motor rotativo exposto",
+        "proteção quebrada",
+        "vazamento por falha de componente",
+        "alterar layout",
+        "cronograma de limpeza para várias linhas",
+        "imprimir etiqueta",
+        "controle de validade"
+      ]
+    }
+  ],
+  "urgency": {
+    "P0_CRITICAL": {
+      "triggers_pt": [
+        "fiação exposta",
+        "motor rotativo exposto",
+        "proteção quebrada com acesso a parte móvel",
+        "botão de emergência quebrado",
+        "porta de emergência obstruída",
+        "saída de emergência obstruída",
+        "mangueira de alta pressão com risco de rompimento",
+        "vazamento com risco de contato",
+        "materiais junto à alta tensão com risco imediato",
+        "risco grave de contaminação do produto",
+        "fiação elétrica exposta",
+        "cabos energizados expostos",
+        "painel elétrico aberto com partes energizadas",
+        "motor sem proteção com partes móveis acessíveis",
+        "saída de emergência bloqueada",
+        "botão de emergência inoperante",
+        "mangueira pressurizada com risco de ruptura",
+        "produto com risco grave de contaminação"
+      ],
+      "action": "Immediate containment. Technical/equipment failure -> Bruno; behavior/housekeeping obstruction or PPE breach -> Supervisores. Notify Supervisores for containment. If production stoppage or cross-area impact, notify Eduardo."
+    },
+    "P1_HIGH": {
+      "triggers_pt": [
+        "extintor vencido",
+        "EPI ausente",
+        "piso molhado",
+        "vazamento",
+        "produto exposto",
+        "pragas",
+        "risco de contaminar a embalagem",
+        "proteção solta",
+        "passagem obstruída"
+      ],
+      "action": "Same-shift containment and routing by root cause."
+    },
+    "P2_MEDIUM": {
+      "triggers_pt": [
+        "etiqueta desgastada",
+        "fiação mal fixada sem exposição",
+        "suporte quebrado",
+        "demarcação apagada",
+        "estrutura debilitada sem falha iminente"
+      ],
+      "action": "Schedule correction with a due date."
+    },
+    "P3_NORMAL": {
+      "triggers_pt": [
+        "reposição de materiais",
+        "atualizar documento",
+        "imprimir etiqueta",
+        "padronização sem risco imediato"
+      ],
+      "action": "Routine queue with a due date."
+    },
+    "deadline_escalation": "Status 'Atrasado' raises urgency one level but never changes the owner. 'Sem Prazo' requires a due date."
+  },
+  "tie_breakers": [
+    "Use object + failure mode + requested action, not audit type or point number alone.",
+    "Production machine/datador/conveyor/electrical panel fault -> Bruno; office PC/printer/network/software/account -> Cesar.",
+    "Broken fixed equipment -> Bruno; missing stock or purchase/replenishment -> Cesar.",
+    "Print/update/track label, form, record or expiry -> Lucas; daily operator logbook omission -> Supervisores.",
+    "One-off housekeeping or behavior -> Supervisores; recurring same issue on 3+ lines/30 days or explicit standard/layout/cleaning-plan decision -> Eduardo.",
+    "Residue caused by leaking/sealing/machine fault -> Bruno; one-off cleaning -> Supervisores; systemic accumulation or schedule across lines -> Eduardo.",
+    "Storage standard/shadow-board rollout -> Eduardo; procure new movable holder/workbench -> Cesar; repair broken installed holder -> Bruno; put available tools away -> Supervisores.",
+    "PPE not worn/incorrectly worn -> Supervisores; PPE stock shortage -> Cesar; cross-line policy redesign -> Eduardo.",
+    "For safety hazards, keep one primary owner based on root cause and notify Supervisores for containment."
+  ],
+  "fallback": {
+    "assign_to": null,
+    "queue": "TRIAGEM_MANUAL",
+    "reason": "No sufficiently specific rule matched or conflicting rules remain after exclusions.",
+    "required_clarifications": [
+      "Descrição",
+      "Área",
+      "Linha",
+      "Impacto na produção",
+      "Há risco imediato?",
+      "A ação necessária é reparo, compra, orientação, documentação ou mudança de processo?"
+    ],
+    "never_default_to": "Eduardo"
+  }
+};
+
+    function validateRoutingConfig(config) {
+      if (!config || typeof config !== "object" || !Array.isArray(config.decision_order) || !config.decision_order.length) return false;
+      if (!config.roles || typeof config.roles !== "object" || !config.urgency || typeof config.urgency !== "object") return false;
+      return config.decision_order.every(rule => rule && rule.id && rule.assign_to && Array.isArray(rule.any_pt) && Array.isArray(rule.any_en) && Array.isArray(rule.exclude));
+    }
+
+    function loadSavedRoutingConfig() {
+      const raw = safeStorageGet(ROUTING_STORAGE_KEY);
+      if (!raw) return JSON.parse(JSON.stringify(DEFAULT_ROUTING_CONFIG));
+      try {
+        const parsed = JSON.parse(raw);
+        return validateRoutingConfig(parsed) ? parsed : JSON.parse(JSON.stringify(DEFAULT_ROUTING_CONFIG));
+      } catch (error) {
+        console.warn("Regras ITSM salvas inválidas; usando padrão:", error);
+        return JSON.parse(JSON.stringify(DEFAULT_ROUTING_CONFIG));
       }
     }
 
@@ -1095,6 +1805,7 @@
       auditHistory: [],
       reviewAuditId: null,
       historySelectedIds: new Set(),
+      routingConfig: loadSavedRoutingConfig(),
       theme: safeStorageGet("auditflow-theme", "light")
     };
 
@@ -1115,7 +1826,9 @@
         };
         const dots = { saved: "bg-emerald-500", saving: "bg-blue-500 animate-pulse", offline: "bg-amber-500", error: "bg-rose-500" };
         el.className = `inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold shrink-0 ${styles[state] || styles.saved}`;
-        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dots[state] || dots.saved}"></span>${String(message)}`;
+        const indicator = document.createElement("span");
+        indicator.className = `w-1.5 h-1.5 rounded-full ${dots[state] || dots.saved}`;
+        el.replaceChildren(indicator, document.createTextNode(String(message)));
       },
       createSnapshot() {
         if (!AppState.audit) return null;
@@ -1292,6 +2005,375 @@
       }
     };
 
+    const TicketRoutingModule = {
+      get config() { return AppState.routingConfig || DEFAULT_ROUTING_CONFIG; },
+      normalize(value) {
+        return String(value ?? "")
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+      },
+      phraseMatch(text, phrase) {
+        const target = this.normalize(phrase);
+        if (!target) return false;
+        return (` ${text} `).includes(` ${target} `);
+      },
+      findMatches(text, phrases = []) {
+        const found = [];
+        (phrases || []).forEach(phrase => {
+          if (this.phraseMatch(text, phrase)) found.push(String(phrase));
+        });
+        return [...new Set(found)];
+      },
+      isInvalidOwner(value) {
+        const normalized = this.normalize(value);
+        return !normalized || ["55", "sem responsavel", "nao informado", "triagem manual", "pendente", "null", "undefined"].includes(normalized);
+      },
+      getKnownOwners() {
+        return Object.keys(this.config.roles || {}).map(name => this.normalize(name));
+      },
+      parseDate(value) {
+        if (!value) return null;
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+        const raw = String(value).trim();
+        const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (iso) return new Date(Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])));
+        const br = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+        if (br) return new Date(Date.UTC(Number(br[3]), Number(br[2]) - 1, Number(br[1])));
+        const parsed = new Date(raw);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      },
+      extractHistoryRows(records = []) {
+        const output = [];
+        (records || []).forEach(item => {
+          if (!item) return;
+          if (Array.isArray(item)) output.push(...item);
+          else if (Array.isArray(item.occurrences)) output.push(...item.occurrences);
+          else if (item.descricao || item["Descrição"] || item.Descrição || item.Pergunta) output.push(item);
+        });
+        return output;
+      },
+      getText(ticket) {
+        return this.normalize([
+          ticket?.descricao, ticket?.Descricao, ticket?.["Descrição"], ticket?.observacao,
+          ticket?.Observacao, ticket?.["Observação"], ticket?.pergunta, ticket?.Pergunta
+        ].filter(Boolean).join(" "));
+      },
+      getSignature(ticket) {
+        return this.normalize(ticket?.descricao || ticket?.Descricao || ticket?.["Descrição"] || ticket?.pergunta || ticket?.Pergunta || "");
+      },
+      getRecurrence(ticket, historyRecords = []) {
+        const signature = this.getSignature(ticket);
+        const ticketDate = this.parseDate(ticket?.data || ticket?.Data || ticket?.Datas);
+        if (!signature || !ticketDate) return { records: 0, distinctLines: 0, distinctAreas: 0, qualifies: false };
+        const windowDays = Number(this.config.systemic_escalation?.lookback_days) || 30;
+        const minLines = Number(this.config.systemic_escalation?.min_distinct_lines) || 3;
+        const minRecords = Number(this.config.systemic_escalation?.min_records) || 3;
+        const minAreas = Number(this.config.systemic_escalation?.min_areas) || 2;
+        const from = ticketDate.getTime() - windowDays * 86400000;
+        const until = ticketDate.getTime() + 86400000;
+        const candidates = this.extractHistoryRows(historyRecords).filter(row => {
+          if (this.getSignature(row) !== signature) return false;
+          const date = this.parseDate(row.data || row.Data || row.Datas);
+          return !!date && date.getTime() >= from && date.getTime() < until;
+        });
+        if (!candidates.some(row => row === ticket)) candidates.push(ticket);
+        const lines = new Set(candidates.map(row => this.normalize(row.linha || row.Linha || row.Linhas)).filter(Boolean));
+        const areas = new Set(candidates.map(row => this.normalize(row.area || row["Área"] || row.Area)).filter(Boolean));
+        return {
+          records: candidates.length,
+          distinctLines: lines.size,
+          distinctAreas: areas.size,
+          qualifies: candidates.length >= minRecords && (lines.size >= minLines || areas.size >= minAreas),
+          windowDays
+        };
+      },
+      classifyPriority(ticket, text) {
+        const urgency = this.config.urgency || {};
+        const levels = ["P0_CRITICAL", "P1_HIGH", "P2_MEDIUM", "P3_NORMAL"];
+        let level = "P3_NORMAL", matched = [];
+        for (const key of levels) {
+          const triggers = urgency[key]?.triggers_pt || [];
+          const hits = this.findMatches(text, triggers);
+          if (hits.length) { level = key; matched = hits; break; }
+        }
+        const status = this.normalize(ticket?.status || ticket?.Status);
+        const due = this.parseDate(ticket?.prazo || ticket?.Prazo);
+        const today = this.parseDate(CalculosModule.getTodayISO());
+        const overdue = status.includes("atrasado") || (!!due && !!today && due.getTime() < today.getTime() && !status.includes("concluido"));
+        // A lista está ordenada da maior para a menor criticidade; ao atrasar,
+        // avançar um nível significa mover o índice para trás (P3 -> P2 -> P1 -> P0).
+        if (overdue && level !== "P0_CRITICAL") level = levels[Math.max(levels.indexOf(level) - 1, 0)];
+        const labels = {
+          P0_CRITICAL: "P0 • Crítica", P1_HIGH: "P1 • Alta", P2_MEDIUM: "P2 • Média", P3_NORMAL: "P3 • Normal"
+        };
+        const notifications = level === "P0_CRITICAL" ? ["Supervisores"] : [];
+        const productionImpact = this.findMatches(text, [
+          "parada de produção", "produção parada", "linha parada", "interrupção da produção",
+          "impacto em várias áreas", "impacto em multiplas áreas", "várias linhas paradas", "cross area impact"
+        ]);
+        if (level === "P0_CRITICAL" && productionImpact.length) notifications.push("Eduardo");
+        return {
+          code: level,
+          label: labels[level] || "P3 • Normal",
+          triggerMatches: matched,
+          overdueEscalated: overdue,
+          notify: [...new Set(notifications)],
+          productionImpact,
+          action: urgency[level]?.action || "Definir prazo e acompanhar a correção."
+        };
+      },
+      classify(ticket, historyRecords = []) {
+        const text = this.getText(ticket);
+        const recurrence = this.getRecurrence(ticket, historyRecords);
+        const ordered = this.config.decision_order || [];
+        let selected = null;
+        let matched = [];
+        let excluded = [];
+
+        for (const rule of ordered) {
+          const blocked = this.findMatches(text, rule.exclude || []);
+          if (blocked.length) {
+            excluded = blocked;
+            continue;
+          }
+          const positive = this.findMatches(text, [...(rule.any_pt || []), ...(rule.any_en || [])]);
+          if (!positive.length) continue;
+
+          if (rule.id === "SYSTEMIC_PRODUCTION_STANDARD") {
+            const exact = this.findMatches(text, rule.always_if_exact_pt || []);
+            const intentTerms = [
+              "padronizacao", "padronizar", "definir padrao", "alterar layout", "rever layout",
+              "cronograma", "planejamento de producao", "fluxo de producao", "dimensionar recursos",
+              "quadro sombra", "local demarcado", "processo de limpeza", "production standardization",
+              "production layout", "production planning", "cleaning schedule", "resource allocation",
+              "acumulo recorrente de residuo", "residuo acumulado em varias linhas", "recorrencia de residuo"
+            ];
+            const explicitIntent = this.findMatches(text, intentTerms);
+            if (exact.length) { selected = rule; matched = exact; break; }
+            if (explicitIntent.length && recurrence.qualifies) { selected = rule; matched = [...new Set([...positive, ...explicitIntent])]; break; }
+            continue;
+          }
+          selected = rule;
+          matched = positive;
+          break;
+        }
+
+        // Resíduos exigem correção diária; a classificação sistêmica depende de recorrência entre linhas ou áreas.
+        if (!selected && (this.phraseMatch(text, "acúmulo de resíduo") || this.phraseMatch(text, "resíduo acumulado") || this.phraseMatch(text, "acúmulo recorrente de resíduo"))) {
+          const systemic = ordered.find(rule => rule.id === "SYSTEMIC_PRODUCTION_STANDARD");
+          const daily = ordered.find(rule => rule.id === "DAILY_OPERATIONS");
+          if (recurrence.qualifies && systemic) {
+            selected = systemic;
+            matched = ["acúmulo de resíduo recorrente"];
+          } else if (daily) {
+            selected = daily;
+            matched = ["acúmulo de resíduo pontual / sem evidência de recorrência sistêmica"];
+          }
+        }
+
+        const priority = this.classifyPriority(ticket, text);
+        if (!selected) {
+          return {
+            assignedTo: null, queue: this.config.fallback?.queue || "TRIAGEM_MANUAL",
+            ruleId: "MANUAL_TRIAGE", ruleLabel: "Triagem manual",
+            reason: this.config.fallback?.reason || "Nenhuma regra específica foi identificada.",
+            matchedKeywords: [], excludedKeywords: excluded, recurrence, priority,
+            notifications: priority.notify, auto: true, needsManual: true,
+            classifiedAt: new Date().toISOString()
+          };
+        }
+        const labels = {
+          IT_SUPPORT: "Suporte de TI", TECHNICAL_MAINTENANCE: "Manutenção técnica",
+          ADMIN_DOCUMENTATION: "Controle administrativo", SUPPLIES_AND_PROCUREMENT: "Suprimentos e compras",
+          SYSTEMIC_PRODUCTION_STANDARD: "Padronização da produção", DAILY_OPERATIONS: "Operação diária"
+        };
+        const reason = `Encaminhado por ${labels[selected.id] || selected.id}. Correspondência: ${matched.slice(0, 4).join(", ")}.`;
+        return {
+          assignedTo: selected.assign_to, queue: null, ruleId: selected.id,
+          ruleLabel: labels[selected.id] || selected.id, reason,
+          matchedKeywords: matched, excludedKeywords: excluded, recurrence, priority,
+          notifications: priority.notify, auto: true, needsManual: false,
+          classifiedAt: new Date().toISOString()
+        };
+      },
+      applyToOccurrence(occurrence, audit, historyRecords = [], force = false) {
+        if (!occurrence) return false;
+        const currentOwner = String(occurrence.responsavel || "").trim();
+        const wasManual = occurrence.responsavelEditadoManualmente === true;
+        const hasPreservedOwner = !!currentOwner && !occurrence.responsavelAutomatico && !this.isInvalidOwner(currentOwner);
+        const classification = this.classify({
+          ...occurrence,
+          data: occurrence.data || audit?.data,
+          area: occurrence.area || audit?.areaNome,
+          linha: occurrence.linha,
+          descricao: occurrence.descricao || occurrence.pergunta || ""
+        }, historyRecords);
+
+        // Responsáveis válidos ou definidos manualmente são preservados; a prioridade continua sendo calculada
+        // e a sugestão da regra fica disponível para que divergências sejam avaliadas por uma pessoa.
+        if (!force && (wasManual || hasPreservedOwner)) {
+          classification.currentOwner = currentOwner;
+          classification.suggestedOwner = classification.assignedTo || null;
+          classification.ownerPreserved = true;
+          if (!classification.assignedTo) {
+            classification.needsManual = false;
+            classification.queue = null;
+            classification.ruleLabel = "Responsável atual preservado";
+            classification.reason = "A atribuição existente foi mantida; nenhum gatilho automático específico foi confirmado.";
+          }
+          classification.ownerConflict = !!(this.getKnownOwners().includes(this.normalize(currentOwner)) &&
+            classification.assignedTo && this.normalize(currentOwner) !== this.normalize(classification.assignedTo));
+          const prev = occurrence.roteamento || {};
+          const changed = JSON.stringify({
+            ruleId: prev.ruleId, priority: prev.priority?.code, matched: prev.matchedKeywords,
+            ownerConflict: prev.ownerConflict, suggestedOwner: prev.suggestedOwner,
+            notifications: prev.notifications, recurrence: prev.recurrence
+          }) !== JSON.stringify({
+            ruleId: classification.ruleId, priority: classification.priority?.code, matched: classification.matchedKeywords,
+            ownerConflict: classification.ownerConflict, suggestedOwner: classification.suggestedOwner,
+            notifications: classification.notifications, recurrence: classification.recurrence
+          });
+          if (changed) occurrence.roteamento = classification;
+          return changed;
+        }
+
+        const assigned = classification.assignedTo || "";
+        const prev = occurrence.roteamento || {};
+        const changed = currentOwner !== assigned || prev.ruleId !== classification.ruleId ||
+          prev.priority?.code !== classification.priority?.code ||
+          JSON.stringify(prev.matchedKeywords || []) !== JSON.stringify(classification.matchedKeywords || []) ||
+          JSON.stringify(prev.notifications || []) !== JSON.stringify(classification.notifications || []) ||
+          Boolean(prev.needsManual) !== Boolean(classification.needsManual) ||
+          JSON.stringify(prev.recurrence || {}) !== JSON.stringify(classification.recurrence || {});
+        if (changed || force || !occurrence.roteamento) {
+          occurrence.roteamento = classification;
+          occurrence.responsavel = assigned;
+          occurrence.responsavelAutomatico = true;
+          occurrence.responsavelEditadoManualmente = false;
+          return true;
+        }
+        return false;
+      },
+      applyToAuditOccurrences(audit, force = false) {
+        if (!audit || !Array.isArray(audit.occurrences)) return false;
+        const history = [...(AppState.auditHistory || []), audit];
+        let changed = false;
+        audit.occurrences.forEach(occ => { if (this.applyToOccurrence(occ, audit, history, force)) changed = true; });
+        return changed;
+      },
+      routeUnassignedReportRows(rows, historyRows = []) {
+        let routed = 0, triage = 0, preserved = 0, conflicts = 0;
+        const history = [...(historyRows || []), ...(rows || [])];
+        const knownOwners = new Set(this.getKnownOwners());
+        (rows || []).forEach(row => {
+          const owner = String(row.Responsável || row.Responsavel || "").trim();
+          const invalid = this.isInvalidOwner(owner);
+          const result = this.classify(row, history);
+          row._roteamento = result;
+          if (invalid) {
+            row._responsavelAutomatico = true;
+            row.Responsável = result.assignedTo || "TRIAGEM_MANUAL";
+            if (result.assignedTo) routed++; else triage++;
+          } else {
+            // A atribuição histórica é uma evidência, não uma verdade absoluta: ela é preservada,
+            // enquanto a prioridade e a sugestão da regra são registradas separadamente para comparação.
+            row._responsavelAutomatico = false;
+            result.currentOwner = owner;
+            result.suggestedOwner = result.assignedTo || null;
+            result.ownerPreserved = true;
+            result.ownerConflict = !!(knownOwners.has(this.normalize(owner)) && result.assignedTo &&
+              this.normalize(owner) !== this.normalize(result.assignedTo));
+            if (result.ownerConflict) conflicts++;
+            row._roteamento = result;
+            preserved++;
+          }
+        });
+        return { routed, triage, preserved, conflicts };
+      },
+      rerouteOccurrence(occurrence, audit) {
+        return this.applyToOccurrence(occurrence, audit, [...(AppState.auditHistory || []), audit], true);
+      },
+      priorityClass(code) {
+        return ({
+          P0_CRITICAL: "bg-rose-600 text-white", P1_HIGH: "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200",
+          P2_MEDIUM: "bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200",
+          P3_NORMAL: "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200"
+        })[code] || "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200";
+      },
+      exportConfig() {
+        try {
+          const payload = JSON.stringify(this.config, null, 2);
+          const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `SomoGhiro_ITSM_Routing_Rules_${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+          App.showToast("Regras de encaminhamento exportadas em JSON.", "success");
+        } catch (error) {
+          console.error("Falha ao exportar regras ITSM:", error);
+          App.showToast("Não foi possível exportar as regras: " + error.message, "error");
+        }
+      },
+      async importConfigFile(input) {
+        const file = input?.files?.[0];
+        if (!file) return;
+        try {
+          const parsed = JSON.parse((await file.text()).replace(/^\uFEFF/, "").trim());
+          if (!validateRoutingConfig(parsed)) throw new Error("JSON inválido: decision_order, roles e urgency são obrigatórios.");
+          const owners = new Set(Object.keys(parsed.roles));
+          if (parsed.decision_order.some(rule => !owners.has(rule.assign_to))) throw new Error("Existe uma regra atribuída a uma pessoa que não está cadastrada em roles.");
+          AppState.routingConfig = parsed;
+          const saved = safeStorageSet(ROUTING_STORAGE_KEY, JSON.stringify(parsed));
+          if (AppState.audit) {
+            (AppState.audit.occurrences || []).forEach(occ => {
+              if (occ.responsavelAutomatico || this.isInvalidOwner(occ.responsavel)) {
+                occ.responsavelAutomatico = true;
+                occ.responsavelEditadoManualmente = false;
+              }
+            });
+            AnomaliasModule.syncOccurrences(AppState.audit);
+          }
+          if (App.currentView === "revisao") RevisaoModule.render();
+          ConfiguracoesModule.renderRoutingSettings();
+          App.showToast(saved ? "Regras ITSM atualizadas e salvas neste navegador." : "Regras atualizadas, mas não foi possível persistir no navegador.", saved ? "success" : "error");
+        } catch (error) {
+          console.error("Erro ao importar regras ITSM:", error);
+          App.showToast("Não foi possível importar as regras: " + error.message, "error");
+        } finally {
+          if (input) input.value = "";
+        }
+      },
+      renderSettings() {
+        const container = document.getElementById("itsm-routing-settings");
+        if (!container) return;
+        const owners = this.config.roles || {};
+        const rules = this.config.decision_order || [];
+        // Escapa valores vindos de JSON importado antes de inseri-los no HTML.
+        const safeText = escapeHTML;
+        container.innerHTML = `
+          <div class="rounded-2xl border border-indigo-200 dark:border-indigo-900 bg-indigo-50/60 dark:bg-indigo-950/20 p-4 sm:p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div><h3 class="text-base font-extrabold text-slate-900 dark:text-white">Encaminhamento automático de chamados (ITSM)</h3><p class="text-xs text-slate-600 dark:text-slate-300 mt-1">Regras determinísticas aplicadas a novas ocorrências e a registros importados sem responsável válido.</p></div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="TicketRoutingModule.exportConfig()" class="px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold">Exportar regras JSON</button>
+                <label class="cursor-pointer px-3 py-2 rounded-lg bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-extrabold">Importar regras<input type="file" accept=".json,application/json" class="hidden" onchange="TicketRoutingModule.importConfigFile(this)"></label>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+              ${Object.entries(owners).map(([name, role]) => `<div class="rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3"><p class="text-sm font-extrabold">${safeText(name)}</p><p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">${safeText(role)}</p></div>`).join("")}
+            </div>
+            <div class="rounded-xl bg-white/80 dark:bg-slate-900/70 border border-slate-200 dark:border-slate-700 p-3">
+              <p class="text-xs font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Ordem de decisão</p>
+              <div class="flex flex-wrap gap-1.5">${rules.map((rule, index) => `<span class="inline-flex items-center gap-1 rounded-lg bg-slate-100 dark:bg-slate-800 px-2 py-1 text-[11px] font-bold"><span class="text-slate-400">${index + 1}.</span>${safeText(rule.assign_to)} • ${safeText(rule.id)}</span>`).join("")}<span class="rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200 px-2 py-1 text-[11px] font-bold">Fallback: TRIAGEM_MANUAL</span></div>
+              <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">Prioridade e responsável são calculados separadamente. Atraso aumenta a prioridade, mas nunca troca o responsável. Ocorrências críticas notificam Supervisores para contenção.</p>
+            </div>
+            <p id="itsm-routing-save-status" class="text-[11px] font-semibold text-emerald-700 dark:text-emerald-300">Regras ${safeText(this.config.schema_version || "1.0.0")} ativas neste navegador.</p>
+          </div>`;
+      }
+    };
+    window.TicketRoutingModule = TicketRoutingModule;
+
     const AnomaliasModule = {
       syncOccurrences(audit) {
         if (!audit) return [];
@@ -1326,11 +2408,16 @@
               dataConclusao, observacao: prev ? prev.observacao : "", ponto: q.codigo, grupo: q.grupo, pergunta: q.pergunta,
               descricao: descricaoFinal,
               tipoProblema: rule.tipoRegistro || (nota <= 2 ? "Anomalia" : "Melhoria"), nota, isCriterioAusente,
-              descricaoEditadaManualmente: prev ? Boolean(prev.descricaoEditadaManualmente) : false
+              descricaoEditadaManualmente: prev ? Boolean(prev.descricaoEditadaManualmente) : false,
+              responsavelAutomatico: prev ? Boolean(prev.responsavelAutomatico) : false,
+              responsavelEditadoManualmente: prev ? Boolean(prev.responsavelEditadoManualmente) : false,
+              roteamento: prev?.roteamento ? JSON.parse(JSON.stringify(prev.roteamento)) : null
             });
           });
         });
         audit.occurrences = updatedOccurrences;
+        const routingChanged = TicketRoutingModule.applyToAuditOccurrences(audit);
+        if (routingChanged && audit === AppState.audit) AuditAutosave.schedule(220);
         this.updateNavBadge();
         return updatedOccurrences;
       },
@@ -1343,6 +2430,17 @@
           occ.descricaoEditadaManualmente = true;
           const resp = AppState.audit.responses?.[occ.questionId]?.[occ.linha];
           if (resp && occ.isCriterioAusente) resp.manualDescription = value;
+        }
+        if (field === "responsavel") {
+          if (String(value || "").trim()) {
+            occ.responsavelEditadoManualmente = true;
+            occ.responsavelAutomatico = false;
+            if (occ.roteamento) occ.roteamento = { ...occ.roteamento, assignedTo: value, auto: false, needsManual: false, ruleLabel: "Atribuição manual", reason: "Responsável definido manualmente na revisão." };
+          } else {
+            occ.responsavelEditadoManualmente = false;
+            occ.responsavelAutomatico = true;
+            TicketRoutingModule.applyToOccurrence(occ, AppState.audit, [...AppState.auditHistory, AppState.audit], true);
+          }
         }
         occ.status = CalculosModule.calculateOccurrenceStatus(occ.prazo, occ.dataConclusao);
         AuditAutosave.schedule(350);
@@ -1376,7 +2474,10 @@
       initSetupForm() {
         document.getElementById("setup-data").value = CalculosModule.getTodayISO();
         const turnoSelect = document.getElementById("setup-turno");
-        turnoSelect.innerHTML = AppState.config.turnos.map(t => `<option value="${t}">${t}</option>`).join("");
+        turnoSelect.innerHTML = AppState.config.turnos.map(turno => {
+          const valorSeguro = escapeHTML(turno);
+          return `<option value="${valorSeguro}">${valorSeguro}</option>`;
+        }).join("");
         this.renderMacroAndTipoButtons();
         this.updateLineSelectorVisibility();
         this.updateChecklistPreview();
@@ -1387,9 +2488,9 @@
         document.getElementById("setup-macroarea").value = this.selectedMacro;
         macroContainer.innerHTML = AppState.config.macroareas.map(m => {
           const active = m.id === this.selectedMacro;
-          return `<button type="button" onclick="AuditoriaModule.selectMacro('${m.id}')"
+          return `<button type="button" onclick="AuditoriaModule.selectMacro(decodeURIComponent('${encodeInlineArgument(m.id)}'))"
             class="py-3.5 px-4 rounded-xl border text-base font-bold transition flex items-center justify-center gap-2 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"}">
-            <span>${m.nome}</span>
+            <span>${escapeHTML(m.nome)}</span>
           </button>`;
         }).join("");
 
@@ -1397,9 +2498,9 @@
         document.getElementById("setup-tipo").value = this.selectedTipo;
         tipoContainer.innerHTML = AppState.config.tiposAuditoria.map(t => {
           const active = t.id === this.selectedTipo;
-          return `<button type="button" onclick="AuditoriaModule.selectTipo('${t.id}')"
+          return `<button type="button" onclick="AuditoriaModule.selectTipo(decodeURIComponent('${encodeInlineArgument(t.id)}'))"
             class="py-3.5 px-2 rounded-xl border text-sm font-bold transition text-center ${active ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700"}">
-            ${t.nome}
+            ${escapeHTML(t.nome)}
           </button>`;
         }).join("");
       },
@@ -1448,9 +2549,9 @@
             const areaObj = fabricaAreas.find(a => a.id === t.id);
             if (areaObj) countInArea = areaObj.linhas.filter(l => this.selectedLinesSet.has(l)).length;
           }
-          return `<button type="button" onclick="AuditoriaModule.setAreaFilterTab('${t.id}')"
+          return `<button type="button" onclick="AuditoriaModule.setAreaFilterTab(decodeURIComponent('${encodeInlineArgument(t.id)}'))"
             class="px-3 py-1.5 rounded-xl text-xs font-bold border transition flex items-center gap-1.5 ${active ? "bg-slate-900 dark:bg-blue-600 text-white border-slate-900 dark:border-blue-600 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
-            <span>${t.nome}</span>
+            <span>${escapeHTML(t.nome)}</span>
             ${countInArea > 0 ? `<span class="px-1.5 py-0.2 rounded-full text-[11px] ${active ? "bg-white/20 text-white" : "bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300"}">${countInArea}</span>` : ""}
           </button>`;
         }).join("");
@@ -1512,13 +2613,13 @@
             <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 p-3.5 space-y-2.5">
               <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
                 <div class="flex items-center gap-2">
-                  <span class="font-extrabold text-sm text-slate-800 dark:text-slate-100">${area.nome}</span>
+                  <span class="font-extrabold text-sm text-slate-800 dark:text-slate-100">${escapeHTML(area.nome)}</span>
                   <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">(${selectedInArea}/${area.linhas.length})</span>
                 </div>
                 <div class="flex items-center gap-2 text-xs">
-                  <button type="button" onclick="AuditoriaModule.toggleAreaLines('${area.id}', ${!allSelected})"
+                  <button type="button" onclick="AuditoriaModule.toggleAreaLines(decodeURIComponent('${encodeInlineArgument(area.id)}'), ${!allSelected})"
                     class="font-bold ${allSelected ? "text-slate-500 hover:text-rose-600" : "text-blue-600 dark:text-blue-400 hover:underline"}">
-                    ${allSelected ? "Desmarcar área" : `Todas de ${area.nome}`}
+                    ${allSelected ? "Desmarcar área" : `Todas de ${escapeHTML(area.nome)}`}
                   </button>
                 </div>
               </div>
@@ -1526,15 +2627,15 @@
                 ${filteredLines.map(linha => {
                   const checked = this.selectedLinesSet.has(linha);
                   return `
-                    <button type="button" onclick="AuditoriaModule.toggleSingleLine('${linha}')"
+                    <button type="button" onclick="AuditoriaModule.toggleSingleLine(decodeURIComponent('${encodeInlineArgument(linha)}'))"
                       class="py-2 px-2 rounded-lg border text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 select-none ${checked ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400"}">
-                      <span>${linha}</span>
+                      <span>${escapeHTML(linha)}</span>
                       ${checked ? `<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>` : ""}
                     </button>`;
                 }).join("")}
               </div>
             </div>`;
-        }).join("") || `<p class="text-sm text-slate-500 text-center py-4">Nenhuma linha encontrada para "${searchTerm}".</p>`;
+        }).join("") || `<p class="text-sm text-slate-500 text-center py-4">Nenhuma linha encontrada para "${escapeHTML(searchTerm)}".</p>`;
       },
 
       updateChecklistPreview() {
@@ -1667,11 +2768,11 @@
           return `
             <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <div class="flex items-center gap-2 min-w-0">
-                <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">Linha ${linha}</span>
-                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${areaNome}</span>
+                <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">Linha ${escapeHTML(linha)}</span>
+                <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHTML(areaNome)}</span>
                 <span class="text-xs text-slate-400">(${answeredCount}/${totalQ})</span>
               </div>
-              <button type="button" ${canRemove ? `onclick="AuditoriaModule.removeLineFromActiveAudit('${linha}')"` : "disabled"}
+              <button type="button" ${canRemove ? `onclick="AuditoriaModule.removeLineFromActiveAudit(decodeURIComponent('${encodeInlineArgument(linha)}'))"` : "disabled"}
                 title="${canRemove ? "Remover linha da auditoria" : "A auditoria precisa ter pelo menos 1 linha"}"
                 class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition ${canRemove ? "bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800" : "opacity-35 cursor-not-allowed bg-slate-200 dark:bg-slate-700 text-slate-500"}">
                 Excluir
@@ -1684,12 +2785,12 @@
           if (availableLines.length === 0) return "";
           return `
             <div class="space-y-1.5">
-              <p class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">${area.nome}</p>
+              <p class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">${escapeHTML(area.nome)}</p>
               <div class="flex flex-wrap gap-1.5">
                 ${availableLines.map(l => `
-                  <button type="button" onclick="AuditoriaModule.addLineToActiveAudit('${l}', '${area.nome}')"
+                  <button type="button" onclick="AuditoriaModule.addLineToActiveAudit(decodeURIComponent('${encodeInlineArgument(l)}'), decodeURIComponent('${encodeInlineArgument(area.nome)}'))"
                     class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition flex items-center gap-1">
-                    <span>+ ${l}</span>
+                    <span>+ ${escapeHTML(l)}</span>
                   </button>`).join("")}
               </div>
             </div>`;
@@ -1723,7 +2824,10 @@
                 <input type="text" id="modal-custom-line-name" placeholder="Ou digite uma linha personalizada (ex: 42)..."
                   class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
                 <select id="modal-custom-line-area" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-bold">
-                  ${fabricaAreas.map(a => `<option value="${a.nome}">${a.nome}</option>`).join("")}
+                  ${fabricaAreas.map(area => {
+                    const nomeSeguro = escapeHTML(area.nome);
+                    return `<option value="${nomeSeguro}">${nomeSeguro}</option>`;
+                  }).join("")}
                 </select>
                 <button type="submit" class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shrink-0">Adicionar</button>
               </form>
@@ -1877,10 +2981,10 @@
             const stat = metrics.lineStats.find(s => s.linha === l);
             const done = stat && stat.linePending === 0;
             const active = l === this.activeLineForLineMode;
-            const areaTag = audit.areasEnvolvidas?.length > 1 ? ` (${audit.lineAreaMap?.[l] || ""})` : "";
-            return `<button type="button" onclick="AuditoriaModule.selectLineForLineMode('${l}')"
+            const areaTag = audit.areasEnvolvidas?.length > 1;
+            return `<button type="button" onclick="AuditoriaModule.selectLineForLineMode(decodeURIComponent('${encodeInlineArgument(l)}'))"
               class="px-3 py-2 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center gap-1.5 ${active ? "bg-blue-600 text-white border-blue-600 shadow-sm" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
-              <span>Linha ${l}${areaTag}</span>
+              <span>Linha ${escapeHTML(l)}${areaTag ? ` (${escapeHTML(audit.lineAreaMap?.[l] || "")})` : ""}</span>
               <span class="px-1.5 py-0.5 rounded-full text-[11px] ${done ? "bg-emerald-500 text-white" : (active ? "bg-blue-500 text-white" : "bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200")}">${done ? "✓" : `${questions.length - (stat?.linePending || 0)}/${questions.length}`}</span>
             </button>`;
           }).join("");
@@ -1895,7 +2999,7 @@
             : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600";
           const isCurrent = idx === this.currentQuestionIndex;
           return `<button type="button" onclick="AuditoriaModule.goToQuestion(${idx})"
-            class="px-2 py-1 rounded-lg text-xs sm:text-sm font-bold border transition ${pillStyle} ${isCurrent ? "ring-2 ring-blue-600 scale-105" : ""}">${q.codigo}</button>`;
+            class="px-2 py-1 rounded-lg text-xs sm:text-sm font-bold border transition ${pillStyle} ${isCurrent ? "ring-2 ring-blue-600 scale-105" : ""}">${escapeHTML(q.codigo)}</button>`;
         }).join("");
 
         this.renderQuestionCard(questions);
@@ -1931,10 +3035,10 @@
         card.innerHTML = `
           <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
             <div class="flex flex-wrap items-center gap-1.5 mb-1.5">
-              <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-extrabold tracking-wide">Questão ${q.codigo}</span>
-              <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold uppercase tracking-wider">${q.grupo}</span>
+              <span class="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-xs sm:text-sm font-extrabold tracking-wide">Questão ${escapeHTML(q.codigo)}</span>
+              <span class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold uppercase tracking-wider">${escapeHTML(q.grupo)}</span>
             </div>
-            <h3 class="text-base sm:text-xl font-extrabold leading-snug">${q.pergunta}</h3>
+            <h3 class="text-base sm:text-xl font-extrabold leading-snug">${escapeHTML(q.pergunta)}</h3>
           </div>
           <div class="mt-3.5 space-y-4">
             ${linesToRender.map(linha => {
@@ -1945,19 +3049,19 @@
               const selectedRule = selectedNota ? rules[selectedNota] : null;
               const criterioSelected = selectedNota ? (q.criterios?.[selectedNota] || "").trim() : "";
               const needsManualDesc = isRated && selectedRule?.gerarRegistro && criterioSelected === "";
-              const areaBadge = audit.areasEnvolvidas?.length > 1 ? `<span class="text-xs font-semibold text-slate-500 dark:text-slate-400">(${audit.lineAreaMap?.[linha] || ""})</span>` : "";
+              const areaBadge = audit.areasEnvolvidas?.length > 1 ? `<span class="text-xs font-semibold text-slate-500 dark:text-slate-400">(${escapeHTML(audit.lineAreaMap?.[linha] || "")})</span>` : "";
 
               return `
                 <div class="p-3 sm:p-4 rounded-2xl border ${isRated ? "border-blue-200 dark:border-blue-800 bg-blue-50/30 dark:bg-blue-950/20" : (isNA ? "border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50" : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900")} space-y-2.5">
                   <div class="flex flex-wrap items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                      <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs sm:text-sm font-extrabold">Linha ${linha}</span>
+                      <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs sm:text-sm font-extrabold">Linha ${escapeHTML(linha)}</span>
                       ${areaBadge}
                       ${resp.status === "pending" ? `<span class="text-xs sm:text-sm font-semibold text-amber-600 dark:text-amber-400">● Pendente</span>`
                         : isNA ? `<span class="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400">Não Aplicável</span>`
-                        : `<span class="text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-300">Nota ${selectedNota} • ${selectedRule?.classificacao || ""}</span>`}
+                        : `<span class="text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-300">Nota ${selectedNota} • ${escapeHTML(selectedRule?.classificacao || "")}</span>`}
                     </div>
-                    <button type="button" onclick="AuditoriaModule.markAsNA('${q.id}', '${linha}')"
+                    <button type="button" onclick="AuditoriaModule.markAsNA(decodeURIComponent('${encodeInlineArgument(q.id)}'), decodeURIComponent('${encodeInlineArgument(linha)}'))"
                       class="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold border transition ${isNA ? "bg-slate-800 text-white border-slate-800" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"}">
                       ${isNA ? "✓ N/A" : "Marcar N/A"}
                     </button>
@@ -1970,14 +3074,14 @@
                       const rule = rules[nota];
                       const style = ratingColors[nota];
                       return `
-                        <button type="button" onclick="AuditoriaModule.selectRating('${q.id}', '${linha}', ${nota})"
+                        <button type="button" onclick="AuditoriaModule.selectRating(decodeURIComponent('${encodeInlineArgument(q.id)}'), decodeURIComponent('${encodeInlineArgument(linha)}'), ${nota})"
                           class="rating-btn text-left px-3 py-2 sm:p-3 rounded-xl border-2 flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-2.5 sm:gap-1.5 min-h-[44px] sm:min-h-[86px] ${isSelected ? style.active : style.base}">
                           <div class="flex items-center sm:justify-between gap-2 shrink-0">
                             <span class="w-7 h-7 sm:w-auto sm:h-auto rounded-lg sm:rounded-none flex items-center justify-center text-base sm:text-xl font-black leading-none ${isSelected ? "bg-white/20 sm:bg-transparent" : "bg-white/80 dark:bg-slate-800/80 sm:bg-transparent"}">${nota}</span>
-                            <span class="hidden sm:inline-block text-[11px] font-bold uppercase px-1.5 py-0.5 rounded ${isSelected ? "bg-white/20 text-white" : style.badge}">${rule?.classificacao || ""}</span>
+                            <span class="hidden sm:inline-block text-[11px] font-bold uppercase px-1.5 py-0.5 rounded ${isSelected ? "bg-white/20 text-white" : style.badge}">${escapeHTML(rule?.classificacao || "")}</span>
                           </div>
                           <p class="flex-1 text-xs sm:text-sm leading-tight font-medium line-clamp-2 sm:line-clamp-none ${isSelected ? "text-white" : (criterio ? "text-slate-700 dark:text-slate-200" : "text-slate-400 italic")}">
-                            ${criterio || "Critério não cadastrado"}
+                            ${escapeHTML(criterio || "Critério não cadastrado")}
                           </p>
                           <span class="sm:hidden shrink-0 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${isSelected ? "bg-white/20 text-white" : style.badge}">
                             ${nota >= 4 ? "Conf." : (nota === 3 ? "Melh." : "NC")}
@@ -1991,8 +3095,8 @@
                       <div class="flex items-center gap-2 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-bold">
                         Critério não cadastrado para nota ${selectedNota}. Descreva o problema:
                       </div>
-                      <input type="text" value="${(resp.manualDescription || "").replace(/"/g, "&quot;")}"
-                        oninput="AuditoriaModule.updateManualDescription('${q.id}', '${linha}', this.value)"
+                      <input type="text" value="${escapeHTML(resp.manualDescription || "")}"
+                        oninput="AuditoriaModule.updateManualDescription(decodeURIComponent('${encodeInlineArgument(q.id)}'), decodeURIComponent('${encodeInlineArgument(linha)}'), this.value)"
                         placeholder="Descreva a anomalia ou melhoria observada..."
                         class="w-full px-3 py-2.5 rounded-xl border border-amber-400 dark:border-amber-600 bg-white dark:bg-slate-800 text-sm sm:text-base font-medium focus:ring-2 focus:ring-amber-500 outline-none" />
                     </div>` : ""}
@@ -2188,6 +3292,7 @@
 
     const RevisaoModule = {
       render() {
+        this.getAvailableAudits();
         this.renderHistoryList();
         const emptyEl = document.getElementById("revisao-empty-state");
         const contentEl = document.getElementById("revisao-content");
@@ -2215,6 +3320,9 @@
         if (headerBadge) headerBadge.textContent = isArchived ? "Auditoria arquivada" : "Auditoria em andamento";
 
         if (!isArchived) AnomaliasModule.syncOccurrences(audit);
+        else if (TicketRoutingModule.applyToAuditOccurrences(audit)) {
+          AuditHistoryStore.save(audit).catch(error => console.warn("Não foi possível persistir o roteamento atualizado no histórico:", error));
+        }
         const metrics = CalculosModule.computeAuditMetrics(audit);
 
         document.getElementById("rev-header-meta").textContent = `${CalculosModule.formatDateBR(audit.data)} • ${audit.turno}${isArchived ? ` • Finalizada em ${audit.finalizadaEm ? new Date(audit.finalizadaEm).toLocaleString("pt-BR") : "data não registrada"}` : " • Em andamento"}`;
@@ -2246,10 +3354,10 @@
           <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col justify-between gap-2">
             <div class="flex items-center justify-between gap-2">
               <div>
-                <span class="font-extrabold text-base">Linha ${ls.linha}</span>
-                <span class="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">${ls.area}</span>
+                <span class="font-extrabold text-base">Linha ${escapeHTML(ls.linha)}</span>
+                <span class="ml-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400">${escapeHTML(ls.area)}</span>
               </div>
-              <span class="px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-bold border ${ls.classification.badgeClass}">${ls.classification.label}</span>
+              <span class="px-2.5 py-0.5 rounded-full text-xs sm:text-sm font-bold border ${ls.classification.badgeClass}">${escapeHTML(ls.classification.label)}</span>
             </div>
             <div class="flex items-baseline justify-between mt-1">
               <div>
@@ -2262,18 +3370,46 @@
             </div>
           </div>`).join("");
 
-        document.getElementById("dl-responsaveis").innerHTML = AppState.config.sugestoesBase.responsaveis.map(r => `<option value="${r}">`).join("");
-        document.getElementById("dl-observacoes").innerHTML = AppState.config.sugestoesBase.observacoes.map(o => `<option value="${o}">`).join("");
+        document.getElementById("dl-responsaveis").innerHTML = AppState.config.sugestoesBase.responsaveis.map(responsavel =>
+          `<option value="${escapeHTML(responsavel)}">`
+        ).join("");
+        document.getElementById("dl-observacoes").innerHTML = AppState.config.sugestoesBase.observacoes.map(observacao =>
+          `<option value="${escapeHTML(observacao)}">`
+        ).join("");
         this.renderOccurrencesTable(audit.occurrences || [], isArchived);
+        this.renderRoutingSummary(audit.occurrences || []);
+      },
+
+      renderRoutingSummary(occurrences) {
+        const container = document.getElementById("rev-routing-summary");
+        if (!container) return;
+        const names = Object.keys(TicketRoutingModule.config.roles || {});
+        const counts = names.map(name => ({ name, count: occurrences.filter(item => TicketRoutingModule.normalize(item.responsavel) === TicketRoutingModule.normalize(name)).length }));
+        const triage = occurrences.filter(item => !item.responsavel || TicketRoutingModule.normalize(item.responsavel) === "triagem manual").length;
+        const auto = occurrences.filter(item => item.responsavelAutomatico && item.responsavel).length;
+        const conflicts = occurrences.filter(item => item.roteamento?.ownerConflict).length;
+        const p0 = occurrences.filter(item => item.roteamento?.priority?.code === "P0_CRITICAL").length;
+        const p1 = occurrences.filter(item => item.roteamento?.priority?.code === "P1_HIGH").length;
+        container.innerHTML = `<div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/30 p-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-2"><p class="text-xs font-extrabold text-slate-700 dark:text-slate-200">Resumo do encaminhamento automático</p><span class="text-[11px] font-bold text-blue-700 dark:text-blue-300">${auto} atribuição(ões) automática(s)</span></div>
+          <div class="flex flex-wrap gap-1.5">${counts.map(item => `<span class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2.5 py-1 text-[11px] font-bold">${item.name}: ${item.count}</span>`).join("")}
+            <span class="rounded-lg ${triage ? "bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-200" : "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200"} px-2.5 py-1 text-[11px] font-extrabold">Triagem manual: ${triage}</span>
+            <span class="rounded-lg ${conflicts ? "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"} px-2.5 py-1 text-[11px] font-extrabold">Divergência de responsável: ${conflicts}</span>
+            <span class="rounded-lg ${p0 ? "bg-rose-600 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"} px-2.5 py-1 text-[11px] font-extrabold">P0 crítica: ${p0}</span>
+            <span class="rounded-lg ${p1 ? "bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-200" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"} px-2.5 py-1 text-[11px] font-extrabold">P1 alta: ${p1}</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400">Responsáveis históricos válidos são preservados. Registros sem correspondência clara ficam sem responsável automático e exigem triagem.</p>
+        </div>`;
       },
 
       historyEscape(value) {
-        return String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+        return escapeHTML(value);
       },
 
       getAvailableAudits() {
-        // A listagem histórica contém auditorias finalizadas; a sessão em andamento
-        // continua acessível pelo resumo principal e não entra na exportação em lote.
+        // A sessão ativa permanece separada; somente arquivos dentro do prazo entram no histórico.
+        const now = Date.now();
+        AppState.auditHistory = AppState.auditHistory.filter(item => !isAuditArchiveExpired(item, now));
         return [...AppState.auditHistory];
       },
 
@@ -2284,7 +3420,7 @@
         const summary = document.getElementById("rev-history-summary");
         const count = document.getElementById("rev-history-selected-count");
         const selectAll = document.getElementById("rev-history-select-all");
-        if (summary) summary.textContent = `${AppState.auditHistory.length} finalizada(s)${AppState.audit ? " • 1 em andamento" : ""}. Os dados ficam salvos neste navegador.`;
+        if (summary) summary.textContent = `${AppState.auditHistory.length} finalizada(s)${AppState.audit ? " • 1 em andamento" : ""}. Os arquivos são removidos automaticamente após 15 minutos.`;
         if (count) count.textContent = `${AppState.historySelectedIds.size} selecionada(s)`;
         if (selectAll) selectAll.checked = items.length > 0 && items.every(item => AppState.historySelectedIds.has(item.id));
         if (!items.length) {
@@ -2299,7 +3435,7 @@
           const viewing = current ? !AppState.reviewAuditId : AppState.reviewAuditId === item.id;
           const label = current ? "Em andamento" : "Finalizada";
           const dateLabel = item.finalizadaEm ? new Date(item.finalizadaEm).toLocaleDateString("pt-BR") : CalculosModule.formatDateBR(item.data);
-          const idArg = `decodeURIComponent('${encodeURIComponent(item.id)}')`;
+          const idArg = `decodeURIComponent('${encodeInlineArgument(item.id)}')`;
           return `<article class="rounded-2xl border ${viewing ? "border-blue-400 dark:border-blue-600 ring-2 ring-blue-100 dark:ring-blue-950" : "border-slate-200 dark:border-slate-700"} bg-slate-50/70 dark:bg-slate-800/40 p-3.5 sm:p-4 min-w-0">
             <div class="flex items-start gap-3">
               <input type="checkbox" class="mt-1 h-4 w-4 rounded accent-blue-600 shrink-0" aria-label="Selecionar auditoria" ${selected ? "checked" : ""} onchange="RevisaoModule.toggleHistorySelection(${idArg},this.checked)">
@@ -2350,7 +3486,7 @@
 
       getAuditById(id) {
         if (AppState.audit && AppState.audit.id === id) return AppState.audit;
-        return AppState.auditHistory.find(item => item.id === id) || null;
+        return AppState.auditHistory.find(item => item.id === id && !isAuditArchiveExpired(item)) || null;
       },
 
       getSelectedAudit() {
@@ -2429,10 +3565,17 @@
           container.innerHTML = `<div class="space-y-3">${occurrences.map(occ => {
             const kind = occ.tipoProblema === "Anomalia" ? "bg-rose-600 text-white" : "bg-amber-500 text-slate-950";
             const status = this.historyEscape(occ.status || CalculosModule.calculateOccurrenceStatus(occ.prazo, occ.dataConclusao));
+            const routing = occ.roteamento || {};
+            const priority = routing.priority || {};
+            const assignment = occ.responsavel || "TRIAGEM_MANUAL";
             return `<article class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/30 p-3.5 space-y-2">
               <div class="flex flex-wrap items-center gap-2"><span class="rounded-lg px-2 py-1 text-xs font-extrabold ${kind}">${this.historyEscape(occ.tipoProblema || "Ocorrência")}</span><strong class="text-sm">Linha ${this.historyEscape(occ.linha)} • Ponto ${this.historyEscape(occ.ponto)}</strong><span class="ml-auto rounded-full px-2 py-1 text-[11px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">${status}</span></div>
               <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">${this.historyEscape(occ.descricao || "Sem descrição registrada")}</p>
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-500 dark:text-slate-400"><span>Responsável: ${this.historyEscape(occ.responsavel || "—")}</span><span>Prazo: ${this.historyEscape(CalculosModule.formatDateBR(occ.prazo) || "—")}</span><span>Conclusão: ${this.historyEscape(CalculosModule.formatDateBR(occ.dataConclusao) || "—")}</span></div>
+              <div class="flex flex-wrap gap-1.5"><span class="rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200 px-2 py-1 text-[11px] font-extrabold">Responsável: ${this.historyEscape(assignment)}</span><span class="rounded-lg px-2 py-1 text-[11px] font-extrabold ${TicketRoutingModule.priorityClass(priority.code)}">${this.historyEscape(priority.label || "P3 • Normal")}</span><span class="rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 px-2 py-1 text-[11px] font-bold">${this.historyEscape(routing.ruleLabel || "Regra não registrada")}</span></div>
+              ${routing.ownerConflict ? `<p class="text-[11px] font-extrabold text-orange-700 dark:text-orange-300">Atribuição histórica preservada: ${this.historyEscape(occ.responsavel)} • regra sugere: ${this.historyEscape(routing.suggestedOwner)}.</p>` : ""}
+              ${routing.matchedKeywords?.length ? `<p class="text-[11px] text-slate-500 dark:text-slate-400">Gatilhos: ${this.historyEscape(routing.matchedKeywords.join(", "))}</p>` : ""}
+              ${routing.notifications?.length ? `<p class="text-[11px] font-bold text-rose-700 dark:text-rose-300">Notificar para contenção: ${this.historyEscape(routing.notifications.join(", "))}</p>` : ""}
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-slate-500 dark:text-slate-400"><span>Prazo: ${this.historyEscape(CalculosModule.formatDateBR(occ.prazo) || "—")}</span><span>Conclusão: ${this.historyEscape(CalculosModule.formatDateBR(occ.dataConclusao) || "—")}</span><span>${occ.responsavelAutomatico ? "Atribuição automática" : "Atribuição preservada"}</span></div>
               ${occ.observacao ? `<p class="text-xs text-slate-600 dark:text-slate-300">Observação: ${this.historyEscape(occ.observacao)}</p>` : ""}
             </article>`;
           }).join("")}</div>`;
@@ -2452,47 +3595,59 @@
             ${occurrences.map(occ => {
               const isAnomalia = occ.tipoProblema === "Anomalia";
               const missingDesc = !occ.descricao || occ.descricao.trim() === "";
+              const routing = occ.roteamento || {};
+              const priority = routing.priority || {};
+              const routingKey = encodeInlineArgument(occ.internalKey);
+              const assignmentLabel = occ.responsavelEditadoManualmente ? "Atribuição manual" : (occ.responsavelAutomatico ? "Sugestão automática" : "Responsável preservado");
               return `
                 <div class="p-4 rounded-2xl border ${missingDesc ? "border-rose-400 dark:border-rose-600 bg-rose-50/30 dark:bg-rose-950/20" : "border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-800/30"} space-y-3">
                   <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200/70 dark:border-slate-700">
                     <div class="flex flex-wrap items-center gap-2">
-                      <span class="px-2.5 py-1 rounded-lg text-sm font-extrabold ${isAnomalia ? "bg-rose-600 text-white" : "bg-amber-500 text-slate-950"}">${occ.tipoProblema} (Nota ${occ.nota})</span>
-                      <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-sm font-bold">Linha ${occ.linha} • Ponto ${occ.ponto}</span>
-                      <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">${CalculosModule.formatDateBR(occ.data)} • ${occ.turno} • ${occ.area}</span>
+                      <span class="px-2.5 py-1 rounded-lg text-sm font-extrabold ${isAnomalia ? "bg-rose-600 text-white" : "bg-amber-500 text-slate-950"}">${escapeHTML(occ.tipoProblema)} (Nota ${escapeHTML(occ.nota)})</span>
+                      <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-sm font-bold">Linha ${escapeHTML(occ.linha)} • Ponto ${escapeHTML(occ.ponto)}</span>
+                      <span class="text-sm text-slate-500 dark:text-slate-400 font-medium">${escapeHTML(CalculosModule.formatDateBR(occ.data))} • ${escapeHTML(occ.turno)} • ${escapeHTML(occ.area)}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                      <span id="status-badge-${occ.internalKey}" class="px-2.5 py-1 rounded-lg text-sm font-bold border ${statusBadge(occ.status)}">${occ.status}</span>
+                      <span id="status-badge-${escapeHTML(occ.internalKey)}" class="px-2.5 py-1 rounded-lg text-sm font-bold border ${statusBadge(occ.status)}">${escapeHTML(occ.status)}</span>
                     </div>
                   </div>
                   <div>
                     <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Descrição ${missingDesc ? '<span class="text-rose-600">* Obrigatória</span>' : ""}</label>
-                    <input type="text" value="${(occ.descricao || "").replace(/"/g, "&quot;")}"
-                      oninput="RevisaoModule.onFieldEdit('${occ.internalKey}', 'descricao', this.value)"
+                    <input type="text" value="${escapeHTML(occ.descricao || "")}"
+                      oninput="RevisaoModule.onFieldEdit(decodeURIComponent('${encodeInlineArgument(occ.internalKey)}'), 'descricao', this.value)"
                       placeholder="Preencha a descrição..."
                       class="w-full px-3.5 py-2.5 rounded-xl border ${missingDesc ? "border-rose-400 dark:border-rose-600 bg-white dark:bg-slate-800" : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"} text-base font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
+                  </div>
+                  <div class="rounded-xl border border-indigo-100 dark:border-indigo-900/70 bg-indigo-50/60 dark:bg-indigo-950/20 p-3 space-y-1.5">
+                    <div class="flex flex-wrap items-center gap-1.5"><span class="rounded-lg px-2 py-1 text-[11px] font-extrabold ${TicketRoutingModule.priorityClass(priority.code)}">${this.historyEscape(priority.label || "P3 • Normal")}</span><span class="rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 px-2 py-1 text-[11px] font-bold">${this.historyEscape(routing.ruleLabel || "Triagem manual")}</span><span class="text-[10px] font-bold text-slate-500 dark:text-slate-400">${assignmentLabel}</span><button type="button" onclick="RevisaoModule.rerouteOccurrence(decodeURIComponent('${routingKey}'))" class="ml-auto px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-[11px] font-extrabold">Reclassificar</button></div>
+                    ${routing.ownerConflict ? `<p class="text-[11px] font-extrabold text-orange-700 dark:text-orange-300">Responsável atual preservado (${this.historyEscape(occ.responsavel)}); sugestão da regra: ${this.historyEscape(routing.suggestedOwner)}.</p>` : ""}
+                    ${routing.matchedKeywords?.length ? `<p class="text-[11px] text-slate-600 dark:text-slate-300">Gatilhos encontrados: ${this.historyEscape(routing.matchedKeywords.slice(0, 4).join(", "))}</p>` : (routing.ownerPreserved ? `<p class="text-[11px] text-slate-600 dark:text-slate-300">Sem gatilho automático específico; a atribuição atual foi preservada.</p>` : `<p class="text-[11px] text-amber-800 dark:text-amber-200">Sem correspondência suficiente. Verifique e atribua manualmente.</p>`)}
+                    ${routing.recurrence?.qualifies ? `<p class="text-[11px] text-slate-600 dark:text-slate-300">Recorrência em ${routing.recurrence.distinctLines} linhas / ${routing.recurrence.distinctAreas} áreas nos últimos ${routing.recurrence.windowDays || 30} dias.</p>` : ""}
+                    ${priority.action ? `<p class="text-[11px] text-slate-600 dark:text-slate-300">Ação de prioridade: ${this.historyEscape(priority.action)}</p>` : ""}
+                    ${routing.notifications?.length ? `<p class="text-[11px] font-extrabold text-rose-700 dark:text-rose-300">Contenção imediata: notificar ${this.historyEscape(routing.notifications.join(", "))}. O responsável principal continua sendo definido pela causa.</p>` : ""}
                   </div>
                   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <div>
                       <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Responsável</label>
-                      <input type="text" list="dl-responsaveis" value="${(occ.responsavel || "").replace(/"/g, "&quot;")}"
-                        oninput="RevisaoModule.onFieldEdit('${occ.internalKey}', 'responsavel', this.value)"
-                        placeholder="Ex: Manutenção"
+                      <input type="text" list="dl-responsaveis" value="${this.historyEscape(occ.responsavel || "")}"
+                        oninput="RevisaoModule.onFieldEdit(decodeURIComponent('${encodeInlineArgument(occ.internalKey)}'), 'responsavel', this.value)"
+                        placeholder="${routing.needsManual ? "Triagem manual • informe responsável" : "Ex: Cesar, Bruno, Supervisores"}"
                         class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
                       <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Prazo</label>
-                      <input type="date" value="${occ.prazo || ""}" onchange="RevisaoModule.onFieldEdit('${occ.internalKey}', 'prazo', this.value)"
+                      <input type="date" value="${escapeHTML(occ.prazo || "")}" onchange="RevisaoModule.onFieldEdit(decodeURIComponent('${encodeInlineArgument(occ.internalKey)}'), 'prazo', this.value)"
                         class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
                       <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Data Conclusão</label>
-                      <input type="date" value="${occ.dataConclusao || ""}" onchange="RevisaoModule.onFieldEdit('${occ.internalKey}', 'dataConclusao', this.value)"
+                      <input type="date" value="${escapeHTML(occ.dataConclusao || "")}" onchange="RevisaoModule.onFieldEdit(decodeURIComponent('${encodeInlineArgument(occ.internalKey)}'), 'dataConclusao', this.value)"
                         class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
                     <div>
                       <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Observação</label>
-                      <input type="text" list="dl-observacoes" value="${(occ.observacao || "").replace(/"/g, "&quot;")}"
-                        oninput="RevisaoModule.onFieldEdit('${occ.internalKey}', 'observacao', this.value)"
+                      <input type="text" list="dl-observacoes" value="${escapeHTML(occ.observacao || "")}"
+                        oninput="RevisaoModule.onFieldEdit(decodeURIComponent('${encodeInlineArgument(occ.internalKey)}'), 'observacao', this.value)"
                         placeholder="Observações"
                         class="w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
                     </div>
@@ -2500,6 +3655,19 @@
                 </div>`;
             }).join("")}
           </div>`;
+      },
+
+      rerouteOccurrence(internalKey) {
+        const audit = AppState.audit;
+        if (!audit) return App.showToast("A reclassificação manual está disponível para a auditoria em andamento. Em auditorias arquivadas, consulte a classificação salva.", "info");
+        const occurrence = (audit.occurrences || []).find(item => item.internalKey === internalKey);
+        if (!occurrence) return App.showToast("Ocorrência não encontrada.", "error");
+        occurrence.responsavelEditadoManualmente = false;
+        occurrence.responsavelAutomatico = true;
+        TicketRoutingModule.rerouteOccurrence(occurrence, audit);
+        AuditAutosave.schedule(0);
+        this.render();
+        App.showToast(occurrence.responsavel ? `Chamado reclassificado para ${occurrence.responsavel}.` : "Nenhuma regra correspondeu com segurança. Encaminhado para triagem manual.", occurrence.responsavel ? "success" : "info");
       },
 
       onFieldEdit(internalKey, field, value) {
@@ -2538,7 +3706,7 @@
               </div>
               <p class="text-base text-slate-700 dark:text-slate-200">Existem <strong>${missingDesc.length}</strong> ocorrência(s) sem descrição:</p>
               <ul class="list-disc pl-5 text-sm text-slate-600 dark:text-slate-300 space-y-1">
-                ${missingDesc.map(m => `<li>Linha <strong>${m.linha}</strong> — Ponto <strong>${m.ponto}</strong> (Nota ${m.nota})</li>`).join("")}
+                ${missingDesc.map(item => `<li>Linha <strong>${escapeHTML(item.linha)}</strong> — Ponto <strong>${escapeHTML(item.ponto)}</strong> (Nota ${escapeHTML(item.nota)})</li>`).join("")}
               </ul>
               <p class="text-sm text-slate-500 dark:text-slate-400">Preencha o campo Descrição antes de gerar o arquivo.</p>
               <div class="flex justify-end pt-2">
@@ -2593,6 +3761,7 @@
           const audit = auditOverride;
           if (!audit) throw new Error("Nenhuma auditoria selecionada.");
           if (audit === AppState.audit) AnomaliasModule.syncOccurrences(audit);
+          else TicketRoutingModule.applyToAuditOccurrences(audit);
 
           const activeQuestions = ChecklistsModule.getActiveQuestions(audit.checklistSnapshot);
           const rules = ChecklistsModule.getRatingRules(audit.checklistSnapshot);
@@ -2847,6 +4016,7 @@
           const audit = auditOverride;
           if (!audit) throw new Error("Nenhuma auditoria selecionada.");
           if (audit === AppState.audit) AnomaliasModule.syncOccurrences(audit);
+          else TicketRoutingModule.applyToAuditOccurrences(audit);
           const metrics = CalculosModule.computeAuditMetrics(audit);
 
           const pageW = doc.internal.pageSize.getWidth();
@@ -3186,7 +4356,7 @@
         const keys = Object.keys(AppState.config.checklists);
         select.innerHTML = keys.map(k => {
           const chk = AppState.config.checklists[k];
-          return `<option value="${k}" ${k === this.selectedChecklistId ? "selected" : ""}>${chk.titulo} (${chk.questoes.length} q.)</option>`;
+          return `<option value="${escapeHTML(k)}" ${k === this.selectedChecklistId ? "selected" : ""}>${escapeHTML(chk.titulo)} (${chk.questoes.length} q.)</option>`;
         }).join("");
         const chk = AppState.config.checklists[this.selectedChecklistId];
         if (!chk) return;
@@ -3194,6 +4364,11 @@
         document.getElementById("cfg-pass-threshold").value = chk.limiteMediaConforme;
         this.renderRatingRules(chk);
         this.renderQuestionsList(chk);
+        this.renderRoutingSettings();
+      },
+
+      renderRoutingSettings() {
+        TicketRoutingModule.renderSettings();
       },
 
       onSelectChecklist() {
@@ -3265,12 +4440,12 @@
             <div class="p-4 rounded-2xl border ${q.ativa !== false ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900" : "border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 opacity-60"} flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="space-y-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-sm font-extrabold">${q.codigo}</span>
-                  <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold">${q.grupo}</span>
+                  <span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-sm font-extrabold">${escapeHTML(q.codigo)}</span>
+                  <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold">${escapeHTML(q.grupo)}</span>
                   ${missingCount > 0 ? `<span class="px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 text-xs font-bold">${missingCount} critério(s) ausente(s)</span>` : `<span class="px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 text-xs font-bold">5 critérios</span>`}
                   ${q.ativa === false ? `<span class="px-2 py-0.5 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 text-xs font-bold">Desativada</span>` : ""}
                 </div>
-                <p class="text-base font-bold">${q.pergunta}</p>
+                <p class="text-base font-bold">${escapeHTML(q.pergunta)}</p>
               </div>
               <div class="flex flex-wrap items-center gap-1.5 shrink-0">
                 <button type="button" onclick="ConfiguracoesModule.moveQuestion(${idx}, -1)" ${idx === 0 ? "disabled" : ""} class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-bold disabled:opacity-30">↑</button>
@@ -3323,26 +4498,26 @@
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Código *</label>
-                <input type="text" id="modal-q-codigo" value="${q.codigo}" required placeholder="Ex: 1.1"
+                <input type="text" id="modal-q-codigo" value="${escapeHTML(q.codigo)}" required placeholder="Ex: 1.1"
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-bold" />
               </div>
               <div class="sm:col-span-2">
                 <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Grupo *</label>
-                <input type="text" id="modal-q-grupo" value="${q.grupo}" required placeholder="Ex: Materiais, Máquina..."
+                <input type="text" id="modal-q-grupo" value="${escapeHTML(q.grupo)}" required placeholder="Ex: Materiais, Máquina..."
                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-medium" />
               </div>
             </div>
             <div>
               <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Pergunta *</label>
               <textarea id="modal-q-pergunta" rows="2" required placeholder="Digite a pergunta..."
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-medium">${q.pergunta}</textarea>
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-medium">${escapeHTML(q.pergunta)}</textarea>
             </div>
             <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
               <p class="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Critérios por Nota</p>
               ${[5, 4, 3, 2, 1].map(n => `
                 <div class="flex items-center gap-2.5">
                   <span class="w-9 h-9 rounded-lg bg-slate-900 dark:bg-slate-700 text-white font-black text-base flex items-center justify-center shrink-0">${n}</span>
-                  <input type="text" id="modal-q-crit-${n}" value="${(q.criterios?.[n] || "").replace(/"/g, "&quot;")}"
+                  <input type="text" id="modal-q-crit-${n}" value="${escapeHTML(q.criterios?.[n] || "")}"
                     placeholder="Critério para nota ${n}..."
                     class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm" />
                 </div>`).join("")}
@@ -3406,7 +4581,10 @@
           content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
           const parsed = JSON.parse(content);
           const result = validateImportedConfig(parsed);
-          if (result.valid) upgradeCriteriaClarity(result.config);
+          if (result.valid) {
+            upgradeCriteriaClarity(result.config);
+            ensureEclusaLine(result.config);
+          }
           if (!result.valid) {
             App.showToast("Arquivo inválido: " + result.errors.slice(0, 2).join(" "), "error");
             if (result.errors.length > 2) console.error("Erros na configuração importada:", result.errors);
@@ -3445,10 +4623,62 @@
 
     const App = {
       currentView: "auditoria",
+      archiveCleanupTimer: null,
+      archiveCleanupRunning: false,
+
+      /**
+       * Agenda a próxima limpeza para o vencimento mais próximo.
+       * A nova expiração é reagendada sempre que uma auditoria é finalizada.
+       */
+      scheduleArchiveRetentionCleanup() {
+        if (this.archiveCleanupTimer) clearTimeout(this.archiveCleanupTimer);
+
+        const nextExpiration = AppState.auditHistory
+          .map(getAuditArchiveExpiration)
+          .filter(expiration => expiration > Date.now())
+          .sort((a, b) => a - b)[0];
+        const delay = nextExpiration
+          ? Math.max(0, nextExpiration - Date.now())
+          : 60 * 1000;
+
+        this.archiveCleanupTimer = setTimeout(() => {
+          this.cleanupArchivedAudits().finally(() => this.scheduleArchiveRetentionCleanup());
+        }, delay);
+      },
+
+      /**
+       * Sincroniza a lista em memória com o armazenamento depois da limpeza.
+       * Também elimina seleções e conteúdo de revisão que apontem para arquivos vencidos.
+       */
+      async cleanupArchivedAudits() {
+        if (this.archiveCleanupRunning) return;
+        this.archiveCleanupRunning = true;
+        try {
+          const previousIds = new Set(AppState.auditHistory.map(item => item.id));
+          AppState.auditHistory = await AuditHistoryStore.list();
+          const retainedIds = new Set(AppState.auditHistory.map(item => item.id));
+
+          AppState.historySelectedIds.forEach(id => {
+            if (!retainedIds.has(id)) AppState.historySelectedIds.delete(id);
+          });
+          if (AppState.reviewAuditId && !retainedIds.has(AppState.reviewAuditId)) {
+            AppState.reviewAuditId = null;
+          }
+
+          const historyChanged = previousIds.size !== retainedIds.size ||
+            [...previousIds].some(id => !retainedIds.has(id));
+          if (historyChanged) RevisaoModule.render();
+        } catch (error) {
+          console.warn("Não foi possível atualizar a retenção do histórico:", error);
+        } finally {
+          this.archiveCleanupRunning = false;
+        }
+      },
 
       async init() {
         this.applyTheme(AppState.theme);
         AppState.auditHistory = await AuditHistoryStore.list();
+        this.scheduleArchiveRetentionCleanup();
         AuditoriaModule.initSetupForm();
         ConfiguracoesModule.render();
 
@@ -3587,7 +4817,7 @@
         this.openModal(`
           <div class="space-y-4">
             <div><span class="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">Salvar no histórico</span><h3 class="text-lg font-extrabold mt-1">Finalizar esta auditoria?</h3></div>
-            <p class="text-sm text-slate-600 dark:text-slate-300">A auditoria será arquivada neste navegador. Você poderá iniciar outra sem perder esta, consultar o histórico e exportar os registros individualmente ou em conjunto.</p>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Após a finalização, esta auditoria ficará disponível no histórico por 15 minutos para consulta e exportação. Durante a execução, a sessão ativa continuará salva automaticamente.</p>
             ${notices.length ? `<div class="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-100"><p class="font-bold mb-1">Antes de finalizar:</p><ul class="list-disc pl-5 space-y-1">${notices.join("")}</ul><p class="mt-2 text-xs">Você pode continuar mesmo assim; as informações serão preservadas como estão.</p></div>` : `<p class="text-sm text-emerald-700 dark:text-emerald-300">Todas as avaliações foram preenchidas.</p>`}
             <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
               <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Continuar auditando</button>
@@ -3603,8 +4833,11 @@
           AnomaliasModule.syncOccurrences(audit);
           const archived = JSON.parse(JSON.stringify(audit));
           archived.status = "finalizada";
-          archived.finalizadaEm = new Date().toISOString();
-          await AuditHistoryStore.save(archived);
+          const finalizedAt = new Date();
+          archived.finalizadaEm = finalizedAt.toISOString();
+          archived.expiraEm = new Date(finalizedAt.getTime() + AUDIT_ARCHIVE_RETENTION_MS).toISOString();
+          const archivedSuccessfully = await AuditHistoryStore.save(archived);
+          if (!archivedSuccessfully) throw new Error("O prazo de retenção desta auditoria já terminou.");
           // A auditoria já está no histórico; remove o rascunho para não restaurá-la como ativa.
           await AuditDraftStore.remove();
           AppState.auditHistory = [archived, ...AppState.auditHistory.filter(item => item.id !== archived.id)]
@@ -3617,7 +4850,8 @@
           AnomaliasModule.updateNavBadge();
           this.closeModal();
           this.navigate("revisao");
-          this.showToast("Auditoria finalizada e salva no histórico. Você já pode iniciar outra.", "success");
+          this.showToast("Auditoria finalizada. O histórico ficará disponível por 15 minutos.", "success");
+          this.scheduleArchiveRetentionCleanup();
         } catch (error) {
           console.error("Erro ao arquivar auditoria:", error);
           this.showToast("Não foi possível arquivar a auditoria: " + error.message, "error");
@@ -3639,6 +4873,8 @@
         if (document.visibilityState === "hidden") {
           AuditAutosave.flushEmergencyCopy();
           AuditAutosave.flush().catch(() => {});
+        } else {
+          App.cleanupArchivedAudits().finally(() => App.scheduleArchiveRetentionCleanup());
         }
       });
       window.addEventListener("pagehide", () => {
@@ -3664,6 +4900,7 @@
     const $ = id => document.getElementById(id);
     const p2 = n => String(n).padStart(2, "0");
     const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const encodeInlineArgument = value => encodeURIComponent(String(value ?? "")).replace(/[!'()*]/g, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`);
     const f2 = (n, d = 2) => (n == null || isNaN(n)) ? "—" : Number(n).toFixed(d).replace(".", ",");
     const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
     const norm = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
@@ -3691,11 +4928,11 @@
     const kpi = (l, v, c = "", s = "") => `
       <div class="rg-card relative overflow-hidden bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/90 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between">
         <div class="flex items-center justify-between gap-2">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">${l}</p>
+          <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">${esc(l)}</p>
           <span class="w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700"></span>
         </div>
-        <p class="text-2xl sm:text-[26px] font-black tracking-tight mt-2 ${c || "text-slate-900 dark:text-white"}">${v}</p>
-        ${s ? `<p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">${s}</p>` : ""}
+        <p class="text-2xl sm:text-[26px] font-black tracking-tight mt-2 ${c || "text-slate-900 dark:text-white"}">${esc(v)}</p>
+        ${s ? `<p class="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">${esc(s)}</p>` : ""}
       </div>`;
 
     const card = (t, body, sub = "", badge = "") => `
@@ -3903,6 +5140,10 @@
               throw new Error("as abas reconhecidas foram encontradas, mas estão vazias ou não possuem registros válidos para análise.");
             }
 
+            const routingSummary = TicketRoutingModule.routeUnassignedReportRows(rel, [...this.rel, ...rel]);
+            if (routingSummary.routed || routingSummary.triage) {
+              console.info(`Encaminhamento ITSM: ${routingSummary.routed} atribuída(s), ${routingSummary.triage} em triagem manual.`);
+            }
             this.rel.push(...rel);
             this.res.push(...res);
             this.files.push(f.name);
@@ -4059,7 +5300,7 @@
           <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 max-h-28 overflow-y-auto pr-1">
             ${lines.map(line => {
               const isChecked = this.selectedLines.has(line);
-              return `<label class="flex items-center gap-2 px-2.5 py-2 rounded-xl border text-xs cursor-pointer transition min-w-0 ${isChecked ? "border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200" : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"}"><input type="checkbox" class="w-3.5 h-3.5 shrink-0 accent-blue-600 rounded" ${isChecked ? "checked" : ""} onchange="RG.toggleLine(decodeURIComponent('${encodeURIComponent(line)}'),this.checked)"><span class="font-bold truncate">${esc(line)}</span></label>`;
+              return `<label class="flex items-center gap-2 px-2.5 py-2 rounded-xl border text-xs cursor-pointer transition min-w-0 ${isChecked ? "border-blue-500 bg-blue-50/70 dark:bg-blue-950/40 text-blue-800 dark:text-blue-200" : "border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"}"><input type="checkbox" class="w-3.5 h-3.5 shrink-0 accent-blue-600 rounded" ${isChecked ? "checked" : ""} onchange="RG.toggleLine(decodeURIComponent('${encodeInlineArgument(line)}'),this.checked)"><span class="font-bold truncate">${esc(line)}</span></label>`;
             }).join("") || `<p class="text-xs text-slate-500 col-span-full py-2">Nenhuma linha encontrada com os filtros atuais.</p>`}
           </div>
           <div class="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
@@ -4560,8 +5801,12 @@
         const byArea = grp("Área"), byTipo = grp("Tipo de Auditoria");
         const byResp = [...group(rows, r => r["Responsável"] || "Sem responsável")].map(([label, a]) => {
           const ok = a.filter(r => /conclu/i.test(String(r.Status || ""))).length;
-          return { label, value: a.length, sub: `${ok} concluídas • ${a.length - ok} pendentes` };
+          const auto = a.filter(r => r._responsavelAutomatico).length;
+          return { label, value: a.length, sub: `${ok} concluídas • ${a.length - ok} pendentes${auto ? ` • ${auto} automática(s)` : ""}` };
         }).sort((a, b) => b.value - a.value);
+        const autoRouted = rows.filter(r => r._responsavelAutomatico && r["Responsável"] && r["Responsável"] !== "TRIAGEM_MANUAL").length;
+        const manualTriage = rows.filter(r => r["Responsável"] === "TRIAGEM_MANUAL").length;
+        const routingConflicts = rows.filter(r => r._roteamento?.ownerConflict).length;
 
         const rec = [...group(rows, r => `${r.Ponto || "?"} — ${r.Descrição || ""}`)].map(([label, a]) => ({ label, value: a.length })).sort((a, b) => b.value - a.value).slice(0, 6);
         const byMonth = [...group(rows.filter(r => r.Data), r => r.Data.slice(0, 7))].sort((a, b) => a[0].localeCompare(b[0]));
@@ -4584,7 +5829,7 @@
             <span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold ${sColor(r.Status)}">${esc(r.Status)}</span>
           </div>
           <p class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200">${esc(r.Descrição)}</p>
-          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">Resp.: ${esc(r["Responsável"] || "—")} • Aberto: ${brDate(r.Data)} • Prazo: ${brDate(r.Prazo)}</p>
+          <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400" title="${esc(r._roteamento?.reason || "")}">Resp.: ${esc(r["Responsável"] || "—")}${r._responsavelAutomatico ? " • Encaminhamento automático" : ""}${r._roteamento?.ownerConflict ? ` • Regra sugere ${esc(r._roteamento.suggestedOwner)}` : ""} • ${esc(r._roteamento?.priority?.label || "")} • Aberto: ${brDate(r.Data)} • Prazo: ${brDate(r.Prazo)}</p>
         </div>`;
 
         return `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
@@ -4596,6 +5841,9 @@
           ${kpi("Tempo médio de conclusão", ttc == null ? "—" : `${f2(ttc, 1)} d`, "text-blue-600 dark:text-blue-400", "Entre abertura e baixa")}
           ${kpi("Área mais afetada", byArea[0]?.label || "—", "", byArea[0] ? `${byArea[0].value} ocorrências` : "")}
           ${kpi("Tipo mais frequente", byTipo[0]?.label || "—", "", byTipo[0] ? `${byTipo[0].value} ocorrências` : "")}
+          ${kpi("Atribuídas automaticamente", autoRouted, "text-indigo-600 dark:text-indigo-400", "Regras ITSM aplicadas aos responsáveis vazios/inválidos")}
+          ${kpi("Triagem manual", manualTriage, manualTriage ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400", "Sem correspondência segura")}
+          ${kpi("Divergências de responsável", routingConflicts, routingConflicts ? "text-orange-600 dark:text-orange-400" : "text-emerald-600 dark:text-emerald-400", "Atribuição histórica mantida; sugestão disponível para revisão")}
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5 items-start">
           <div class="lg:col-span-1">${card("Ocorrências por área", bars(byArea, { cls: "bg-blue-600", scroll: true }), "Distribuição de apontamentos por setor")}</div>
