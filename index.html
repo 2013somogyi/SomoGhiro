@@ -79,6 +79,25 @@
       transform: translateY(-2px);
       box-shadow: 0 10px 20px -6px rgba(37, 99, 235, 0.16);
     }
+    .rg-point-wrap { position: relative; min-width: 0; z-index: 0; }
+    .rg-point-wrap:hover, .rg-point-wrap:focus-within, .rg-point-wrap.is-open { z-index: 70; }
+    .rg-point-tooltip {
+      position: absolute; left: 50%; bottom: calc(100% + 8px); z-index: 80;
+      width: min(280px, calc(100vw - 36px)); padding: 12px 13px;
+      border: 1px solid #cbd5e1; border-radius: 12px; background: #ffffff;
+      color: #0f172a; box-shadow: 0 14px 35px -12px rgba(15, 23, 42, 0.35);
+      opacity: 0; visibility: hidden; pointer-events: none;
+      transform: translate(-50%, 5px); transition: opacity .16s ease, transform .16s ease, visibility .16s ease;
+    }
+    .dark .rg-point-tooltip { background: #0f172a; color: #f8fafc; border-color: #475569; }
+    .rg-point-wrap:hover .rg-point-tooltip, .rg-point-wrap:focus-within .rg-point-tooltip, .rg-point-wrap.is-open .rg-point-tooltip {
+      opacity: 1; visibility: visible; transform: translate(-50%, 0);
+    }
+    .rg-point-info { touch-action: manipulation; }
+    @media (max-width: 640px) {
+      .rg-point-tooltip { left: 0; transform: translateY(5px); width: min(280px, calc(100vw - 36px)); }
+      .rg-point-wrap:hover .rg-point-tooltip, .rg-point-wrap:focus-within .rg-point-tooltip, .rg-point-wrap.is-open .rg-point-tooltip { transform: translateY(0); }
+    }
     @media print {
       @page {
         size: A4 portrait;
@@ -3549,6 +3568,11 @@
     const f2 = (n, d = 2) => (n == null || isNaN(n)) ? "—" : Number(n).toFixed(d).replace(".", ",");
     const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
     const norm = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim();
+    const normalizePoint = value => {
+      const raw = String(value ?? "").trim().replace(/\s+/g, "").replace(",", ".");
+      const match = raw.match(/^([1-4])\.([1-5])$/);
+      return match ? `${match[1]}.${match[2]}` : raw;
+    };
     const cmp = (a, b) => String(a).localeCompare(String(b), undefined, { numeric: true });
     const days = (a, b) => (a && b) ? Math.round((new Date(b) - new Date(a)) / 864e5) : null;
     const group = (rows, fn) => { const m = new Map(); rows.forEach(r => { const k = fn(r); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
@@ -3636,7 +3660,7 @@
         // Identidade de uma avaliação para mesclar a matriz com os detalhes sem duplicar pontos.
         const responseKey = row => [
           toISO(row.Data), norm(normalizeShift(row.Turno)), norm(row["Tipo de Auditoria"]),
-          norm(row["Área"]), norm(row.Linha), String(row.Ponto ?? "").trim()
+          norm(row["Área"]), norm(row.Linha), normalizePoint(row.Ponto)
         ].join("¦");
 
         for (const f of files) {
@@ -3669,7 +3693,7 @@
                 "Tipo de Auditoria": String(pick(r, "Tipo de Auditoria") || ""),
                 Área: String(pick(r, "Área", "Area") || ""),
                 Linha: String(pick(r, "Linha", "Linhas") || ""),
-                Ponto: String(pick(r, "Ponto") || ""),
+                Ponto: normalizePoint(pick(r, "Ponto")),
                 Responsável: String(pick(r, "Responsável", "Responsavel") || "")
               }));
 
@@ -3701,13 +3725,15 @@
             const matrixRecords = [];
             if (matrixRaw.length) {
               const matrixHeaders = Object.keys(matrixRaw[0]);
-              const pointHeaders = matrixHeaders
-                .filter(h => /^[1-4]\.[1-5]$/.test(String(h).trim()))
-                .sort(cmp);
+              const pointColumns = matrixHeaders
+                .filter(h => /^[1-4][.,][1-5]$/.test(String(h).trim()))
+                .map(raw => ({ raw: String(raw).trim(), point: normalizePoint(raw) }))
+                .filter((column, index, all) => all.findIndex(item => item.point === column.point) === index)
+                .sort((a, b) => cmp(a.point, b.point));
               const hasMetadata = matrixHeaders.some(h =>
                 ["DATAS", "DATA", "ÁREA", "AREA", "TURNO", "LINHAS", "LINHA", "TIPO DE AUDITORIA"].includes(norm(h))
               );
-              if (!pointHeaders.length || !hasMetadata) {
+              if (!pointColumns.length || !hasMetadata) {
                 throw new Error('a aba "NOTAS POR LINHA" não possui cabeçalhos reconhecíveis. Esperados: DATAS, ÁREA, TURNO, LINHAS, pontos (1.1 a 4.5) e TIPO DE AUDITORIA.');
               }
 
@@ -3718,8 +3744,8 @@
                 const linha = String(pick(row, "LINHAS", "LINHA") || "").trim();
                 const auditType = String(pick(row, "TIPO DE AUDITORIA") || "").trim();
 
-                pointHeaders.forEach(point => {
-                  const original = pick(row, point);
+                pointColumns.forEach(({ raw, point }) => {
+                  const original = pick(row, raw);
                   if (!present(original)) return;
                   const score = parseScore(original);
                   const na = isNA(original);
@@ -3736,8 +3762,8 @@
                     Auditor: "",
                     "Área": area,
                     Linha: linha,
-                    Ponto: String(point),
-                    Grupo: String(point).split(".")[0],
+                    Ponto: point,
+                    Grupo: point.split(".")[0],
                     Pergunta: `Ponto ${point}`,
                     NotaOriginal: original,
                     Nota: score,
@@ -4387,36 +4413,111 @@
         <div class="mt-4">${card(`Ocorrências detalhadas (${n})`, n ? `<div class="space-y-2.5 max-h-96 overflow-y-auto pr-1">${rows.map(r => rowCard(r)).join("")}</div>` : EMPTY)}</div>`;
       },
 
+      togglePointQuestion(button) {
+        const wrapper = button?.closest(".rg-point-wrap");
+        if (!wrapper) return;
+        const wasOpen = wrapper.classList.contains("is-open");
+        document.querySelectorAll(".rg-point-wrap.is-open").forEach(item => {
+          item.classList.remove("is-open");
+          const control = item.querySelector(".rg-point-info");
+          if (control) control.setAttribute("aria-expanded", "false");
+        });
+        if (!wasOpen) {
+          wrapper.classList.add("is-open");
+          button.setAttribute("aria-expanded", "true");
+        }
+      },
+
       viewNotas(mode) {
-        const rows = this.notasRows(mode).filter(r => r.Nota != null);
+        const rawRows = this.notasRows(mode);
+        const parseValidNote = value => {
+          if (value === null || value === undefined || String(value).trim() === "") return null;
+          const n = typeof value === "number" ? value : Number(String(value).trim().replace(",", "."));
+          return Number.isFinite(n) && n >= 1 && n <= 5 ? n : null;
+        };
+        const rows = rawRows.map(r => ({
+          ...r,
+          Ponto: normalizePoint(r.Ponto),
+          Nota: parseValidNote(r.Nota)
+        })).filter(r => r.Nota !== null);
         const total = rows.length, conf = rows.filter(r => r.Nota >= 4).length, nc = rows.filter(r => r.Nota <= 2).length, mel = rows.filter(r => r.Nota === 3).length;
         const pct = total ? conf / total * 100 : null, avg = mean(rows.map(r => r.Nota));
-        const months = [...new Set(rows.map(r => r.Data.slice(0, 7)).filter(Boolean))].sort();
+        const months = [...new Set(rows.map(r => String(r.Data || "").slice(0, 7)).filter(v => /^\d{4}-\d{2}$/.test(v)))].sort();
         const cur = months.at(-1), prev = months.at(-2), mFmt = s => s ? s.split("-").reverse().join("/") : "—";
-        const curR = rows.filter(r => r.Data.startsWith(cur || "x")), prevR = rows.filter(r => r.Data.startsWith(prev || "x"));
-        const averageScore = list => mean(list.map(r => Number(r.Nota)).filter(Number.isFinite));
+        const averageScore = list => {
+          const scores = list.map(r => parseValidNote(r.Nota)).filter(v => v !== null);
+          return scores.length ? mean(scores) : null;
+        };
 
-        const tipos = [...new Set([...curR, ...prevR].map(r => r["Tipo de Auditoria"]).filter(Boolean))].sort(cmp);
+        // Resolve o texto da pergunta por macroárea + tipo + código do ponto.
+        // Quando a planilha traz RESPOSTAS DETALHADAS, essa pergunta tem prioridade;
+        // quando só há a matriz de notas, usa o checklist configurado no sistema.
+        const getChecklistForType = typeName => {
+          if (typeof AppState === "undefined" || !AppState.config) return null;
+          const typeConfig = (AppState.config.tiposAuditoria || []).find(item =>
+            norm(item.nome) === norm(typeName) || norm(item.id) === norm(typeName)
+          );
+          const typeId = typeConfig?.id || String(typeName || "").trim();
+          const macroId = mode === "mistura" ? "Mistura" : "Fabrica";
+          return AppState.config.checklists?.[`${macroId}_${typeId}`] || null;
+        };
+        const tipos = [...new Set(rows.map(r => String(r["Tipo de Auditoria"] || "").trim()).filter(Boolean))].sort(cmp);
         const grid = tipos.map(t => {
-          const a = curR.filter(r => r["Tipo de Auditoria"] === t), b = prevR.filter(r => r["Tipo de Auditoria"] === t);
-          const pts = [...new Set([...a, ...b].map(r => r.Ponto).filter(Boolean))].sort(cmp);
+          const typeRows = rows.filter(r => norm(r["Tipo de Auditoria"]) === norm(t));
+          const typeQuestionRows = rawRows.filter(r => norm(r["Tipo de Auditoria"]) === norm(t));
+          const checklist = getChecklistForType(t);
+          const questions = Array.isArray(checklist?.questoes) ? checklist.questoes.filter(q => q.ativa !== false) : [];
+          const pointsFromData = typeRows.map(r => normalizePoint(r.Ponto)).filter(Boolean);
+          const pointsFromChecklist = questions.map(q => normalizePoint(q.codigo)).filter(Boolean);
+          const pts = [...new Set([...pointsFromChecklist, ...pointsFromData])].sort(cmp);
           return `<div class="${tipos.length > 1 ? "mb-5 last:mb-0" : ""}">
             ${tipos.length > 1 ? `<div class="flex items-center gap-2 mb-3"><span class="w-2 h-2 rounded-full bg-blue-600"></span><p class="text-xs font-extrabold uppercase tracking-wider text-slate-600 dark:text-slate-300">${esc(t)}</p></div>` : ""}
             <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-10 gap-2.5">${pts.map(pt => {
-              const xRows = a.filter(r => r.Ponto === pt), yRows = b.filter(r => r.Ponto === pt);
+              const pointRows = typeRows.filter(r => normalizePoint(r.Ponto) === pt && r.Data);
+              const byMonth = group(pointRows, r => String(r.Data).slice(0, 7));
+              const scoredMonths = [...byMonth.keys()].filter(key => /^\d{4}-\d{2}$/.test(key)).sort();
+              // Sem filtro mensal, cada ponto usa seu próprio mês mais recente com nota válida.
+              // Isso evita mostrar "—" só porque aquele ponto não foi avaliado no último mês global.
+              const pointCurrentMonth = this.monthFilter
+                ? this.monthFilter
+                : (scoredMonths.at(-1) || "");
+              const pointPreviousMonth = this.monthFilter
+                ? ""
+                : (scoredMonths.length > 1 ? scoredMonths.at(-2) : "");
+              const xRows = pointCurrentMonth ? (byMonth.get(pointCurrentMonth) || []) : [];
+              const yRows = pointPreviousMonth ? (byMonth.get(pointPreviousMonth) || []) : [];
               const x = averageScore(xRows), y = averageScore(yRows);
               const diff = (x != null && y != null) ? x - y : null;
               const ar = diff != null ? (diff > 0.005 ? "▲" : diff < -0.005 ? "▼" : "=") : "";
               const arColor = diff != null ? (diff > 0.005 ? "text-emerald-600 dark:text-emerald-400" : diff < -0.005 ? "text-rose-600 dark:text-rose-400" : "text-slate-400") : "text-slate-400";
               const borderTop = x == null ? "border-t-slate-300 dark:border-t-slate-700" : x >= 4.5 ? "border-t-emerald-500" : x >= 3 ? "border-t-amber-500" : "border-t-rose-500";
-              return `<div class="rg-point-card rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/90 border-t-4 ${borderTop} bg-white dark:bg-slate-900 shadow-2xs">
-                <div class="px-2 py-1.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span class="text-xs font-black tracking-tight text-slate-800 dark:text-slate-100">Pt ${esc(pt)}</span>
-                  <span class="text-[10px] font-extrabold ${arColor}">${ar}</span>
+              const questionFromData = typeQuestionRows
+                .filter(r => normalizePoint(r.Ponto) === pt)
+                .map(r => String(r.Pergunta || "").trim())
+                .find(question => question && !/^Ponto\s+[1-4][.,][1-5]$/i.test(question));
+              const questionFromChecklist = questions.find(q => normalizePoint(q.codigo) === pt)?.pergunta;
+              const question = questionFromData || questionFromChecklist || `Pergunta do ponto ${pt} não encontrada no checklist atual.`;
+              const pointRef = pointCurrentMonth ? mFmt(pointCurrentMonth) : "Sem histórico";
+              const previousRef = pointPreviousMonth ? mFmt(pointPreviousMonth) : "—";
+              return `<div class="rg-point-wrap group relative">
+                <div class="rg-point-card rounded-xl border border-slate-200 dark:border-slate-700/90 border-t-4 ${borderTop} bg-white dark:bg-slate-900 shadow-2xs">
+                  <div class="px-2 py-1.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-1">
+                    <span class="text-xs font-black tracking-tight text-slate-800 dark:text-slate-100">Pt ${esc(pt)}</span>
+                    <div class="flex items-center gap-1">
+                      <span class="text-[10px] font-extrabold ${arColor}">${ar}</span>
+                      <button type="button" class="rg-point-info inline-flex items-center justify-center w-5 h-5 rounded-full border border-slate-300 dark:border-slate-600 text-[10px] font-black text-slate-500 dark:text-slate-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500" onclick="RG.togglePointQuestion(this)" aria-expanded="false" aria-label="Ver pergunta do ponto ${esc(pt)}">i</button>
+                    </div>
+                  </div>
+                  <div class="py-2.5 px-2 text-center">
+                    <p class="text-xl sm:text-2xl font-black leading-none tracking-tight ${txtCls(x)}">${x == null ? "—" : f2(x, 1)}</p>
+                    <p class="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1">Ref. ${esc(pointRef)}</p>
+                    <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1">Ant. <span class="font-bold text-slate-600 dark:text-slate-300">${y == null ? "—" : f2(y, 1)}</span> <span class="font-medium">${esc(previousRef)}</span></p>
+                  </div>
                 </div>
-                <div class="py-2.5 px-2 text-center">
-                  <p class="text-xl sm:text-2xl font-black leading-none tracking-tight ${txtCls(x)}">${x == null ? "—" : f2(x, 1)}</p>
-                  <p class="text-[10px] font-semibold text-slate-400 dark:text-slate-500 mt-1.5">Ant. <span class="font-bold text-slate-600 dark:text-slate-300">${y == null ? "—" : f2(y, 1)}</span></p>
+                <div class="rg-point-tooltip" role="tooltip">
+                  <p class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-300 mb-1">Pergunta relacionada • ${esc(t)} • Ponto ${esc(pt)}</p>
+                  <p class="text-xs sm:text-sm font-semibold leading-relaxed text-slate-800 dark:text-slate-100">${esc(question)}</p>
+                  <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-2">Média calculada com as notas válidas de ${esc(pointRef)}${previousRef !== "—" ? `; comparação anterior: ${esc(previousRef)}` : ""}.</p>
                 </div>
               </div>`;
             }).join("")}</div></div>`;
@@ -4465,7 +4566,7 @@
           ${kpi("Não conformidades", nc, nc ? "text-rose-500" : "", "Notas 1 e 2")}${kpi("Melhorias", mel, mel ? "text-amber-500" : "", "Nota 3")}
           ${kpi("Conformes", conf, "text-emerald-500", "Notas 4 e 5")}${kpi("Mês de referência", mFmt(cur), "text-slate-700 dark:text-slate-200", "Período em destaque")}
         </div>
-        <div class="mt-5">${card("Médias por Ponto (Conformidade Ponto a Ponto)", grid || EMPTY, `Destaque das médias por ponto (escala 1 a 5): ${mFmt(cur)} comparado ao mês anterior ${mFmt(prev)}`, "Visão Principal")}</div>
+        <div class="mt-5">${card("Médias por Ponto (Conformidade Ponto a Ponto)", grid || EMPTY, this.monthFilter ? `Médias do mês selecionado (${mFmt(cur)}). Passe o mouse ou toque no ícone “i” de cada card para consultar a pergunta.` : `Cada ponto usa o mês mais recente em que recebeu nota válida e compara com o período anterior em que foi avaliado. Passe o mouse ou toque no ícone “i” para consultar a pergunta.`, "Visão Principal")}</div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
           ${card("Pontos mais críticos", crit, "Conformidade em percentual • menores percentuais primeiro")}
           ${card(mode === "mistura" ? "Evolução por data (%)" : "Evolução mensal (%)", evo, "Conformes, melhorias e não conformidades em percentual por período")}
