@@ -933,7 +933,20 @@
       removeFallbackById(id) {
         const rows = this.readFallback();
         const retained = rows.filter(item => item.id !== id);
-        if (retained.length !== rows.length) this.writeFallback(retained);
+        const removed = retained.length !== rows.length;
+        if (removed) this.writeFallback(retained);
+        return removed;
+      },
+
+      /** Remove uma cópia alternativa e informa quando o navegador não conclui a gravação. */
+      removeFallbackByIdStrict(id) {
+        const rows = this.readFallback();
+        const retained = rows.filter(item => item.id !== id);
+        if (retained.length === rows.length) return false;
+        if (!this.writeFallback(retained)) {
+          throw new Error("O navegador não permitiu remover a cópia de segurança da auditoria.");
+        }
+        return true;
       },
 
       /**
@@ -1048,6 +1061,41 @@
 
         // A cópia alternativa também é removida, mesmo quando o IndexedDB está funcionando.
         this.removeFallbackById(id);
+      },
+
+      /**
+       * Remove uma auditoria por solicitação explícita e confirma a persistência da exclusão.
+       * Usa o armazenamento alternativo somente quando o IndexedDB não está disponível.
+       * @param {string} id Identificador único da auditoria arquivada.
+       */
+      async removePermanently(id) {
+        let db;
+        try {
+          db = await this.open();
+        } catch (openError) {
+          // Em navegadores sem IndexedDB, só é seguro confirmar se a cópia alternativa existir.
+          const removedFromFallback = this.removeFallbackByIdStrict(id);
+          if (removedFromFallback) return true;
+          throw new Error("Não foi possível acessar o histórico persistido para confirmar a exclusão.");
+        }
+
+        try {
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_HISTORY_STORE, "readwrite");
+            tx.objectStore(AUDIT_HISTORY_STORE).delete(id);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error || new Error("Falha ao excluir a auditoria do histórico"));
+            tx.onabort = () => reject(tx.error || new Error("A exclusão da auditoria foi cancelada"));
+          });
+        } catch (error) {
+          throw error;
+        } finally {
+          db.close();
+        }
+
+        // Remove também uma eventual cópia de emergência para impedir que o registro reapareça.
+        this.removeFallbackByIdStrict(id);
+        return true;
       }
     };
 
@@ -3456,11 +3504,74 @@
                   <button type="button" onclick="RevisaoModule.viewHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg ${viewing ? "bg-blue-700" : "bg-blue-600 hover:bg-blue-700"} text-white text-xs font-extrabold">${viewing ? "Visualizando" : "Visualizar"}</button>
                   <button type="button" onclick="RevisaoModule.exportHistoryExcel(${idArg})" class="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold">Excel</button>
                   <button type="button" onclick="RevisaoModule.exportHistoryPDF(${idArg})" class="px-3 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold">PDF</button>
+                  <button type="button" onclick="RevisaoModule.confirmDeleteHistoryAudit(${idArg})" class="px-3 py-2 rounded-lg border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-extrabold">Apagar</button>
                 </div>
               </div>
             </div>
           </article>`;
         }).join("");
+      },
+
+      /**
+       * Abre a confirmação antes de excluir uma auditoria arquivada.
+       * Auditorias em andamento não fazem parte do histórico e não podem ser apagadas por esta ação.
+       * @param {string} id Identificador da auditoria arquivada.
+       */
+      confirmDeleteHistoryAudit(id) {
+        const audit = AppState.auditHistory.find(item => item.id === id && !isAuditArchiveExpired(item));
+        if (!audit) return App.showToast("Esta auditoria não está mais disponível no histórico.", "error");
+
+        const title = `${ChecklistsModule.getTipoName(audit.tipo)} — ${ChecklistsModule.getMacroareaName(audit.macroarea)}`;
+        const location = `${audit.areaNome || "Área não informada"} • ${(audit.linhas || []).join(", ") || "Sem linha informada"}`;
+        const date = audit.finalizadaEm
+          ? new Date(audit.finalizadaEm).toLocaleString("pt-BR")
+          : "Data de finalização não informada";
+        const idArg = `decodeURIComponent('${encodeInlineArgument(id)}')`;
+
+        App.openModal(`
+          <div class="space-y-4">
+            <div>
+              <span class="text-xs font-extrabold uppercase tracking-wider text-rose-600 dark:text-rose-400">Excluir do histórico</span>
+              <h3 class="text-lg font-extrabold mt-1">Apagar esta auditoria?</h3>
+            </div>
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 p-3 space-y-1.5">
+              <p class="text-sm font-extrabold text-slate-900 dark:text-white">${this.historyEscape(title)}</p>
+              <p class="text-xs text-slate-600 dark:text-slate-300">${this.historyEscape(location)}</p>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Auditor: ${this.historyEscape(audit.auditor || "Não informado")} • Finalizada em: ${this.historyEscape(date)}</p>
+            </div>
+            <p class="text-sm text-rose-700 dark:text-rose-300">Esta ação excluirá permanentemente a auditoria salva e sua cópia de segurança neste navegador. Não será possível desfazê-la.</p>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+              <button type="button" onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Cancelar</button>
+              <button type="button" onclick="RevisaoModule.deleteHistoryAudit(${idArg})" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-extrabold">Apagar auditoria</button>
+            </div>
+          </div>`);
+      },
+
+      /**
+       * Exclui a auditoria selecionada do armazenamento persistente e atualiza a revisão.
+       * @param {string} id Identificador da auditoria arquivada.
+       */
+      async deleteHistoryAudit(id) {
+        const audit = AppState.auditHistory.find(item => item.id === id);
+        if (!audit) {
+          App.closeModal();
+          return App.showToast("Esta auditoria já não está disponível no histórico.", "info");
+        }
+
+        try {
+          await AuditHistoryStore.removePermanently(id);
+          AppState.auditHistory = AppState.auditHistory.filter(item => item.id !== id);
+          AppState.historySelectedIds.delete(id);
+          if (AppState.reviewAuditId === id) AppState.reviewAuditId = null;
+
+          App.closeModal();
+          this.render();
+          App.scheduleArchiveRetentionCleanup();
+          App.showToast("Auditoria apagada permanentemente do histórico.", "success");
+        } catch (error) {
+          console.error("Não foi possível apagar a auditoria:", error);
+          App.showToast(`Não foi possível apagar a auditoria: ${error.message}`, "error");
+        }
       },
 
       toggleHistorySelection(id, checked) {
@@ -5707,87 +5818,205 @@
         return this.monthFilter || months.at(-1) || "";
       },
 
+      /**
+       * Compara cada linha operacional com cada tipo de auditoria esperado.
+       * Uma linha só é considerada concluída para um tipo quando há ao menos
+       * uma resposta importada daquele tipo, naquela área, linha e mês.
+       * Os filtros ativos de área e tipo limitam a lista de pendências.
+       */
       getUnauditedLinesForReferenceMonth() {
         const monthKey = this.getReferenceMonthForReport();
-        const areasConfig = Array.isArray(AppState?.config?.areasOperacionais)
-          ? AppState.config.areasOperacionais
+        const config = typeof AppState !== "undefined" ? AppState.config : null;
+        const areasConfig = Array.isArray(config?.areasOperacionais)
+          ? config.areasOperacionais
           : [];
         const selectedAreas = this.F["Área"]?.size ? [...this.F["Área"]] : null;
         const selectedTypes = this.F["Tipo de Auditoria"]?.size ? [...this.F["Tipo de Auditoria"]] : null;
-        const areaIsSelected = name => !selectedAreas || selectedAreas.some(v => norm(v) === norm(name));
-        const typeIsSelected = value => !selectedTypes || selectedTypes.some(v => norm(v) === norm(value));
+
+        const areaIsSelected = areaName =>
+          !selectedAreas || selectedAreas.some(value => norm(value) === norm(areaName));
+        const typeIsSelected = auditType =>
+          !selectedTypes || selectedTypes.some(value =>
+            norm(value) === norm(auditType.id) || norm(value) === norm(auditType.name)
+          );
+
+        // Usa os tipos configurados no sistema; a lista fixa protege bases
+        // antigas que ainda não possuem essa propriedade de configuração.
+        const configuredTypes = Array.isArray(config?.tiposAuditoria)
+          ? config.tiposAuditoria
+              .filter(item => item && (item.id || item.nome))
+              .map(item => ({
+                id: String(item.id || item.nome).trim(),
+                name: String(item.nome || item.id).trim()
+              }))
+          : [];
+        const availableTypes = configuredTypes.length
+          ? configuredTypes
+          : [
+              { id: "Seguranca", name: "Segurança" },
+              { id: "Qualidade", name: "Qualidade" },
+              { id: "5S", name: "5S" }
+            ];
+        const expectedTypes = availableTypes.filter(typeIsSelected);
 
         const expectedAreas = areasConfig
           .filter(area => areaIsSelected(area.nome || area.id))
           .map(area => ({
-            name: area.nome || area.id || "Área não identificada",
+            name: String(area.nome || area.id || "Área não identificada").trim(),
             lines: [...new Set((Array.isArray(area.linhas) ? area.linhas : [])
-              .map(line => String(line ?? "").trim()).filter(Boolean))]
+              .map(line => String(line ?? "").trim())
+              .filter(Boolean))]
           }))
           .filter(area => area.lines.length);
 
-        // Fallback para configurações antigas sem linhas cadastradas: usa as
-        // linhas conhecidas na base importada, sem inventar linhas ausentes.
+        // Em configurações antigas sem linhas, usa apenas as linhas encontradas
+        // na planilha importada, sem criar unidades operacionais por suposição.
         if (!expectedAreas.length) {
           const areaLineMap = new Map();
           this.res.forEach(row => {
-            const area = String(row["Área"] || "").trim();
-            const line = String(row.Linha || "").trim();
-            if (!area || !line || !areaIsSelected(area)) return;
-            if (!areaLineMap.has(norm(area))) areaLineMap.set(norm(area), { name: area, lines: new Set() });
-            areaLineMap.get(norm(area)).lines.add(line);
+            const areaName = String(row["Área"] || "").trim();
+            const lineName = String(row.Linha || "").trim();
+            if (!areaName || !lineName || !areaIsSelected(areaName)) return;
+
+            const areaKey = norm(areaName);
+            if (!areaLineMap.has(areaKey)) {
+              areaLineMap.set(areaKey, { name: areaName, lines: new Set() });
+            }
+            areaLineMap.get(areaKey).lines.add(lineName);
           });
-          expectedAreas.push(...[...areaLineMap.values()].map(item => ({ name: item.name, lines: [...item.lines] })));
+          expectedAreas.push(...[...areaLineMap.values()].map(area => ({
+            name: area.name,
+            lines: [...area.lines]
+          })));
         }
 
-        const referenceRows = monthKey ? this.res.filter(row => {
-          const dateMonth = String(row.Data || "").slice(0, 7);
-          return dateMonth === monthKey &&
-            this.COLS.every(c => !this.F[c]?.size || this.F[c].has(String(row[c] ?? ""))) &&
-            typeIsSelected(row["Tipo de Auditoria"]);
-        }) : [];
+        const referenceRows = monthKey
+          ? this.res.filter(row => {
+              const rowMonth = String(row.Data || "").slice(0, 7);
+              return rowMonth === monthKey &&
+                this.COLS.every(column =>
+                  !this.F[column]?.size || this.F[column].has(String(row[column] ?? ""))
+                );
+            })
+          : [];
 
-        const auditedByArea = new Map();
+        // A chave contém tipo, área e linha: registrar Segurança não elimina
+        // a pendência de Qualidade ou 5S para a mesma linha.
+        const auditedCombinations = new Set();
         referenceRows.forEach(row => {
           const areaName = String(row["Área"] || "").trim();
-          const lineName = String(row.Linha || "").trim() || (norm(areaName) === "MISTURA" ? "Geral Mistura" : "");
-          if (!areaName || !lineName) return;
-          const key = norm(areaName);
-          if (!auditedByArea.has(key)) auditedByArea.set(key, new Set());
-          // A presença de uma resposta de ponto no mês é evidência de auditoria.
-          // A importação da matriz cria registros apenas para notas válidas ou N/A.
-          auditedByArea.get(key).add(norm(lineName));
+          const lineName = String(row.Linha || "").trim() ||
+            (norm(areaName) === "MISTURA" ? "Geral Mistura" : "");
+          const rowType = String(row["Tipo de Auditoria"] || "").trim();
+          if (!areaName || !lineName || !rowType) return;
+
+          const matchingType = expectedTypes.find(type =>
+            norm(type.id) === norm(rowType) || norm(type.name) === norm(rowType)
+          );
+          if (!matchingType) return;
+
+          auditedCombinations.add([
+            norm(matchingType.id),
+            norm(areaName),
+            norm(lineName)
+          ].join("¦"));
         });
 
-        const groups = expectedAreas.map(area => {
-          const audited = auditedByArea.get(norm(area.name)) || new Set();
-          const lines = area.lines.filter(line => !audited.has(norm(line))).sort(cmp);
-          const auditedCount = area.lines.filter(line => audited.has(norm(line))).length;
-          return { name: area.name, missing: lines, total: area.lines.length, audited: auditedCount };
+        const groups = expectedTypes.map(type => {
+          const areas = expectedAreas.map(area => {
+            const missing = area.lines
+              .filter(line => !auditedCombinations.has([
+                norm(type.id), norm(area.name), norm(line)
+              ].join("¦")))
+              .sort(cmp);
+            const audited = area.lines.length - missing.length;
+            return {
+              name: area.name,
+              missing,
+              total: area.lines.length,
+              audited
+            };
+          });
+
+          const totalExpected = areas.reduce((sum, area) => sum + area.total, 0);
+          const totalAudited = areas.reduce((sum, area) => sum + area.audited, 0);
+          const missingCount = areas.reduce((sum, area) => sum + area.missing.length, 0);
+          return {
+            id: type.id,
+            name: type.name,
+            areas: areas.filter(area => area.missing.length),
+            totalExpected,
+            totalAudited,
+            missingCount
+          };
         });
 
-        const totalExpected = groups.reduce((sum, group) => sum + group.total, 0);
-        const totalAudited = groups.reduce((sum, group) => sum + group.audited, 0);
-        const missingCount = groups.reduce((sum, group) => sum + group.missing.length, 0);
-        return { monthKey, groups, totalExpected, totalAudited, missingCount, hasReferenceData: referenceRows.length > 0 };
+        const totalExpected = groups.reduce((sum, type) => sum + type.totalExpected, 0);
+        const totalAudited = groups.reduce((sum, type) => sum + type.totalAudited, 0);
+        const missingCount = groups.reduce((sum, type) => sum + type.missingCount, 0);
+
+        return {
+          monthKey,
+          groups,
+          totalExpected,
+          totalAudited,
+          missingCount,
+          // Um mês escolhido manualmente continua válido mesmo quando ainda
+          // não existem respostas importadas para ele: nesse caso, tudo falta.
+          hasReferenceData: referenceRows.length > 0 || Boolean(this.monthFilter)
+        };
       },
 
       renderUnauditedLinesCard() {
         const result = this.getUnauditedLinesForReferenceMonth();
         const monthTitle = result.monthKey ? this.monthLabel(result.monthKey) : "Sem mês de referência";
         let body = "";
+
         if (!result.monthKey) {
           body = EMPTY;
         } else if (!result.totalExpected) {
-          body = `<div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">Não há linhas cadastradas para as áreas selecionadas.</div>`;
+          body = `<div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">Não há linhas ou tipos de auditoria cadastrados para os filtros selecionados.</div>`;
         } else if (!result.hasReferenceData) {
-          body = `<div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">Não foram encontrados registros para ${esc(monthTitle)} com os filtros atuais.</div>`;
+          body = `<div class="p-4 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 text-sm text-slate-500 dark:text-slate-400">Não foram encontrados registros para ${esc(monthTitle)} com os filtros atuais. Selecione um mês para visualizar todas as auditorias pendentes.</div>`;
         } else if (!result.missingCount) {
-          body = `<div class="flex items-center gap-3 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/70 dark:bg-emerald-950/20"><span class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg font-black">✓</span><div><p class="text-sm font-extrabold text-emerald-800 dark:text-emerald-200">Todas as linhas foram auditadas</p><p class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">${result.totalAudited} de ${result.totalExpected} linhas em ${esc(monthTitle)}.</p></div></div>`;
+          body = `<div class="flex items-center gap-3 p-4 rounded-xl border border-emerald-200 dark:border-emerald-900 bg-emerald-50/70 dark:bg-emerald-950/20"><span class="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center text-lg font-black">✓</span><div><p class="text-sm font-extrabold text-emerald-800 dark:text-emerald-200">Todas as auditorias foram realizadas</p><p class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">${result.totalAudited} de ${result.totalExpected} combinações de linha e tipo concluídas em ${esc(monthTitle)}.</p></div></div>`;
         } else {
-          body = `<div class="flex flex-wrap items-center justify-between gap-2 mb-3"><p class="text-xs font-semibold text-slate-600 dark:text-slate-300">${result.missingCount} linha(s) sem avaliação • ${result.totalAudited}/${result.totalExpected} auditadas</p><span class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[11px] font-extrabold">${esc(monthTitle)}</span></div><div class="space-y-3 max-h-72 overflow-y-auto pr-1">${result.groups.filter(group => group.missing.length).map(group => `<section class="rounded-xl border border-slate-200 dark:border-slate-700 p-3"><div class="flex items-center justify-between gap-2 mb-2"><h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-100">${esc(group.name)}</h4><span class="text-[10px] font-bold text-rose-600 dark:text-rose-300">${group.missing.length} pendente(s)</span></div><div class="flex flex-wrap gap-1.5">${group.missing.map(line => `<span class="inline-flex px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/70 text-xs font-bold text-rose-700 dark:text-rose-300">${esc(line)}</span>`).join("")}</div></section>`).join("")}</div>`;
+          const pendingTypes = result.groups.filter(type => type.missingCount > 0);
+          body = `<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <p class="text-xs font-semibold text-slate-600 dark:text-slate-300"><strong>${result.missingCount}</strong> auditoria(s) pendente(s) • ${result.totalAudited}/${result.totalExpected} combinações concluídas</p>
+            <span class="px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-[11px] font-extrabold">${esc(monthTitle)}</span>
+          </div>
+          <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
+            ${pendingTypes.map((type, index) => `
+              <section class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                <div class="flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/70">
+                  <h4 class="text-xs font-extrabold text-slate-800 dark:text-slate-100">${esc(type.name)}</h4>
+                  <span class="text-[10px] font-bold text-rose-600 dark:text-rose-300">${type.missingCount} pendente(s)</span>
+                </div>
+                <div class="p-3 space-y-2.5">
+                  ${type.areas.map(area => `
+                    <div>
+                      <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <p class="text-[11px] font-extrabold uppercase tracking-wide text-slate-500 dark:text-slate-400">${esc(area.name)}</p>
+                        <span class="text-[10px] font-semibold text-slate-400">${area.missing.length} linha(s)</span>
+                      </div>
+                      <div class="flex flex-wrap gap-1.5">
+                        ${area.missing.map(line => `<span class="inline-flex px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/70 text-xs font-bold text-rose-700 dark:text-rose-300">${esc(line)}</span>`).join("")}
+                      </div>
+                    </div>
+                  `).join("")}
+                </div>
+              </section>
+            `).join("")}
+          </div>`;
         }
-        return card("Linhas não auditadas", body, "Linhas cadastradas sem respostas no mês de referência, considerando os filtros de tipo e área.", monthTitle);
+
+        return card(
+          "Auditorias pendentes por linha",
+          body,
+          "Mostra separadamente Segurança, Qualidade e 5S, indicando a área e a linha em que cada auditoria ainda falta.",
+          monthTitle
+        );
       },
 
       viewRel() {
