@@ -190,6 +190,10 @@
           Em andamento:
         </span>
         <span id="session-bar-info" class="font-medium truncate"></span>
+        <span id="audit-save-status" role="status" aria-live="polite" class="inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold text-emerald-700 dark:text-emerald-300 shrink-0">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          Salvamento automático ativo
+        </span>
       </div>
       <div class="flex items-center gap-2 shrink-0">
         <button id="btn-manage-audit-lines" type="button" onclick="AuditoriaModule.openManageLinesModal()" class="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold transition text-xs flex items-center gap-1 shadow-sm">
@@ -784,8 +788,11 @@
 
     const CONFIG_STORAGE_KEY = "somoghiroaudit-imported-config-v1";
     const AUDIT_HISTORY_DB = "somoghiroaudit-history-db";
+    const AUDIT_HISTORY_DB_VERSION = 2;
     const AUDIT_HISTORY_STORE = "audits";
+    const AUDIT_DRAFT_STORE = "drafts";
     const AUDIT_HISTORY_FALLBACK_KEY = "somoghiroaudit-history-fallback-v1";
+    const AUDIT_DRAFT_FALLBACK_KEY = "somoghiroaudit-active-draft-v1";
 
     // Histórico local: IndexedDB comporta mais auditorias que o localStorage.
     // Um fallback localStorage é mantido para navegadores/ambientes sem IndexedDB.
@@ -793,10 +800,11 @@
       open() {
         return new Promise((resolve, reject) => {
           if (!window.indexedDB) return reject(new Error("IndexedDB indisponível"));
-          const request = window.indexedDB.open(AUDIT_HISTORY_DB, 1);
+          const request = window.indexedDB.open(AUDIT_HISTORY_DB, AUDIT_HISTORY_DB_VERSION);
           request.onupgradeneeded = () => {
             const db = request.result;
             if (!db.objectStoreNames.contains(AUDIT_HISTORY_STORE)) db.createObjectStore(AUDIT_HISTORY_STORE, { keyPath: "id" });
+            if (!db.objectStoreNames.contains(AUDIT_DRAFT_STORE)) db.createObjectStore(AUDIT_DRAFT_STORE, { keyPath: "id" });
           };
           request.onsuccess = () => resolve(request.result);
           request.onerror = () => reject(request.error || new Error("Falha ao abrir o histórico"));
@@ -862,6 +870,76 @@
           const rows = this.readFallback().filter(item => item.id !== id);
           safeStorageSet(AUDIT_HISTORY_FALLBACK_KEY, JSON.stringify(rows));
         }
+      }
+    };
+
+    // Rascunho da auditoria ativa: grava localmente a cada alteração, sem depender da internet.
+    // O IndexedDB é o armazenamento principal; localStorage funciona como cópia de emergência/fallback.
+    const AuditDraftStore = {
+      async save(snapshot) {
+        const copy = JSON.parse(JSON.stringify(snapshot));
+        const serialized = JSON.stringify(copy);
+        let backupSaved = false;
+        try {
+          window.localStorage.setItem(AUDIT_DRAFT_FALLBACK_KEY, serialized);
+          backupSaved = true;
+        } catch (storageError) {
+          console.warn("Cópia de emergência do rascunho não pôde ser atualizada:", storageError);
+        }
+
+        try {
+          const db = await AuditHistoryStore.open();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_DRAFT_STORE, "readwrite");
+            tx.objectStore(AUDIT_DRAFT_STORE).put(copy);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => reject(tx.error || new Error("Falha ao salvar rascunho"));
+            tx.onabort = () => reject(tx.error || new Error("Salvamento do rascunho cancelado"));
+          });
+          return "indexedDB";
+        } catch (error) {
+          console.warn("IndexedDB indisponível para o rascunho:", error);
+          if (backupSaved) return "localStorage";
+          throw new Error("Não foi possível salvar a auditoria neste dispositivo. Verifique o espaço disponível no navegador.");
+        }
+      },
+      async load() {
+        try {
+          const db = await AuditHistoryStore.open();
+          const row = await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_DRAFT_STORE, "readonly");
+            const req = tx.objectStore(AUDIT_DRAFT_STORE).get("active");
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error || new Error("Falha ao recuperar rascunho"));
+            tx.oncomplete = () => db.close();
+            tx.onerror = () => reject(tx.error || new Error("Falha na leitura do rascunho"));
+          });
+          if (row?.audit) return row;
+        } catch (error) {
+          console.warn("Não foi possível ler o rascunho pelo IndexedDB:", error);
+        }
+        try {
+          const raw = window.localStorage.getItem(AUDIT_DRAFT_FALLBACK_KEY);
+          const parsed = raw ? JSON.parse(raw) : null;
+          return parsed?.audit ? parsed : null;
+        } catch (error) {
+          console.warn("Cópia local do rascunho inválida:", error);
+          return null;
+        }
+      },
+      async remove() {
+        try {
+          const db = await AuditHistoryStore.open();
+          await new Promise((resolve, reject) => {
+            const tx = db.transaction(AUDIT_DRAFT_STORE, "readwrite");
+            tx.objectStore(AUDIT_DRAFT_STORE).delete("active");
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onerror = () => reject(tx.error || new Error("Falha ao remover rascunho"));
+          });
+        } catch (error) {
+          console.warn("Não foi possível remover rascunho do IndexedDB:", error);
+        }
+        try { window.localStorage.removeItem(AUDIT_DRAFT_FALLBACK_KEY); } catch (error) { console.warn("Não foi possível remover cópia de emergência:", error); }
       }
     };
 
@@ -951,6 +1029,82 @@
       reviewAuditId: null,
       historySelectedIds: new Set(),
       theme: safeStorageGet("auditflow-theme", "light")
+    };
+
+    const AuditAutosave = {
+      timer: null,
+      pending: Promise.resolve(),
+      sequence: 0,
+      failureNotified: false,
+      statusElement() { return document.getElementById("audit-save-status"); },
+      setStatus(message, state = "saved") {
+        const el = this.statusElement();
+        if (!el) return;
+        const styles = {
+          saved: "text-emerald-700 dark:text-emerald-300",
+          saving: "text-blue-700 dark:text-blue-300",
+          offline: "text-amber-700 dark:text-amber-300",
+          error: "text-rose-700 dark:text-rose-300"
+        };
+        const dots = { saved: "bg-emerald-500", saving: "bg-blue-500 animate-pulse", offline: "bg-amber-500", error: "bg-rose-500" };
+        el.className = `inline-flex items-center gap-1 text-[11px] sm:text-xs font-semibold shrink-0 ${styles[state] || styles.saved}`;
+        el.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dots[state] || dots.saved}"></span>${String(message)}`;
+      },
+      createSnapshot() {
+        if (!AppState.audit) return null;
+        return {
+          id: "active",
+          audit: JSON.parse(JSON.stringify(AppState.audit)),
+          ui: {
+            currentQuestionIndex: Number(AuditoriaModule.currentQuestionIndex) || 0,
+            evaluationMode: ["question", "line"].includes(AuditoriaModule.evaluationMode) ? AuditoriaModule.evaluationMode : "question",
+            activeLineForLineMode: AuditoriaModule.activeLineForLineMode || AppState.audit.linhas[0] || null
+          },
+          savedAt: new Date().toISOString()
+        };
+      },
+      schedule(delay = 220) {
+        if (!AppState.audit) return;
+        clearTimeout(this.timer);
+        if (navigator.onLine === false) this.setStatus("Offline • salvando neste dispositivo", "offline");
+        else this.setStatus("Salvando...", "saving");
+        this.timer = setTimeout(() => { this.flush().catch(() => {}); }, delay);
+      },
+      flush() {
+        clearTimeout(this.timer);
+        this.timer = null;
+        const snapshot = this.createSnapshot();
+        if (!snapshot) return this.pending;
+        const seq = ++this.sequence;
+        this.pending = this.pending.catch(() => {}).then(async () => {
+          const storage = await AuditDraftStore.save(snapshot);
+          if (seq === this.sequence) {
+            const time = new Date(snapshot.savedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+            const mode = navigator.onLine === false ? "Offline • salvo localmente" : "Salvo neste dispositivo";
+            this.setStatus(`${mode} às ${time}`, "saved");
+            this.failureNotified = false;
+          }
+          return storage;
+        }).catch(error => {
+          console.error("Falha no salvamento automático da auditoria:", error);
+          if (seq === this.sequence) this.setStatus("Falha ao salvar • verifique o espaço do navegador", "error");
+          if (!this.failureNotified) {
+            this.failureNotified = true;
+            App.showToast("Atenção: não foi possível salvar automaticamente. Verifique o espaço disponível no navegador.", "error");
+          }
+          throw error;
+        });
+        return this.pending;
+      },
+      flushEmergencyCopy() {
+        // beforeunload/pagehide não aguardam Promises; gravação síncrona de última defesa.
+        try {
+          const snapshot = this.createSnapshot();
+          if (snapshot) window.localStorage.setItem(AUDIT_DRAFT_FALLBACK_KEY, JSON.stringify(snapshot));
+        } catch (error) {
+          console.warn("Cópia de emergência antes de sair não pôde ser gravada:", error);
+        }
+      }
     };
 
     const LineDirectory = {
@@ -1124,6 +1278,7 @@
           if (resp && occ.isCriterioAusente) resp.manualDescription = value;
         }
         occ.status = CalculosModule.calculateOccurrenceStatus(occ.prazo, occ.dataConclusao);
+        AuditAutosave.schedule(350);
       },
       updateNavBadge() {
         const badge = document.getElementById("nav-badge-anomalias");
@@ -1403,6 +1558,7 @@
         this.currentQuestionIndex = 0;
         this.activeLineForLineMode = selectedLinhas[0];
         this.showExecutionUI();
+        AuditAutosave.schedule(0);
         App.showToast(`Auditoria iniciada (${selectedLinhas.length} linha${selectedLinhas.length > 1 ? "s" : ""})!`, "success");
       },
 
@@ -1554,6 +1710,7 @@
 
         this.syncAuditAreasMetadata();
         this.refreshAllViewsAfterLineChange();
+        AuditAutosave.schedule(0);
         this.openManageLinesModal();
         App.showToast(`Linha ${cleanLinha} (${resolvedArea}) adicionada!`, "success");
       },
@@ -1591,6 +1748,7 @@
         this.syncAuditAreasMetadata();
         AnomaliasModule.syncOccurrences(audit);
         this.refreshAllViewsAfterLineChange();
+        AuditAutosave.schedule(0);
         this.openManageLinesModal();
         App.showToast(`Linha ${linha} removida da auditoria.`, "info");
       },
@@ -1684,6 +1842,8 @@
           nextBtn.innerHTML = `Próxima <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>`;
           nextBtn.className = "px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm sm:text-base shadow-md transition flex items-center gap-1.5";
         }
+        // Também persiste o índice da questão e o modo de navegação atual.
+        AuditAutosave.schedule(350);
       },
 
       renderQuestionCard(questions) {
@@ -1785,6 +1945,7 @@
         resp.status = "rated";
         resp.nota = Number(nota);
         AnomaliasModule.syncOccurrences(audit);
+        AuditAutosave.schedule(0);
         this.renderExecution();
 
         this.handleAutoAdvance();
@@ -1807,6 +1968,7 @@
           resp.manualDescription = "";
         }
         AnomaliasModule.syncOccurrences(audit);
+        AuditAutosave.schedule(0);
         this.renderExecution();
 
         if (resp.status === "na") {
@@ -1912,6 +2074,7 @@
         if (!audit) return;
         audit.responses[questionId][linha].manualDescription = text;
         AnomaliasModule.syncOccurrences(audit);
+        AuditAutosave.schedule(450);
       },
 
       goToQuestion(index) {
@@ -3113,7 +3276,31 @@
         AppState.auditHistory = await AuditHistoryStore.list();
         AuditoriaModule.initSetupForm();
         ConfiguracoesModule.render();
+
+        // Recupera automaticamente a auditoria interrompida, inclusive após fechar o navegador.
+        const draft = await AuditDraftStore.load();
+        const draftAlreadyArchived = draft?.audit && AppState.auditHistory.some(item => item.id === draft.audit.id);
+        if (draftAlreadyArchived || draft?.audit?.status === "finalizada") {
+          // Protege contra um rascunho antigo reaparecer caso o navegador tenha interrompido a limpeza.
+          await AuditDraftStore.remove();
+        }
+        if (draft?.audit && !draftAlreadyArchived && draft.audit.status !== "finalizada" && Array.isArray(draft.audit.linhas) && draft.audit.responses) {
+          AppState.audit = draft.audit;
+          const ui = draft.ui || {};
+          const totalQuestions = ChecklistsModule.getActiveQuestions(AppState.audit.checklistSnapshot).length;
+          AuditoriaModule.currentQuestionIndex = Math.max(0, Math.min(Number(ui.currentQuestionIndex) || 0, Math.max(0, totalQuestions - 1)));
+          AuditoriaModule.evaluationMode = ["question", "line"].includes(ui.evaluationMode) ? ui.evaluationMode : "question";
+          AuditoriaModule.activeLineForLineMode = AppState.audit.linhas.includes(ui.activeLineForLineMode)
+            ? ui.activeLineForLineMode : (AppState.audit.linhas[0] || null);
+          AnomaliasModule.syncOccurrences(AppState.audit);
+        }
+
         this.navigate("auditoria");
+        if (AppState.audit) {
+          AuditAutosave.setStatus("Auditoria recuperada • salvamento automático ativo", "saved");
+          this.showToast("Sua auditoria anterior foi recuperada neste dispositivo. Continue de onde parou.", "success");
+          AuditAutosave.schedule(0);
+        }
         if (AppState.auditHistory.length) {
           const badge = document.getElementById("nav-badge-anomalias");
           if (badge && !AppState.audit) badge.classList.add("hidden");
@@ -3243,6 +3430,8 @@
           archived.status = "finalizada";
           archived.finalizadaEm = new Date().toISOString();
           await AuditHistoryStore.save(archived);
+          // A auditoria já está no histórico; remove o rascunho para não restaurá-la como ativa.
+          await AuditDraftStore.remove();
           AppState.auditHistory = [archived, ...AppState.auditHistory.filter(item => item.id !== archived.id)]
             .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
           AppState.reviewAuditId = archived.id;
@@ -3269,6 +3458,28 @@
     window.addEventListener("DOMContentLoaded", () => {
       App.init();
       document.addEventListener("keydown", (e) => AuditoriaModule.handleKeyboardShortcut(e));
+
+      // Salva ao alternar de aba, minimizar ou fechar a página.
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+          AuditAutosave.flushEmergencyCopy();
+          AuditAutosave.flush().catch(() => {});
+        }
+      });
+      window.addEventListener("pagehide", () => {
+        AuditAutosave.flushEmergencyCopy();
+        AuditAutosave.flush().catch(() => {});
+      });
+      window.addEventListener("beforeunload", () => AuditAutosave.flushEmergencyCopy());
+      window.addEventListener("offline", () => {
+        if (AppState.audit) AuditAutosave.setStatus("Sem internet • dados salvos neste dispositivo", "offline");
+      });
+      window.addEventListener("online", () => {
+        if (AppState.audit) {
+          AuditAutosave.setStatus("Conexão restabelecida • salvando...", "saving");
+          AuditAutosave.flush().catch(() => {});
+        }
+      });
     });
   </script>
 
