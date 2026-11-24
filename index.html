@@ -615,6 +615,141 @@
     }
 
   </style>
+
+  <style id="audit-mobile-followup-fixes">
+    /* Gerenciar Linhas: ações e campos sempre acessíveis em telas estreitas. */
+    #modal-box .manage-lines-modal {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      gap: 16px;
+    }
+    #modal-box .manage-lines-modal > * { margin-top: 0 !important; min-width: 0; }
+    #modal-box .manage-lines-modal-header { gap: 12px; }
+    #modal-box .manage-lines-modal-header > div:first-child { min-width: 0; }
+    #modal-box .manage-lines-modal-header h3 { line-height: 1.25; }
+    #modal-box .manage-lines-active-list,
+    #modal-box .manage-lines-available-list {
+      min-width: 0;
+      overscroll-behavior: contain;
+      scrollbar-width: thin;
+    }
+    #modal-box .manage-lines-active-item { min-width: 0; }
+    #modal-box .manage-lines-active-item > div { flex-wrap: wrap; min-width: 0; }
+    #modal-box .manage-lines-active-item > div > span { max-width: 100%; overflow-wrap: anywhere; }
+    #modal-box .manage-lines-area-group { min-width: 0; }
+    #modal-box .manage-lines-area-options { align-items: stretch; }
+    #modal-box .manage-lines-area-option { min-height: 44px; max-width: 100%; white-space: normal; }
+    #modal-box .manage-lines-add-form { min-width: 0; }
+    #modal-box .manage-lines-add-form > * { min-width: 0; }
+    #modal-box .manage-lines-add-form input,
+    #modal-box .manage-lines-add-form select,
+    #modal-box .manage-lines-add-form button { width: 100%; min-height: 46px; }
+    #modal-box .manage-lines-footer {
+      align-items: center;
+      background: var(--spell-surface, #fff);
+      border-color: var(--spell-border, #e2e8f0) !important;
+    }
+    #modal-box .manage-lines-footer button { min-width: 128px; min-height: 46px; }
+
+    /* Critérios: cartões empilhados no celular, com texto integral e legível. */
+    #active-question-card .rating-options-grid { align-items: stretch; }
+    #active-question-card .rating-btn {
+      width: 100%;
+      min-width: 0;
+      min-height: 108px;
+      height: 100%;
+      align-items: stretch;
+      justify-content: flex-start;
+      gap: 10px;
+      white-space: normal;
+      overflow: visible;
+      text-align: left;
+    }
+    #active-question-card .rating-btn > span:first-child { min-width: 0; }
+    #active-question-card .rating-criterion-text {
+      display: block !important;
+      width: 100%;
+      min-width: 0;
+      overflow: visible;
+      white-space: normal !important;
+      overflow-wrap: anywhere;
+      word-break: normal;
+      line-height: 1.45;
+      font-size: 14px;
+      -webkit-line-clamp: unset !important;
+      -webkit-box-orient: initial !important;
+    }
+    @media (max-width: 639px) {
+      #modal-backdrop { align-items: flex-end !important; }
+      #modal-box {
+        display: flex;
+        flex-direction: column;
+        max-height: 90dvh !important;
+        padding: 14px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+      #modal-box .manage-lines-modal { gap: 13px; }
+      #modal-box .manage-lines-modal-header {
+        position: sticky;
+        top: -14px;
+        z-index: 3;
+        padding: 3px 0 12px;
+        background: var(--spell-surface, #fff);
+      }
+      .dark #modal-box .manage-lines-modal-header { background: #0f172a; }
+      #modal-box .manage-lines-active-list {
+        grid-template-columns: minmax(0, 1fr);
+        max-height: min(22dvh, 190px);
+      }
+      #modal-box .manage-lines-available-list { max-height: min(24dvh, 210px); }
+      #modal-box .manage-lines-area-options { gap: 7px; }
+      #modal-box .manage-lines-area-option { flex: 1 1 calc(33.333% - 7px); justify-content: center; }
+      #modal-box .manage-lines-add-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+      }
+      #modal-box .manage-lines-add-form input { grid-column: 1 / -1; }
+      #modal-box .manage-lines-add-form select,
+      #modal-box .manage-lines-add-form button { width: 100%; }
+      #modal-box .manage-lines-footer {
+        position: sticky;
+        bottom: -14px;
+        z-index: 4;
+        margin: 0 -12px -14px !important;
+        padding: 12px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+        background: rgba(255,255,255,.96);
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+      }
+      .dark #modal-box .manage-lines-footer { background: rgba(15,23,42,.97); }
+      #modal-box .manage-lines-footer button { width: 100%; }
+      #active-question-card .rating-options-grid { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+      #active-question-card .rating-btn { min-height: 92px; padding: 13px !important; }
+      #active-question-card .rating-criterion-text { font-size: 14px; line-height: 1.5; }
+    }
+    @media (min-width: 640px) and (max-width: 1023px) {
+      #modal-box .manage-lines-add-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(150px, .7fr) auto;
+      }
+      #modal-box .manage-lines-add-form button { width: auto; }
+    }
+    @media (min-width: 640px) {
+      #modal-box .manage-lines-footer { position: sticky; bottom: -24px; padding: 12px 0 2px; }
+      #active-question-card .rating-options-grid { gap: 10px; }
+      #active-question-card .rating-criterion-text { font-size: 14px; }
+    }
+    @media (min-width: 1024px) {
+      #modal-box .manage-lines-add-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(170px, .65fr) auto;
+      }
+      #modal-box .manage-lines-add-form button { width: auto; min-width: 112px; }
+      #modal-box .manage-lines-active-list { max-height: 240px; }
+      #modal-box .manage-lines-available-list { max-height: 270px; }
+    }
+  </style>
 </head>
 <body class="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-200">
 
@@ -1069,6 +1204,42 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0 safe-bottom"></div>
 
   <script>
+    // Textos compactos usados somente nos cartões de avaliação.
+    // O texto original permanece intacto nos dados, histórico e relatórios.
+    const RATING_CRITERION_DISPLAY = Object.freeze({
+      "Operador executa todos os controles corretamente e registra tudo de forma correta": "Controles e registros completos e corretos",
+      "Controles executados, porém com imprecisões; registros adequados, mas com falhas": "Controles com imprecisões e registros com falhas",
+      "Nenhuma indicação de status; identificação ilegível, incorreta ou ausente": "Sem status; identificação ausente, incorreta ou ilegível",
+      "Total conformidade (touca cobrindo 100% do cabelo, máscara correta)": "Touca cobre todo o cabelo e máscara correta",
+      "Status presente, porém com falhas de visibilidade ou identificação": "Status visível com falhas de identificação",
+      "Todos os registros completos, corretos, padronizados e sem erros.": "Registros completos, padronizados e sem erros",
+      "Controles feitos parcialmente ou com erros; registros incompletos": "Controles parciais ou incorretos; registros incompletos",
+      "Registros completos e corretos, com pequenas falhas pontuais.": "Registros corretos, com pequenas falhas",
+      "Rachos, ondulações ou buracos leves que influenciam operação": "Rachaduras, ondulações ou buracos que afetam a operação",
+      "Ajuste incorreto leve (máscara abaixada, luva mal colocada)": "EPI mal ajustado (máscara baixa ou luva mal colocada)",
+      "Área com equipamentos fora de uso ou equipamentos quebrados": "Equipamentos quebrados ou fora de uso",
+      "Faixa parcialmente apagada ou passagem parcialmente ocupada": "Faixa apagada ou passagem parcialmente ocupada",
+      "Materiais encostando ou muito perto de áreas quentes/móveis": "Materiais próximos de áreas quentes ou partes móveis",
+      "Ralo limpo, sem odor, fluxo perfeito, sem água acumulada": "Ralo limpo, sem odor ou água parada, com bom escoamento",
+      "Acesso parcialmente obstruído OU validade quase vencendo": "Acesso parcialmente bloqueado ou validade próxima do vencimento",
+      "Algum objeto próximo que pode atrapalhar em emergência": "Objeto próximo que dificulta o acesso em emergência",
+      "Desobstruído, mas sinalização parcialmente desgastada": "Acesso livre, com sinalização desgastada",
+      "Rota parcialmente estreita ou com objetos de passagem": "Passagem estreita ou parcialmente obstruída",
+      "Materiais muito perto, risco alto (dentro da máquina)": "Materiais muito próximos, com risco dentro da máquina",
+      "Obstrução parcial que exige mover itens para acessar": "Acesso parcialmente bloqueado por objetos",
+      "Ajuste incorreto ou 1 EPI usado de forma inadequada": "Um EPI ausente ou usado incorretamente",
+      "Sinalização muito fraca ou obstrução parcial séria": "Sinalização pouco visível ou acesso muito obstruído",
+      "Superfície crítica, ferrugem ou descascando muito": "Ferrugem ou descascamento intenso na superfície",
+      "Pequeno desgaste (adesivos velhos, pintura gasta)": "Desgaste leve em adesivos ou pintura",
+      "Totalmente desobstruído e sinalizado corretamente": "Acesso livre e sinalizado corretamente",
+      "Improvisos graves substituindo soluções adequadas": "Improvisos graves no lugar de soluções adequadas"
+    });
+
+    function getRatingCriterionDisplayText(value) {
+      const original = String(value ?? "").trim();
+      return RATING_CRITERION_DISPLAY[original] || original || "Critério não cadastrado";
+    }
+
     const DEFAULT_CONFIG = {
       version: "2.1.0",
       macroareas: [
@@ -3701,7 +3872,7 @@
           const canRemove = audit.linhas.length > 1;
 
           return `
-            <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div class="manage-lines-active-item flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
               <div class="flex items-center gap-2 min-w-0">
                 <span class="px-2.5 py-1 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-xs font-extrabold">Linha ${escapeHTML(linha)}</span>
                 <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate">${escapeHTML(areaNome)}</span>
@@ -3719,12 +3890,12 @@
           const availableLines = area.linhas.filter(l => !audit.linhas.includes(l));
           if (availableLines.length === 0) return "";
           return `
-            <div class="space-y-1.5">
+            <div class="manage-lines-area-group space-y-1.5">
               <p class="text-xs font-bold uppercase text-slate-500 dark:text-slate-400">${escapeHTML(area.nome)}</p>
-              <div class="flex flex-wrap gap-1.5">
+              <div class="manage-lines-area-options flex flex-wrap gap-1.5">
                 ${availableLines.map(l => `
                   <button type="button" onclick="AuditoriaModule.addLineToActiveAudit(decodeURIComponent('${encodeInlineArgument(l)}'), decodeURIComponent('${encodeInlineArgument(area.nome)}'))"
-                    class="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition flex items-center gap-1">
+                    class="manage-lines-area-option px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 text-xs font-bold transition flex items-center gap-1">
                     <span>+ ${escapeHTML(l)}</span>
                   </button>`).join("")}
               </div>
@@ -3732,8 +3903,8 @@
         }).join("");
 
         App.openModal(`
-          <div class="space-y-5">
-            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div class="manage-lines-modal space-y-5">
+            <div class="manage-lines-modal-header flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 class="text-lg font-extrabold">Gerenciar Linhas da Auditoria</h3>
                 <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Adicione ou remova linhas sem perder o progresso atual.</p>
@@ -3745,17 +3916,17 @@
 
             <div class="space-y-2">
               <p class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Linhas em Auditoria (${audit.linhas.length})</p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+              <div class="manage-lines-active-list grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
                 ${activeLinesHtml}
               </div>
             </div>
 
             <div class="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <p class="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">Acrescentar Outra Linha</p>
-              <div class="space-y-3 max-h-52 overflow-y-auto pr-1">
+              <div class="manage-lines-available-list space-y-3 max-h-52 overflow-y-auto pr-1">
                 ${availableAreasHtml || '<p class="text-sm text-slate-500 italic">Todas as linhas cadastradas já estão incluídas nesta auditoria.</p>'}
               </div>
-              <form onsubmit="AuditoriaModule.addCustomLineFromModal(event)" class="flex items-center gap-2 pt-2">
+              <form onsubmit="AuditoriaModule.addCustomLineFromModal(event)" class="manage-lines-add-form flex items-center gap-2 pt-2">
                 <input type="text" id="modal-custom-line-name" placeholder="Ou digite uma linha personalizada (ex: 42)..."
                   class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500 outline-none" />
                 <select id="modal-custom-line-area" class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm font-bold">
@@ -3768,7 +3939,7 @@
               </form>
             </div>
 
-            <div class="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div class="manage-lines-footer flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
               <button type="button" onclick="App.closeModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-slate-700 text-white text-sm font-bold">Concluir</button>
             </div>
           </div>`);
@@ -4002,24 +4173,22 @@
                     </button>
                   </div>
 
-                  <div class="grid grid-cols-1 sm:grid-cols-5 gap-1.5 sm:gap-2">
+                  <div class="rating-options-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-2.5">
                     ${[5, 4, 3, 2, 1].map(nota => {
                       const isSelected = selectedNota === nota;
-                      const criterio = (q.criterios?.[nota] || "").trim();
+                      const criterioOriginal = (q.criterios?.[nota] || "").trim();
+                      const criterio = getRatingCriterionDisplayText(criterioOriginal);
                       const rule = rules[nota];
                       const style = ratingColors[nota];
                       return `
-                        <button type="button" onclick="AuditoriaModule.selectRating(decodeURIComponent('${encodeInlineArgument(q.id)}'), decodeURIComponent('${encodeInlineArgument(linha)}'), ${nota})"
-                          class="rating-btn text-left px-3 py-2 sm:p-3 rounded-xl border-2 flex flex-row sm:flex-col items-center sm:items-stretch justify-between gap-2.5 sm:gap-1.5 min-h-[44px] sm:min-h-[86px] ${isSelected ? style.active : style.base}">
-                          <div class="flex items-center sm:justify-between gap-2 shrink-0">
-                            <span class="w-7 h-7 sm:w-auto sm:h-auto rounded-lg sm:rounded-none flex items-center justify-center text-base sm:text-xl font-black leading-none ${isSelected ? "bg-white/20 sm:bg-transparent" : "bg-white/80 dark:bg-slate-800/80 sm:bg-transparent"}">${nota}</span>
-                            <span class="hidden sm:inline-block text-[11px] font-bold uppercase px-1.5 py-0.5 rounded ${isSelected ? "bg-white/20 text-white" : style.badge}">${escapeHTML(rule?.classificacao || "")}</span>
+                        <button type="button" aria-pressed="${isSelected ? "true" : "false"}" onclick="AuditoriaModule.selectRating(decodeURIComponent('${encodeInlineArgument(q.id)}'), decodeURIComponent('${encodeInlineArgument(linha)}'), ${nota})"
+                          class="rating-btn w-full min-w-0 text-left p-3 sm:p-4 rounded-xl border-2 flex flex-col items-stretch justify-start gap-2 min-h-[108px] ${isSelected ? style.active : style.base}">
+                          <div class="flex items-center justify-between gap-2 w-full">
+                            <span class="w-9 h-9 shrink-0 rounded-xl flex items-center justify-center text-lg font-black leading-none ${isSelected ? "bg-white/20" : "bg-white/85 dark:bg-slate-800/85"}">${nota}</span>
+                            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wide px-2 py-1 rounded-lg ${isSelected ? "bg-white/20 text-white" : style.badge}">${escapeHTML(rule?.classificacao || "")}</span>
                           </div>
-                          <p class="flex-1 text-xs sm:text-sm leading-tight font-medium line-clamp-2 sm:line-clamp-none ${isSelected ? "text-white" : (criterio ? "text-slate-700 dark:text-slate-200" : "text-slate-400 italic")}">
-                            ${escapeHTML(criterio || "Critério não cadastrado")}
-                          </p>
-                          <span class="sm:hidden shrink-0 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${isSelected ? "bg-white/20 text-white" : style.badge}">
-                            ${nota >= 4 ? "Conf." : (nota === 3 ? "Melh." : "NC")}
+                          <span class="rating-criterion-text block w-full text-sm leading-snug font-medium whitespace-normal break-words ${isSelected ? "text-white" : (criterioOriginal ? "text-slate-700 dark:text-slate-200" : "text-slate-400 italic")}">
+                            ${escapeHTML(criterio)}
                           </span>
                         </button>`;
                     }).join("")}
