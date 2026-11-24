@@ -1139,8 +1139,8 @@
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 class="text-xl font-extrabold">Checklists e Critérios</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Questões e critérios são carregados do Banco de Dados. Entre com uma conta autorizada para editar e salvar no banco.</p>
-            <p id="cfg-save-status" class="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-1" role="status" aria-live="polite">Conectando ao Banco...</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Questões e critérios são carregados do Supabase. Entre com uma conta autorizada para editar e salvar no banco.</p>
+            <p id="cfg-save-status" class="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-1" role="status" aria-live="polite">Conectando ao Supabase...</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <input id="cfg-checklist-import-file" type="file" accept=".json,application/json" class="hidden" onchange="SupabaseChecklistModule.importJSONFile(this)" />
@@ -1212,7 +1212,34 @@
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     }) || null;
 
-    // O critério de avaliação é lido diretamente da coluna JSONB no Supabase.
+    // Critérios e regras dos checklists são lidos diretamente do Supabase.
+    const DEFAULT_RATING_RULES = {
+      "1": { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
+      "2": { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
+      "3": { classificacao: "Melhoria", gerarRegistro: true, tipoRegistro: "Melhoria" },
+      "4": { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null },
+      "5": { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null }
+    };
+
+    function normalizeRatingRules(value) {
+      const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+      const normalized = {};
+      [1, 2, 3, 4, 5].forEach(nota => {
+        const key = String(nota);
+        const fallback = DEFAULT_RATING_RULES[key];
+        const current = source[key] ?? source[nota];
+        const rule = current && typeof current === "object" && !Array.isArray(current) ? current : {};
+        const classificacoesValidas = ["Não conformidade", "Melhoria", "Conformidade"];
+        const classificacao = classificacoesValidas.includes(rule.classificacao) ? rule.classificacao : fallback.classificacao;
+        const gerarRegistro = typeof rule.gerarRegistro === "boolean" ? rule.gerarRegistro : fallback.gerarRegistro;
+        let tipoRegistro = rule.tipoRegistro ?? fallback.tipoRegistro;
+        if (!gerarRegistro) tipoRegistro = null;
+        else if (!["Anomalia", "Melhoria"].includes(tipoRegistro)) tipoRegistro = classificacao === "Não conformidade" ? "Anomalia" : "Melhoria";
+        normalized[key] = { classificacao, gerarRegistro, tipoRegistro };
+      });
+      return normalized;
+    }
+
     function getRatingCriterionDisplayText(value) {
       return String(value ?? "").trim() || "Critério não cadastrado";
     }
@@ -2385,7 +2412,7 @@
         return checklist.questoes.filter(q => q.ativa !== false);
       },
       getRatingRules(checklist) {
-        return (checklist && checklist.regrasNotas) ? checklist.regrasNotas : {};
+        return normalizeRatingRules(checklist?.regrasNotas);
       },
       getMacroareaName(id) {
         const found = AppState.config.macroareas.find(m => m.id === id);
@@ -5457,7 +5484,10 @@
           return true;
         } catch (error) {
           console.error("Falha na inicialização do Supabase:", error);
-          this.setStatus(`Falha ao conectar/carregar checklists: ${error.message}. Confirme se o SQL de instalação foi executado no Supabase.`, "error");
+          const schemaHint = /schema cache|column .* does not exist|could not find the .* column/i.test(String(error.message || ""))
+            ? " Atualize o schema no Supabase e execute NOTIFY pgrst, 'reload schema'."
+            : " Confirme as tabelas, permissões e políticas RLS.";
+          this.setStatus(`Falha ao conectar/carregar checklists: ${error.message}.${schemaHint}`, "error");
           AppState.config.checklists = {};
           return false;
         }
@@ -5488,7 +5518,7 @@
               macroarea: row.macroarea,
               tipo: row.tipo,
               limiteMediaConforme: Number(row.limite_media_conforme ?? 4.8),
-              regrasNotas: row.regras_notas || null,
+              regrasNotas: normalizeRatingRules(row.regras_notas),
               ativo: row.ativo !== false,
               questoes: []
             };
@@ -5575,6 +5605,7 @@
 
           const checklistIds = new Set();
           const questionIds = new Set();
+          const questionCodes = new Set();
           const checklistRows = payload.checklists.map((item, index) => {
             const id = String(item?.id || "").trim();
             const titulo = String(item?.titulo || "").trim();
@@ -5596,13 +5627,7 @@
             return {
               id, titulo, macroarea, tipo,
               limite_media_conforme: limite,
-              regras_notas: regras || {
-                "1": { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
-                "2": { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
-                "3": { classificacao: "Melhoria", gerarRegistro: true, tipoRegistro: "Melhoria" },
-                "4": { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null },
-                "5": { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null }
-              },
+              regras_notas: normalizeRatingRules(regras),
               ativo: item.ativo !== false,
               atualizado_em: new Date().toISOString()
             };
@@ -5622,6 +5647,9 @@
             }
             if (questionIds.has(id)) throw new Error(`A questão "${id}" aparece mais de uma vez no JSON.`);
             questionIds.add(id);
+            const codeKey = `${checklist_id}::${codigo}`;
+            if (questionCodes.has(codeKey)) throw new Error(`O código ${codigo} aparece mais de uma vez no checklist "${checklist_id}".`);
+            questionCodes.add(codeKey);
             const sourceCriteria = item.criterios && typeof item.criterios === "object" && !Array.isArray(item.criterios)
               ? item.criterios : null;
             if (!sourceCriteria) throw new Error(`A questão "${id}" não possui o objeto "criterios".`);
@@ -5874,7 +5902,7 @@
       },
 
       renderRatingRules(chk) {
-        const rules = ChecklistsModule.getRatingRules(chk);
+        const rules = normalizeRatingRules(ChecklistsModule.getRatingRules(chk));
         const container = document.getElementById("cfg-rating-rules-grid");
         container.innerHTML = [5, 4, 3, 2, 1].map(nota => {
           const r = rules[nota] || rules[String(nota)];
@@ -5900,8 +5928,8 @@
       async updateRule(nota, field, value) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
         if (!chk || !SupabaseChecklistModule.requireEditor()) { this.render(); return; }
-        const rules = JSON.parse(JSON.stringify(chk.regrasNotas || {}));
-        const rule = rules[nota] || rules[String(nota)];
+        const rules = normalizeRatingRules(chk.regrasNotas);
+        const rule = rules[String(nota)];
         rule[field] = value;
         if (field === "classificacao") rule.tipoRegistro = value === "Não conformidade" ? "Anomalia" : (value === "Melhoria" ? "Melhoria" : null);
         if (field === "gerarRegistro" && value && !rule.tipoRegistro) rule.tipoRegistro = nota <= 2 ? "Anomalia" : "Melhoria";
@@ -5965,8 +5993,8 @@
           const firstOrder = first.ordem || index + 1;
           const secondOrder = second.ordem || target + 1;
           const [a, b] = await Promise.all([
-            supabaseClient.from("questoes_checklist").update({ ordem: secondOrder }).eq("id", first.id).eq("checklist_id", chk.id),
-            supabaseClient.from("questoes_checklist").update({ ordem: firstOrder }).eq("id", second.id).eq("checklist_id", chk.id)
+            supabaseClient.from("questoes_checklist").update({ ordem: secondOrder, atualizado_em: new Date().toISOString() }).eq("id", first.id).eq("checklist_id", chk.id),
+            supabaseClient.from("questoes_checklist").update({ ordem: firstOrder, atualizado_em: new Date().toISOString() }).eq("id", second.id).eq("checklist_id", chk.id)
           ]);
           if (a.error) throw a.error;
           if (b.error) throw b.error;
