@@ -406,7 +406,7 @@
               <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16M4 19h16"/></svg>
               </span>
-              <div><h2 class="text-base sm:text-lg font-extrabold">Histórico de auditorias</h2><p id="rev-history-summary" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">As auditorias finalizadas ficam disponíveis por 15 minutos após o encerramento.</p></div>
+              <div><h2 class="text-base sm:text-lg font-extrabold">Histórico de auditorias</h2><p id="rev-history-summary" class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">As auditorias finalizadas ficam disponíveis por 6 horas após o encerramento.</p></div>
             </div>
           </div>
           <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -429,7 +429,7 @@
           <svg class="w-7 h-7 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
         </div>
         <h3 class="text-lg font-bold">Nenhuma auditoria no histórico</h3>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Ao finalizar uma auditoria, ela será arquivada automaticamente e ficará disponível aqui por 15 minutos.</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Ao finalizar uma auditoria, ela será arquivada automaticamente e ficará disponível aqui por 6 horas.</p>
         <button onclick="App.navigate('auditoria')" class="mt-5 px-5 py-3 rounded-xl bg-blue-600 text-white text-base font-bold hover:bg-blue-700 transition">
           Configurar Nova Auditoria
         </button>
@@ -904,7 +904,24 @@
     const AUDIT_DRAFT_STORE = "drafts";
     const AUDIT_HISTORY_FALLBACK_KEY = "somoghiroaudit-history-fallback-v1";
     const AUDIT_DRAFT_FALLBACK_KEY = "somoghiroaudit-active-draft-v1";
-    const AUDIT_ARCHIVE_RETENTION_MS = 15 * 60 * 1000;
+    const AUDIT_ARCHIVE_RETENTION_MS = 6 * 60 * 60 * 1000;
+
+    function createAuditId() {
+      const uuid = window.crypto?.randomUUID?.();
+      return uuid ? `AUD-${uuid}` : `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    }
+
+    /** Consolida registros repetidos pelo identificador estável da auditoria. */
+    function deduplicateAuditsById(audits) {
+      const unique = new Map();
+      (Array.isArray(audits) ? audits : []).forEach(audit => {
+        if (!audit || !audit.id) return;
+        unique.set(String(audit.id), audit);
+      });
+      return [...unique.values()].sort((a, b) =>
+        String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || ""))
+      );
+    }
 
     /**
      * Calcula o limite de retenção de uma auditoria finalizada.
@@ -915,14 +932,12 @@
       const finalizedAt = Date.parse(audit?.finalizadaEm || "");
       if (!Number.isFinite(finalizedAt)) return 0;
 
-      const maximumExpiration = finalizedAt + AUDIT_ARCHIVE_RETENTION_MS;
-      const storedExpiration = Date.parse(audit?.expiraEm || "");
-      return Number.isFinite(storedExpiration)
-        ? Math.min(storedExpiration, maximumExpiration)
-        : maximumExpiration;
+      // expiraEm pode conter o prazo antigo de 15 minutos. O prazo atual é
+      // recalculado a partir da finalização original, sem renovar ao abrir/editar.
+      return finalizedAt + AUDIT_ARCHIVE_RETENTION_MS;
     }
 
-    /** Indica se uma auditoria arquivada já ultrapassou os 15 minutos de retenção. */
+    /** Indica se uma auditoria arquivada já ultrapassou o prazo de 6 horas. */
     function isAuditArchiveExpired(audit, now = Date.now()) {
       const expiration = getAuditArchiveExpiration(audit);
       return !expiration || expiration <= now;
@@ -1033,14 +1048,10 @@
             tx.oncomplete = () => db.close();
             tx.onerror = () => reject(tx.error || new Error("Falha na leitura do histórico"));
           });
-          return rows
-            .filter(audit => !isAuditArchiveExpired(audit))
-            .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
+          return deduplicateAuditsById(rows.filter(audit => !isAuditArchiveExpired(audit)));
         } catch (error) {
           console.warn("Usando armazenamento alternativo para o histórico:", error);
-          return this.readFallback()
-            .filter(audit => !isAuditArchiveExpired(audit))
-            .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
+          return deduplicateAuditsById(this.readFallback().filter(audit => !isAuditArchiveExpired(audit)));
         }
       },
 
@@ -1073,6 +1084,62 @@
           if (!this.writeFallback(rows)) {
             throw new Error("Não foi possível salvar o histórico neste navegador. Libere espaço de armazenamento e tente novamente.");
           }
+          return true;
+        }
+      },
+
+      /**
+       * Atualiza dados complementares de um arquivo já existente.
+       * Diferentemente de save(), nunca cria um novo registro de histórico.
+       */
+      async updateExisting(audit) {
+        if (!audit?.id) return false;
+        const copy = JSON.parse(JSON.stringify(audit));
+
+        try {
+          const db = await this.open();
+          try {
+            return await new Promise((resolve, reject) => {
+              const tx = db.transaction(AUDIT_HISTORY_STORE, "readwrite");
+              const store = tx.objectStore(AUDIT_HISTORY_STORE);
+              const request = store.get(copy.id);
+              let updated = false;
+
+              request.onsuccess = () => {
+                const existing = request.result;
+                if (!existing || isAuditArchiveExpired(existing)) return;
+                const expiration = getAuditArchiveExpiration(existing);
+                store.put({
+                  ...existing,
+                  ...copy,
+                  id: existing.id,
+                  finalizadaEm: existing.finalizadaEm,
+                  expiraEm: new Date(expiration).toISOString()
+                });
+                updated = true;
+              };
+              request.onerror = () => reject(request.error || new Error("Falha ao localizar auditoria arquivada"));
+              tx.oncomplete = () => resolve(updated);
+              tx.onerror = () => reject(tx.error || new Error("Falha ao atualizar auditoria arquivada"));
+              tx.onabort = () => reject(tx.error || new Error("Atualização da auditoria arquivada cancelada"));
+            });
+          } finally {
+            db.close();
+          }
+        } catch (error) {
+          // Fallback também exige que o registro já exista; nunca insere um novo arquivo.
+          const rows = this.readFallback();
+          const index = rows.findIndex(item => String(item.id) === String(copy.id));
+          if (index < 0 || isAuditArchiveExpired(rows[index])) return false;
+          const existing = rows[index];
+          rows[index] = {
+            ...existing,
+            ...copy,
+            id: existing.id,
+            finalizadaEm: existing.finalizadaEm,
+            expiraEm: new Date(getAuditArchiveExpiration(existing)).toISOString()
+          };
+          if (!this.writeFallback(rows)) throw new Error("Não foi possível atualizar a auditoria arquivada neste navegador.");
           return true;
         }
       },
@@ -1893,6 +1960,7 @@
       pending: Promise.resolve(),
       sequence: 0,
       failureNotified: false,
+      finalizing: false,
       statusElement() { return document.getElementById("audit-save-status"); },
       setStatus(message, state = "saved") {
         const el = this.statusElement();
@@ -1923,13 +1991,14 @@
         };
       },
       schedule(delay = 220) {
-        if (!AppState.audit) return;
+        if (!AppState.audit || this.finalizing) return;
         clearTimeout(this.timer);
         if (navigator.onLine === false) this.setStatus("Offline • salvando neste dispositivo", "offline");
         else this.setStatus("Salvando...", "saving");
         this.timer = setTimeout(() => { this.flush().catch(() => {}); }, delay);
       },
       flush() {
+        if (this.finalizing) return this.pending;
         clearTimeout(this.timer);
         this.timer = null;
         const snapshot = this.createSnapshot();
@@ -1955,8 +2024,19 @@
         });
         return this.pending;
       },
+      async stopForFinalization() {
+        // Impede qualquer novo autosave de recriar o rascunho após a remoção.
+        this.finalizing = true;
+        clearTimeout(this.timer);
+        this.timer = null;
+        this.sequence += 1;
+        try { await this.pending; } catch (error) {
+          console.warn("Falha no último salvamento do rascunho antes do arquivamento:", error);
+        }
+      },
       flushEmergencyCopy() {
         // beforeunload/pagehide não aguardam Promises; gravação síncrona de última defesa.
+        if (this.finalizing) return;
         try {
           const snapshot = this.createSnapshot();
           if (snapshot) window.localStorage.setItem(AUDIT_DRAFT_FALLBACK_KEY, JSON.stringify(snapshot));
@@ -3069,8 +3149,9 @@
         const areaResumoNome = Array.from(areasEnvolvidasSet).join(" + ");
 
         AppState.reviewAuditId = null;
+        AuditAutosave.finalizing = false;
         AppState.audit = {
-          id: "AUD-" + Date.now(),
+          id: createAuditId(),
           configVersion: AppState.config.version,
           macroarea,
           tipo,
@@ -3739,7 +3820,7 @@
           });
 
           if (isArchived && snapshotChanged) {
-            AuditHistoryStore.save(audit).catch(error => console.warn("Não foi possível atualizar os dados recuperados do perfil:", error));
+            AuditHistoryStore.updateExisting(audit).catch(error => console.warn("Não foi possível atualizar os dados recuperados do perfil:", error));
           }
 
           const profileLines = Array.isArray(audit.linhas) ? audit.linhas : lines;
@@ -3991,7 +4072,7 @@
       getAvailableAudits() {
         // A sessão ativa permanece separada; somente arquivos dentro do prazo entram no histórico.
         const now = Date.now();
-        AppState.auditHistory = AppState.auditHistory.filter(item => !isAuditArchiveExpired(item, now));
+        AppState.auditHistory = deduplicateAuditsById(AppState.auditHistory.filter(item => !isAuditArchiveExpired(item, now)));
         return [...AppState.auditHistory];
       },
 
@@ -4002,7 +4083,7 @@
         const summary = document.getElementById("rev-history-summary");
         const count = document.getElementById("rev-history-selected-count");
         const selectAll = document.getElementById("rev-history-select-all");
-        if (summary) summary.textContent = `${AppState.auditHistory.length} finalizada(s)${AppState.audit ? " • 1 em andamento" : ""}. Os arquivos são removidos automaticamente após 15 minutos.`;
+        if (summary) summary.textContent = `${items.length} finalizada(s)${AppState.audit ? " • 1 em andamento" : ""}. Os arquivos são removidos automaticamente após 6 horas.`;
         if (count) count.textContent = `${AppState.historySelectedIds.size} selecionada(s)`;
         if (selectAll) selectAll.checked = items.length > 0 && items.every(item => AppState.historySelectedIds.has(item.id));
         if (!items.length) {
@@ -5334,6 +5415,7 @@
       currentView: "auditoria",
       archiveCleanupTimer: null,
       archiveCleanupRunning: false,
+      finishAuditPromise: null,
 
       /**
        * Agenda a próxima limpeza para o vencimento mais próximo.
@@ -5510,6 +5592,7 @@
       },
 
       confirmFinishAudit() {
+        if (this.finishAuditPromise) return App.showToast("A finalização já está sendo processada.", "info");
         const audit = AppState.audit;
         if (!audit) return App.showToast("Não há auditoria em andamento para finalizar.", "info");
         AnomaliasModule.syncOccurrences(audit);
@@ -5521,7 +5604,7 @@
         this.openModal(`
           <div class="space-y-4">
             <div><span class="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">Arquivamento automático</span><h3 class="text-lg font-extrabold mt-1">Finalizar esta auditoria?</h3></div>
-            <p class="text-sm text-slate-600 dark:text-slate-300">Ao confirmar, a sessão será arquivada automaticamente e o sistema abrirá o perfil completo desta auditoria. O registro ficará disponível na aba de auditorias arquivadas por 15 minutos, sem precisar realizar outra ação.</p>
+            <p class="text-sm text-slate-600 dark:text-slate-300">Ao confirmar, a sessão será arquivada automaticamente e o sistema abrirá o perfil completo desta auditoria. O registro ficará disponível na aba de auditorias arquivadas por 6 horas, sem precisar realizar outra ação.</p>
             ${notices.length ? `<div class="rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-100"><p class="font-bold mb-1">Antes de finalizar:</p><ul class="list-disc pl-5 space-y-1">${notices.join("")}</ul><p class="mt-2 text-xs">Você pode continuar mesmo assim; as informações serão preservadas como estão.</p></div>` : `<p class="text-sm text-emerald-700 dark:text-emerald-300">Todas as avaliações foram preenchidas.</p>`}
             <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
               <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-sm font-bold">Continuar auditando</button>
@@ -5531,45 +5614,88 @@
       },
 
       async finishAudit() {
-        const audit = AppState.audit;
-        if (!audit) return;
-        try {
-          AnomaliasModule.syncOccurrences(audit);
-          const archived = JSON.parse(JSON.stringify(audit));
-          const archivedChecklist = getAuditChecklistSnapshot(archived);
-          archived.checklistSnapshot = JSON.parse(JSON.stringify(archivedChecklist || {}));
-          archived.questionIds = ChecklistsModule.getActiveQuestions(archivedChecklist).map(question => String(question.id));
-          archived.linhas = getAuditLines(archived);
-          archived.responses = normalizeAuditResponses(archived);
-          archived.status = "finalizada";
-          const finalizedAt = new Date();
-          archived.finalizadaEm = finalizedAt.toISOString();
-          archived.expiraEm = new Date(finalizedAt.getTime() + AUDIT_ARCHIVE_RETENTION_MS).toISOString();
-          const archivedSuccessfully = await AuditHistoryStore.save(archived);
-          if (!archivedSuccessfully) throw new Error("O prazo de retenção desta auditoria já terminou.");
-          // A auditoria já está no histórico; remove o rascunho para não restaurá-la como ativa.
+        // A mesma Promise é compartilhada por todos os cliques enquanto a finalização ocorre.
+        if (this.finishAuditPromise) return this.finishAuditPromise;
+        const activeAudit = AppState.audit;
+        if (!activeAudit) return App.showToast("Não há auditoria em andamento para finalizar.", "info");
+
+        const auditId = String(activeAudit.id || createAuditId());
+        activeAudit.id = auditId;
+        const finalizeButton = document.querySelector('#modal-box button[onclick="App.finishAudit()"]');
+        if (finalizeButton) {
+          finalizeButton.disabled = true;
+          finalizeButton.textContent = "Finalizando...";
+          finalizeButton.classList.add("opacity-60", "cursor-wait");
+        }
+
+        this.finishAuditPromise = (async () => {
           try {
+            // Aguarda qualquer autosave já iniciado e cancela timers pendentes para que
+            // nenhum rascunho antigo seja gravado novamente depois da remoção.
+            await AuditAutosave.stopForFinalization();
+            if (!AppState.audit || String(AppState.audit.id) !== auditId) {
+              throw new Error("A sessão ativa mudou durante a finalização. Reabra a auditoria e tente novamente.");
+            }
+
+            // Se a auditoria já estiver no histórico (por uma tentativa anterior que
+            // concluiu o arquivo, mas foi interrompida antes de limpar o rascunho),
+            // reutiliza o registro existente em vez de arquivar novamente.
+            const existingArchive = (await AuditHistoryStore.list())
+              .find(item => String(item.id) === auditId);
+            let archived = existingArchive || null;
+
+            if (!archived) {
+              AnomaliasModule.syncOccurrences(activeAudit);
+              archived = JSON.parse(JSON.stringify(activeAudit));
+              const archivedChecklist = getAuditChecklistSnapshot(archived);
+              archived.checklistSnapshot = JSON.parse(JSON.stringify(archivedChecklist || {}));
+              archived.questionIds = ChecklistsModule.getActiveQuestions(archivedChecklist).map(question => String(question.id));
+              archived.linhas = getAuditLines(archived);
+              archived.responses = normalizeAuditResponses(archived);
+              archived.status = "finalizada";
+              const finalizedAt = new Date();
+              archived.finalizadaEm = finalizedAt.toISOString();
+              archived.expiraEm = new Date(finalizedAt.getTime() + AUDIT_ARCHIVE_RETENTION_MS).toISOString();
+
+              const archivedSuccessfully = await AuditHistoryStore.save(archived);
+              if (!archivedSuccessfully) throw new Error("Não foi possível arquivar a auditoria dentro do prazo de retenção.");
+            }
+
+            // Remove o rascunho somente depois de confirmar que existe um único arquivo persistido.
             await AuditDraftStore.remove();
-          } catch (draftError) {
-            // O histórico arquivado prevalece; na próxima abertura, o rascunho duplicado será removido pela verificação de IDs.
-            console.warn("O rascunho não pôde ser removido imediatamente após a finalização:", draftError);
+            if (AppState.audit && String(AppState.audit.id) === auditId) AppState.audit = null;
+
+            AppState.auditHistory = deduplicateAuditsById([archived, ...AppState.auditHistory.filter(item => String(item.id) !== auditId)]);
+            AppState.reviewAuditId = auditId;
+            AppState.historySelectedIds.clear();
+            AppState.historySelectedIds.add(auditId);
+
+            const sessionBar = document.getElementById("session-bar");
+            if (sessionBar) sessionBar.classList.add("hidden");
+            AnomaliasModule.updateNavBadge();
+            this.closeModal();
+            this.navigate("perfil-auditoria");
+            this.showToast("Auditoria finalizada e arquivada uma única vez. O perfil completo ficará disponível por 6 horas.", "success");
+            this.scheduleArchiveRetentionCleanup();
+            return archived;
+          } catch (error) {
+            console.error("Erro ao finalizar auditoria:", error);
+            this.showToast("Não foi possível finalizar a auditoria: " + error.message, "error");
+            AuditAutosave.finalizing = false;
+            AuditAutosave.schedule(0);
+            if (finalizeButton) {
+              finalizeButton.disabled = false;
+              finalizeButton.textContent = "Finalizar auditoria";
+              finalizeButton.classList.remove("opacity-60", "cursor-wait");
+            }
+            return null;
           }
-          AppState.auditHistory = [archived, ...AppState.auditHistory.filter(item => item.id !== archived.id)]
-            .sort((a, b) => String(b.finalizadaEm || "").localeCompare(String(a.finalizadaEm || "")));
-          AppState.reviewAuditId = archived.id;
-          AppState.audit = null;
-          AppState.historySelectedIds.clear();
-          AppState.historySelectedIds.add(archived.id);
-          const sessionBar = document.getElementById("session-bar");
-          if (sessionBar) sessionBar.classList.add("hidden");
-          AnomaliasModule.updateNavBadge();
-          this.closeModal();
-          this.navigate("perfil-auditoria");
-          this.showToast("Auditoria finalizada e arquivada automaticamente. O perfil completo está disponível por 15 minutos.", "success");
-          this.scheduleArchiveRetentionCleanup();
-        } catch (error) {
-          console.error("Erro ao arquivar auditoria:", error);
-          this.showToast("Não foi possível arquivar a auditoria: " + error.message, "error");
+        })();
+
+        try {
+          return await this.finishAuditPromise;
+        } finally {
+          this.finishAuditPromise = null;
         }
       },
 
