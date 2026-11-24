@@ -35,6 +35,7 @@
   <!-- jsPDF + AutoTable para Relatório Executivo PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -789,13 +790,6 @@
     </nav>
 
     <div class="p-4 border-t border-slate-200 dark:border-slate-800 space-y-2 safe-bottom">
-      <input id="config-import-file" type="file" accept=".json,.txt,application/json,text/plain" class="hidden" onchange="ConfigImportModule.importFile(this);" />
-      <button type="button" onclick="document.getElementById('config-import-file').click()"
-        class="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold transition"
-        title="Importar macroáreas, áreas, turnos, critérios e questões de um arquivo TXT ou JSON">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 16V4m0 0L7 9m5-5 5 5M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
-        Importar critérios (.TXT / .JSON)
-      </button>
       <button onclick="App.toggleTheme()" class="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
         <span class="font-semibold text-sm">Tema</span>
         <span id="theme-label" class="text-sm font-bold text-blue-600 dark:text-blue-400">Claro</span>
@@ -1144,24 +1138,27 @@
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-6 shadow-sm">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
           <div>
-            <h2 class="text-xl font-extrabold">Configurações dos Checklists e Regras</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Edite perguntas e critérios. As alterações são salvas automaticamente neste navegador e aplicadas às próximas auditorias.</p>
-            <p id="cfg-save-status" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">Configuração pronta para edição.</p>
+            <h2 class="text-xl font-extrabold">Checklists e Critérios</h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Questões e critérios são carregados do Banco de Dados. Entre com uma conta autorizada para editar e salvar no banco.</p>
+            <p id="cfg-save-status" class="text-xs font-semibold text-blue-600 dark:text-blue-400 mt-1" role="status" aria-live="polite">Conectando ao Banco...</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" onclick="ConfiguracoesModule.exportConfigJSON()" class="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition">
-              Exportar configuração (.JSON)
+            <input id="cfg-checklist-import-file" type="file" accept=".json,application/json" class="hidden" onchange="SupabaseChecklistModule.importJSONFile(this)" />
+            <button id="cfg-import-json-btn" type="button" onclick="SupabaseChecklistModule.openImportPicker()" class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition">
+              Importar critérios (JSON)
             </button>
-            <button type="button" onclick="ConfiguracoesModule.confirmRestoreDefaults()"
-              class="px-3.5 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-sm font-bold transition">
-              Restaurar Padrão
+            <button id="cfg-auth-btn" type="button" onclick="SupabaseChecklistModule.toggleAuth()" class="px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition">
+              Entrar para editar
+            </button>
+            <button id="cfg-refresh-btn" type="button" onclick="SupabaseChecklistModule.refresh(true)" class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-sm font-bold transition">
+              Atualizar do banco
             </button>
           </div>
         </div>
 
         <div class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 items-end bg-slate-50 dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
           <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Checklist (6 disponíveis)</label>
+            <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1.5">Checklist (Supabase)</label>
             <select id="cfg-checklist-select" onchange="ConfiguracoesModule.onSelectChecklist()"
               class="w-full px-3.5 py-3 rounded-xl border border-slate-300 dark:border-slate-600 text-base font-bold bg-white dark:bg-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"></select>
           </div>
@@ -1204,40 +1201,20 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0 safe-bottom"></div>
 
   <script>
-    // Textos compactos usados somente nos cartões de avaliação.
-    // O texto original permanece intacto nos dados, histórico e relatórios.
-    const RATING_CRITERION_DISPLAY = Object.freeze({
-      "Operador executa todos os controles corretamente e registra tudo de forma correta": "Controles e registros completos e corretos",
-      "Controles executados, porém com imprecisões; registros adequados, mas com falhas": "Controles com imprecisões e registros com falhas",
-      "Nenhuma indicação de status; identificação ilegível, incorreta ou ausente": "Sem status; identificação ausente, incorreta ou ilegível",
-      "Total conformidade (touca cobrindo 100% do cabelo, máscara correta)": "Touca cobre todo o cabelo e máscara correta",
-      "Status presente, porém com falhas de visibilidade ou identificação": "Status visível com falhas de identificação",
-      "Todos os registros completos, corretos, padronizados e sem erros.": "Registros completos, padronizados e sem erros",
-      "Controles feitos parcialmente ou com erros; registros incompletos": "Controles parciais ou incorretos; registros incompletos",
-      "Registros completos e corretos, com pequenas falhas pontuais.": "Registros corretos, com pequenas falhas",
-      "Rachos, ondulações ou buracos leves que influenciam operação": "Rachaduras, ondulações ou buracos que afetam a operação",
-      "Ajuste incorreto leve (máscara abaixada, luva mal colocada)": "EPI mal ajustado (máscara baixa ou luva mal colocada)",
-      "Área com equipamentos fora de uso ou equipamentos quebrados": "Equipamentos quebrados ou fora de uso",
-      "Faixa parcialmente apagada ou passagem parcialmente ocupada": "Faixa apagada ou passagem parcialmente ocupada",
-      "Materiais encostando ou muito perto de áreas quentes/móveis": "Materiais próximos de áreas quentes ou partes móveis",
-      "Ralo limpo, sem odor, fluxo perfeito, sem água acumulada": "Ralo limpo, sem odor ou água parada, com bom escoamento",
-      "Acesso parcialmente obstruído OU validade quase vencendo": "Acesso parcialmente bloqueado ou validade próxima do vencimento",
-      "Algum objeto próximo que pode atrapalhar em emergência": "Objeto próximo que dificulta o acesso em emergência",
-      "Desobstruído, mas sinalização parcialmente desgastada": "Acesso livre, com sinalização desgastada",
-      "Rota parcialmente estreita ou com objetos de passagem": "Passagem estreita ou parcialmente obstruída",
-      "Materiais muito perto, risco alto (dentro da máquina)": "Materiais muito próximos, com risco dentro da máquina",
-      "Obstrução parcial que exige mover itens para acessar": "Acesso parcialmente bloqueado por objetos",
-      "Ajuste incorreto ou 1 EPI usado de forma inadequada": "Um EPI ausente ou usado incorretamente",
-      "Sinalização muito fraca ou obstrução parcial séria": "Sinalização pouco visível ou acesso muito obstruído",
-      "Superfície crítica, ferrugem ou descascando muito": "Ferrugem ou descascamento intenso na superfície",
-      "Pequeno desgaste (adesivos velhos, pintura gasta)": "Desgaste leve em adesivos ou pintura",
-      "Totalmente desobstruído e sinalizado corretamente": "Acesso livre e sinalizado corretamente",
-      "Improvisos graves substituindo soluções adequadas": "Improvisos graves no lugar de soluções adequadas"
-    });
+    // ================================================================
+    // SUPABASE — CONFIGURAÇÃO DE CONEXÃO (CHAVE PUBLICÁVEL)
+    // A chave publishable é pública por definição; RLS controla permissões.
+    // Nunca coloque uma service_role/secret key neste arquivo.
+    // ================================================================
+    const SUPABASE_URL = "https://xqcceghexugbmxcxqcbd.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Lls_j68xReiSxg5cG1QlPA__863mbJi";
+    const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    }) || null;
 
+    // O critério de avaliação é lido diretamente da coluna JSONB no Supabase.
     function getRatingCriterionDisplayText(value) {
-      const original = String(value ?? "").trim();
-      return RATING_CRITERION_DISPLAY[original] || original || "Critério não cadastrado";
+      return String(value ?? "").trim() || "Critério não cadastrado";
     }
 
     const DEFAULT_CONFIG = {
@@ -1282,13 +1259,6 @@
           linhas: ["Geral Mistura"]
         }
       ],
-      regrasNotasPadrao: {
-        1: { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
-        2: { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
-        3: { classificacao: "Melhoria", gerarRegistro: true, tipoRegistro: "Melhoria" },
-        4: { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null },
-        5: { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null }
-      },
       regrasMedia: { minimoMelhoria: 3 },
       sugestoesBase: {
         responsaveis: [
@@ -1300,189 +1270,7 @@
           "Ação imediata aplicada em turno", "Ordem de serviço aberta", "Necessário treinamento operacional"
         ]
       },
-      checklists: {
-        "Fabrica_Seguranca": {
-          id: "Fabrica_Seguranca",
-          titulo: "Checklist de Segurança — Fábrica",
-          macroarea: "Fabrica",
-          tipo: "Seguranca",
-          limiteMediaConforme: 4.8,
-          regrasNotas: null,
-          questoes: [
-            { id: "FS_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "Existem mecanismos ou motores rotativos sem proteção?", ativa: true, criterios: { 1: "Equipamento exposto em área de operação", 2: "", 3: "Equipamento exposto em área sem risco", 4: "", 5: "Motores e esteiras protegidas" } },
-            { id: "FS_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "Os operadores abriram algum Olhar Seguro no último mês?", ativa: true, criterios: { 1: "Não abriram Olhar Seguro", 2: "", 3: "", 4: "", 5: "Abriram Olhar Seguro" } },
-            { id: "FS_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "Existem riscos de tropeço na linha? (Mangueiras, paletes, caixas, etc)", ativa: true, criterios: { 1: "Mangueiras ou Paletes gerando risco", 2: "", 3: "", 4: "", 5: "Sem riscos de queda" } },
-            { id: "FS_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "Há materiais perto de equipamentos (motores/painéis) que possam enroscar ou queimar ?", ativa: true, criterios: { 1: "Materiais apoiados sobre motor/painel ", 2: "Materiais encostando ou muito perto de áreas quentes/móveis", 3: "", 4: "", 5: "Nada próximo; área completamente livre" } },
-            { id: "FS_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "Os extintores e hidrantes estão livres para acesso e com a data de validade/inspeção em dia?", ativa: true, criterios: { 1: "Acesso difícil OU validade vencida", 2: "Acesso parcialmente obstruído OU validade quase vencendo", 3: "", 4: "", 5: "Livre acesso, validade em dia" } },
-            { id: "FS_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "Os botões de Parada de Emergência (\"Cogumelo\") estão visíveis, desobstruídos e funcionando?", ativa: true, criterios: { 1: "Não funciona ou impossível de acessar", 2: "Sinalização desbotada/ Não identificável", 3: "", 4: "Sinalização levemente desgastada", 5: "Visíveis, livres e funcionando" } },
-            { id: "FS_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "Os sensores indutivos usados para bloqueio de energia (segurança) estão funcionando?", ativa: true, criterios: { 1: "Não funcionam", 2: "", 3: "", 4: "", 5: "Funcionam bem" } },
-            { id: "FS_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "As proteções da máquina estão intactas e fixas (sem sinais de remoção ou quebra)?", ativa: true, criterios: { 1: "Removidas/faltando/quebradas", 2: "Folga moderada ou peças começando a deformar.", 3: "", 4: "Leve desgaste ou pequena folga", 5: "Fixas, íntegras e firmes" } },
-            { id: "FS_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "As placas de advertência (\"Alta Tensão\", \"Quente\") estão presentes e visíveis nas máquinas?", ativa: true, criterios: { 1: "Sem placas obrigatórias", 2: "", 3: "Placas levemente desgastadas ou desbotadas", 4: "", 5: "Todas visíveis e legíveis" } },
-            { id: "FS_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "Os painéis elétricos próximos às áreas de envase estão com as portas totalmente fechadas e trancadas neste momento?", ativa: true, criterios: { 1: "Painél aberto", 2: "", 3: "", 4: "", 5: "Painéis fechados e com cadeado (se houver)" } },
-            { id: "FS_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "Foi identificada alguma fiação com isolamento degradado, sinais de superaquecimento ou exposição?", ativa: true, criterios: { 1: "Eletricidade exposta", 2: "", 3: "Fiação ressecada / mal isolada", 4: "", 5: "Fiação no padrão" } },
-            { id: "FS_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "Os caminhos e áreas de circulação estão livres de obstruções (cabos, mangueiras, paletes)?", ativa: true, criterios: { 1: "Caminho bloqueado", 2: "Obstrução significativa", 3: "", 4: "", 5: "Caminho livre e demarcado" } },
-            { id: "FS_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "O chão está seco perto da máquina ou da área de trabalho?", ativa: true, criterios: { 1: "Chão molhado com risco imediato de queda", 2: "", 3: "Umidade no chão", 4: "", 5: "Piso totalmente seco" } },
-            { id: "FS_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Existe algum vazamento que pode prejudicar a saúde dos operadores?", ativa: true, criterios: { 1: "Poeira aérea densa", 2: "", 3: "Poeira aérea", 4: "", 5: "Vazamento sem riscos" } },
-            { id: "FS_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "Pallets e carrinhos estão posicionados dentro das faixas de sinalização no solo?", ativa: true, criterios: { 1: "Vazamento afetando sensores ou partes elétricas", 2: "", 3: "", 4: "Vazamento muito leve (pontos isolados).", 5: "Sem vazamentos." } },
-            { id: "FS_4.1", codigo: "4.1", grupo: "Operador", pergunta: "As plataformas de trabalho estão em bom estado para auxiliar o operador?", ativa: true, criterios: { 1: "Instáveis ou inseguras", 2: "", 3: "Desgaste moderado", 4: "", 5: "Firmes e limpas" } },
-            { id: "FS_4.2", codigo: "4.2", grupo: "Operador", pergunta: "Existem parafusos/rebites soltos ou faltando?", ativa: true, criterios: { 1: "Estrutura solta sem parafusos", 2: "", 3: "Alguns parafusos faltando", 4: "", 5: "Parafusos e rebites presentes" } },
-            { id: "FS_4.3", codigo: "4.3", grupo: "Operador", pergunta: "O operador está seguindo o procedimento (velocidade, peso) sem fazer ajustes proibidos?", ativa: true, criterios: { 1: "Ajustes proibidos ", 2: "", 3: "Pequeno ajuste não crítico", 4: "", 5: "Segue integralmente" } },
-            { id: "FS_4.4", codigo: "4.4", grupo: "Operador", pergunta: "Os operadores estão utilizando corretamente os EPIs (máscaras, luvas) e EPCs disponíveis?", ativa: true, criterios: { 1: "Vários EPIs faltando", 2: "1 EPI faltando", 3: "", 4: "Ajuste incorreto leve (máscara abaixada, luva mal colocada)", 5: "Usando tudo corretamente" } },
-            { id: "FS_4.5", codigo: "4.5", grupo: "Operador", pergunta: "Os equipamentos estão apresentando algum risco a médio ou longo prazo? (Amortecedores, cadeiras, mesas, etc...)", ativa: true, criterios: { 1: "Equipamento impactando o operador", 2: "", 3: "Equipamentos necessitando de reparo", 4: "", 5: "Equipamentos OK" } }
-          ]
-        },
-        "Fabrica_Qualidade": {
-          id: "Fabrica_Qualidade",
-          titulo: "Checklist de Qualidade — Fábrica",
-          macroarea: "Fabrica",
-          tipo: "Qualidade",
-          limiteMediaConforme: 4.6,
-          regrasNotas: null,
-          questoes: [
-            { id: "FQ_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "As superfícies dos equipamentos estão em bom estado (sem ferrugem, descascando)?", ativa: true, criterios: { 1: "Superfície crítica, ferrugem ou descascando muito", 2: "", 3: "", 4: "Pequeno desgaste", 5: "Superfície perfeita, sem defeitos" } },
-            { id: "FQ_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "As conexões e portas dos equipamentos estão íntegras e bem vedadas para evitar vazamentos?", ativa: true, criterios: { 1: "Vazamento claro ou vedação quebrada", 2: "", 3: "", 4: "", 5: "Tudo vedado e íntegro" } },
-            { id: "FQ_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "Há vazamento visível de pó, produto ou óleo se acumulando no chão/rodapés?", ativa: true, criterios: { 1: "Vazamento acumulando no chão", 2: "", 3: "Vazamento controlado", 4: "", 5: "Sem vazamento" } },
-            { id: "FQ_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "A área apresenta umidade?", ativa: true, criterios: { 1: "Área molhada", 2: "", 3: "Pequeno acúmulo", 4: "", 5: "Sem sinals de umidade" } },
-            { id: "FQ_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "O material está em paletes limpos e íntegros?", ativa: true, criterios: { 1: "Paletes debilitados", 2: "", 3: "Paletes velhos mas utilizaveis", 4: "", 5: "Paletes ok" } },
-            { id: "FQ_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "Os produtos químicos estão identificados? (Álcool, cola. etc)", ativa: true, criterios: { 1: "Não identificados", 2: "Alguns identificados", 3: "", 4: "", 5: "Identificados" } },
-            { id: "FQ_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "O peso do produto está baixo ou apresenta sobrepeso? (Olhar data de calibração)", ativa: true, criterios: { 1: "Sobrepeso ou peso baixo", 2: "", 3: "", 4: "", 5: "Peso ok" } },
-            { id: "FQ_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "As embalagens (cartuchos, caixas de embarque) de insumos estão limpas antes do uso?", ativa: true, criterios: { 1: "Contaminação evidente", 2: "", 3: "Risco de Contaminação", 4: "", 5: "Limpo" } },
-            { id: "FQ_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "Existem itens pessoais na linha?", ativa: true, criterios: { 1: "Muitos itens pessoais sendo utilizados", 2: "Alguns itens pessoais", 3: "", 4: "", 5: "Sem itens pessoais" } },
-            { id: "FQ_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "As ferramentas de trabalho estão limpas para evitar contaminação?", ativa: true, criterios: { 1: "Sujas", 2: "", 3: "Levemente sujas", 4: "", 5: "Limpas" } },
-            { id: "FQ_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "A embalagem apresenta falhas? (rugas, produto na selagem)", ativa: true, criterios: { 1: "Embalagem ruim", 2: "", 3: "Algumas ruins", 4: "", 5: "Embalagem ok" } },
-            { id: "FQ_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "O código de barras corresponde com o produto?", ativa: true, criterios: { 1: "Não corresponde", 2: "", 3: "", 4: "", 5: "Corresponde" } },
-            { id: "FQ_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "Existem resíduos de produto antigo na máquina? (contaminação)", ativa: true, criterios: { 1: "Resíduo antigo", 2: "", 3: "", 4: "", 5: "Sem resíduo antigo" } },
-            { id: "FQ_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Há riscos de contaminação cruzada? (Materiais próximos do produto, acessórios, etc)", ativa: true, criterios: { 1: "Contaminação evidente", 2: "Materiais muito perto, risco alto (dentro da máquina)", 3: "Itens próximos ao produto", 4: "Pequeno item próximo, mas sem risco real", 5: "Nada próximo que possa contaminar" } },
-            { id: "FQ_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "Não há objetos estranhos (celulares, lápis, canetas bic, etc) sobre as máquinas ou bancadas?", ativa: true, criterios: { 1: "Alguns objetos estranhos", 2: "", 3: "", 4: "", 5: "Sem objetos estranhos" } },
-            { id: "FQ_4.1", codigo: "4.1", grupo: "Operador", pergunta: "Os corpos de prova estão disponíveis no posto?", ativa: true, criterios: { 1: "Corpos de prova não disponíveis", 2: "", 3: "", 4: "", 5: "Corpos de prova disponíveis / ou não necessários" } },
-            { id: "FQ_4.2", codigo: "4.2", grupo: "Operador", pergunta: "O operador executou os controles e monitoramentos previstos no caderno de apontamento e realizou os registros de maneira adequada?", ativa: true, criterios: { 1: "Controles feitos parcialmente ou com erros; registros incompletos", 2: "Controles executados, porém com imprecisões; registros adequados, mas com falhas", 3: "", 4: "", 5: "Operador executa todos os controles corretamente e registra tudo de forma correta" } },
-            { id: "FQ_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Existe um grande volume de retrabalho para ser feito?", ativa: true, criterios: { 1: "Grande acúmulo de retrabalho", 2: "", 3: "Acúmulo relevante", 4: "", 5: "Nenhum / somente o necessário" } },
-            { id: "FQ_4.4", codigo: "4.4", grupo: "Operador", pergunta: "O descarte de resíduos segue rigorosamente as boas práticas?", ativa: true, criterios: { 1: "Sacaria para fora", 2: "Sacaria trocada", 3: "Resíduo na lixeira errada", 4: "", 5: "Tudo ok" } },
-            { id: "FQ_4.5", codigo: "4.5", grupo: "Operador", pergunta: "BPF geral", ativa: true, criterios: { 1: "Mais de 1 ponto", 2: "", 3: "1 ponto", 4: "", 5: "Nenhum ponto" } }
-          ]
-        },
-        "Fabrica_5S": {
-          id: "Fabrica_5S",
-          titulo: "Checklist de 5S — Fábrica",
-          macroarea: "Fabrica",
-          tipo: "5S",
-          limiteMediaConforme: 4.6,
-          regrasNotas: null,
-          questoes: [
-            { id: "F5S_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "O posto apresenta as marcações, etiquetas e quadros em bom estado (sem arranhões/sujeira)?", ativa: true, criterios: { 1: "Ilegíveis, rasgados ou quebrados", 2: "Muito sujos, riscados ou quase ilegíveis", 3: "Desgaste moderado ou legibilidade reduzida", 4: "Leve desgaste (leve sujeira, arranhão pequeno)", 5: "Tudo limpo, legível e sem danos" } },
-            { id: "F5S_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "A linha possui todos os itens de trabalho?", ativa: true, criterios: { 1: "Mais de um item faltando", 2: "", 3: "1 item faltando", 4: "", 5: "Todos os intens presentes" } },
-            { id: "F5S_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "Há facas, vidros quebrados ou objetos pontiagudos espalhados ou mal guardados?", ativa: true, criterios: { 1: "Local inadequado", 2: "", 3: "Alguns itens fora de lugar", 4: "", 5: "Tudo em seus devidos lugares" } },
-            { id: "F5S_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "O posto está livre de improvisos ou \"gambiarras\" (fitas/papelões) para conter pó ou prender peças?", ativa: true, criterios: { 1: "Improvisos graves substituindo soluções adequadas", 2: "Vários improvisos evidentes", 3: "1 ou 2 improvisos moderados", 4: "", 5: "Nenhuma gambiarra" } },
-            { id: "F5S_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "O operador mantém o ritmo de organização de forma contínua, sem acúmulo de produtos no posto?", ativa: true, criterios: { 1: "Posto muito sujo e bagunçado", 2: "", 3: "Acúmulo moderado perceptível", 4: "Acúmulo mínimo ocasional", 5: "Sempre limpo, zero acúmulo" } },
-            { id: "F5S_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "O ambiente (piso, paredes e teto) está livre de acúmulo de poeira e resíduos de pó?", ativa: true, criterios: { 1: "Acúmulo pesado", 2: "Poeira visível em vários pontos", 3: "", 4: "", 5: "Totalmente limpos" } },
-            { id: "F5S_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "Existe evidência de acúmulo de pó ou resíduos nas partes inferiores e locais de difícil acesso das máquinas?", ativa: true, criterios: { 1: "Sujeira crítica acumulada", 2: "Poeira acumulada", 3: "", 4: "Poeira leve", 5: "Sem sujeira nos locais escondidos" } },
-            { id: "F5S_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "As ferramentas de trabalho estão limpas, organizadas e íntegras?", ativa: true, criterios: { 1: "Inutilizáveis", 2: "Desorganizados", 3: "Desgastadas ou sujas", 4: "", 5: "Perfeito estado" } },
-            { id: "F5S_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "Os utensílios de limpeza estão organizados e íntegros?", ativa: true, criterios: { 1: "Sujos, quebrados, jogados ou ausentes", 2: "Alguns itens desorganizados", 3: "", 4: "", 5: "Organizados, íntegros, guardados corretamente" } },
-            { id: "F5S_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "As bancadas de trabalho estão limpas?", ativa: true, criterios: { 1: "Sujeira acumulada", 2: "", 3: "Poeira leve", 4: "", 5: "Bancada limpa" } },
-            { id: "F5S_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "Utensílios da linha possuem locais fixos e demarcados e estão identificados?", ativa: true, criterios: { 1: "Sem demarcação e tudo fora do lugar", 2: "Demarcação ruim ou não visível", 3: "Alguns fora do local", 4: "1 item fora do lugar", 5: "Tudo no lugar certo e claramente demarcado" } },
-            { id: "F5S_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "Há poeira ou cola acumulada dentro das máquinas, equipamentos quentes ou elétricos?", ativa: true, criterios: { 1: "Quase nenhum alinhado", 2: "Sem  marcação", 3: "Vários fora", 4: "1 fora", 5: "Todos dentro da faixa" } },
-            { id: "F5S_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "As ferramentas estão de acordo com o padrão estipulado?", ativa: true, criterios: { 1: "Ferramentas debilitadas", 2: "Ferramentas modificadas", 3: "Ferramentas não identificadas ou gastas", 4: "", 5: "Ferramentas em boas condições de 5S" } },
-            { id: "F5S_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Não há mesas, cadeiras, bandejas ou carrinhos de outras linhas presentes?", ativa: true, criterios: { 1: "Muitos itens de outra linha", 2: "1 item isolado", 3: "", 4: "", 5: "Nenhum item estranho" } },
-            { id: "F5S_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "Existem materiais de trabalho ou itens pessoais dentro ou sobre a máquina?", ativa: true, criterios: { 1: "Item sobre a máquina e fora do suporte", 2: "Item apoiado na máquina mas sem suporte", 3: "", 4: "", 5: "Nenhum item sobre a máquina" } },
-            { id: "F5S_4.1", codigo: "4.1", grupo: "Operador", pergunta: "As pás e vassouras estão limpas e guardadas corretamente?", ativa: true, criterios: { 1: "Sujos ou com marcas", 2: "Desorganizados ou espalhados", 3: "", 4: "", 5: "Organizados e Limpos" } },
-            { id: "F5S_4.2", codigo: "4.2", grupo: "Operador", pergunta: "A máquina está limpa de acordo com o padrão?", ativa: true, criterios: { 1: "Sujeira acumulada", 2: "", 3: "Sujeira moderada", 4: "", 5: "Máquina limpa" } },
-            { id: "F5S_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Equipamentos quebrados ou ferramentas fora de uso foram removidos da linha?", ativa: true, criterios: { 1: "Área com equipamentos fora de uso ou equipamentos quebrados", 2: "Muitos itens sem uso", 3: "", 4: "", 5: "Nada quebrado presente" } },
-            { id: "F5S_4.4", codigo: "4.4", grupo: "Operador", pergunta: "As lixeiras e bandejas coletoras estão íntegras e identificadas?", ativa: true, criterios: { 1: "Ausentes ou quebradas", 2: "", 3: "Danificadas ou sem identificação", 4: "", 5: "Lixeiras e coletores" } },
-            { id: "F5S_4.5", codigo: "4.5", grupo: "Operador", pergunta: "Há pedaços de fita Durex/Teflon colados improvisadamente ou espalhados pela área?", ativa: true, criterios: { 1: "Fita substituindo soluções adequadas", 2: "", 3: "Pedaços de fita espalhados", 4: "", 5: "Sem fitas na área" } }
-          ]
-        },
-        "Mistura_Seguranca": {
-          id: "Mistura_Seguranca",
-          titulo: "Checklist de Segurança — Mistura",
-          macroarea: "Mistura",
-          tipo: "Seguranca",
-          limiteMediaConforme: 4.4,
-          regrasNotas: null,
-          questoes: [
-            { id: "MS_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "Os quadros de energia e chaves gerais da área estão desobstruídos e sinalizados?", ativa: true, criterios: { 1: "Obstruído totalmente ou sem sinalização crítica", 2: "Obstrução parcial que exige mover itens para acessar", 3: "Algum objeto próximo que pode atrapalhar em emergência", 4: "Desobstruído, mas sinalização parcialmente desgastada", 5: "Totalmente desobstruído e sinalizado corretamente" } },
-            { id: "MS_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "O botão de parada está funcionando, visível, sinalizado e desobstruído para acionamento imediato?", ativa: true, criterios: { 1: "Não funciona ou não está acessível", 2: "", 3: "", 4: "Pequeno desgaste na sinalização ou leve sujeira", 5: "Funciona, visível, sinalizado e livre" } },
-            { id: "MS_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "Extintores e hidrantes estão livres de obstáculos e com a sinalização de solo visível?", ativa: true, criterios: { 1: "Sinalização muito fraca ou obstrução parcial séria", 2: "Leve obstrução que exige mover itens", 3: "", 4: "Pequeno desgaste (adesivos velhos, pintura gasta)", 5: "Livre, selo e sinalização perfeitos" } },
-            { id: "MS_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "As passagens e saídas de emergência estão desobstruídas em caso de evacuação?", ativa: true, criterios: { 1: "Acesso difícil", 2: "", 3: "Rota parcialmente estreita ou com objetos de passagem", 4: "", 5: "Totalmente livres e demarcadas" } },
-            { id: "MS_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "Os caminhos e áreas de circulação estão livres de obstruções (cabos, mangueiras, paletes)?", ativa: true, criterios: { 1: "Caminho bloqueado", 2: "Obstrução significativa", 3: "Itens que estreitam parcialmente o caminho", 4: "1 item fora do lugar que não bloqueia passagem", 5: "Caminho livre e demarcado" } },
-            { id: "MS_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "O piso está plano (sem buracos) que possam tombar a palleteira ou a carga?", ativa: true, criterios: { 1: "Buracos críticos", 2: "Buracos que geram risco real de tombamento", 3: "Rachos, ondulações ou buracos leves que influenciam operação", 4: "Pequena irregularidade que NÃO afeta paleteira", 5: "Sem buracos, nivelado" } },
-            { id: "MS_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "Os equipamentos estão apresentando riscos durante o funcionamento? Os operadores estão seguindo os procedimentos de segurança?", ativa: true, criterios: { 1: "Risco eminente", 2: "", 3: "Risco progressivo", 4: "", 5: "Funcionamento sem riscos" } },
-            { id: "MS_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "A faixa de circulação no solo está visível e desobstruída?", ativa: true, criterios: { 1: "Difícil identificar ou obstruída", 2: "", 3: "Faixa parcialmente apagada ou passagem parcialmente ocupada", 4: "Desgaste visível da pintura", 5: "Faixa totalmente pintada e livre" } },
-            { id: "MS_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "O piso está livre de rastros de pó que possam causar escorregamento?", ativa: true, criterios: { 1: "Poeira em excesso com risco claro", 2: "", 3: "Poeira mais intensa em áreas pontuais", 4: "", 5: "Piso totalmente limpo" } },
-            { id: "MS_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "Os operadores estão utilizando o EPI nas áreas requeridas? (capacete, óculos de proteção, máscara)", ativa: true, criterios: { 1: "Múltiplos EPIs ausentes", 2: "1 EPI ausente", 3: "", 4: "Ajuste incorreto ou 1 EPI usado de forma inadequada", 5: "Todos com EPI completo e correto" } },
-            { id: "MS_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "Estruturas metálicas estão íntegras e apresentam pontas vivas (ferrugem ou risco de corte)?", ativa: true, criterios: { 1: "Pontas vivas ou áreas cortantes", 2: "", 3: "Ferrugem moderada que pode virar risco", 4: "Pequena corrosão superficial", 5: "Sem ferrugem e sem danos" } },
-            { id: "MS_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "Mangueiras de alta pressão estão sem remendos ou vazamento?", ativa: true, criterios: { 1: "Vazamento visível / risco de rompimento", 2: "Remendos presentes (mesmo sem vazamento)", 3: "", 4: "", 5: "Integridade total" } },
-            { id: "MS_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "O escoamento de água está sendo efetivo ou possuem poças d'água próximas?", ativa: true, criterios: { 1: "Poças de água", 2: "", 3: "Água ligeiramente acumulada", 4: "", 5: "Escoamento OK, sem poças" } },
-            { id: "MS_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Os cabos de rodos, escovas e demais ferramentas de lavagem estão íntegros e sem \"gambiarras", ativa: true, criterios: { 1: "Materiais quebrados ou ausentes", 2: "Materiais remendados", 3: "", 4: "", 5: "Materiais íntegros" } },
-            { id: "MS_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "As grelhas de escoamento estão perfeitamente encaixadas e sem deformações causadas pelo tráfego diário de paleteiras?", ativa: true, criterios: { 1: "Grelhas faltando", 2: "", 3: "Grelha torta", 4: "", 5: "Grelha íntegra" } },
-            { id: "MS_4.1", codigo: "4.1", grupo: "Operador", pergunta: "As caixas de energia (painéis) estão trancadas para evitar choque?", ativa: true, criterios: { 1: "Destrancado", 2: "Trancado com solução improvisada", 3: "", 4: "Trava com leve folga", 5: "Trancados corretamente" } },
-            { id: "MS_4.2", codigo: "4.2", grupo: "Operador", pergunta: "Os manípulos de movimentação de sacarias estão íntegros e operantes?", ativa: true, criterios: { 1: "Manípulos rasgados ou quebrados", 2: "Manípulos remendados", 3: "", 4: "", 5: "Manípulos funcionando" } },
-            { id: "MS_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Existe fiação exposta, descascada ou com isolamento improvisado?", ativa: true, criterios: { 1: "Fios expostos ou isolamento ruim", 2: "", 3: "Fiação improvisada, mesmo sem risco imediato", 4: "Leve desgaste", 5: "Fiação perfeita" } },
-            { id: "MS_4.4", codigo: "4.4", grupo: "Operador", pergunta: "Os amortecedores dos equipamentos estão funcionando corretamente?", ativa: true, criterios: { 1: "Quase inoperante", 2: "", 3: "Eficiência reduzida", 4: "", 5: "Funcionando perfeitamente" } },
-            { id: "MS_4.5", codigo: "4.5", grupo: "Operador", pergunta: "Existem pallets quebrados/lascados ou com pregos expostos?", ativa: true, criterios: { 1: "Pregos expostos ou partes quebradas", 2: "", 3: "Pequenas lascas, sem risco imediato", 4: "", 5: "Excelente estado" } }
-          ]
-        },
-        "Mistura_Qualidade": {
-          id: "Mistura_Qualidade",
-          titulo: "Checklist de Qualidade — Mistura",
-          macroarea: "Mistura",
-          tipo: "Qualidade",
-          limiteMediaConforme: 4.4,
-          regrasNotas: null,
-          questoes: [
-            { id: "MQ_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "O escoamento de ralos evita o retorno de odores ou água parada?", ativa: true, criterios: { 1: "Ralo entupido / água parada evidente", 2: "Odor forte ou água acumulada moderadamente", 3: "", 4: "", 5: "Ralo limpo, sem odor, fluxo perfeito, sem água acumulada" } },
-            { id: "MQ_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "Há buracos ou partes soltas no piso ou perto do encaixe dos carrinhos?", ativa: true, criterios: { 1: "Piso crítico, risco de acidente ou contaminação", 2: "Buraco significativo", 3: "Buraco leve", 4: "Pequena fissura, sem risco", 5: "Piso íntegro" } },
-            { id: "MQ_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "As quinas (parede/piso) estão íntegras e sem acúmulo de sujeira?", ativa: true, criterios: { 1: "Acúmulo pesado / Descascamento", 2: "Sujeira evidente ou quina danificada", 3: "", 4: "", 5: "Íntegras e limpas" } },
-            { id: "MQ_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "Cabos e conduítes sobre o misturador estão isentos de pó ou crostas?", ativa: true, criterios: { 1: "Crostas espessas / risco de queda no produto", 2: "", 3: "", 4: "Poeira leve", 5: "Totalmente limpos e sem resíduos" } },
-            { id: "MQ_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "Há teias, insetos ou sinais de pragas nas estruturas ou cantos?", ativa: true, criterios: { 1: "Múltiplos sinais claros de pragas", 2: "", 3: "", 4: "", 5: "Nenhum indício" } },
-            { id: "MQ_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "Há pó ou sujeira acumulada no chão logo abaixo das juntas/saídas da máquina?", ativa: true, criterios: { 1: "Sujeira crítica / camadas grossas", 2: "Acúmulo pesado", 3: "Acúmulo moderado", 4: "", 5: "Zero acúmulo" } },
-            { id: "MQ_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "O acoplamento evita que o pó caia fora durante a descarga (vazamento)?", ativa: true, criterios: { 1: "Vazamento relevante criando acúmulo", 2: "", 3: "Vazamento perceptível", 4: "Pequeno pó no entorno", 5: "Zero vazamento, vedação perfeita" } },
-            { id: "MQ_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "Internamente, os carrinhos estão limpos, secos e sem residuos de lotes anteriores? (olhar 5 carrinhos)", ativa: true, criterios: { 1: "Mais de 1 carrinho com resíduos", 2: "", 3: "1 carrinho com resíduos de lote anterior", 4: "1 carrinho com sujeira leve", 5: "Todos 5 carrinhos limpos, secos e sem resíduos" } },
-            { id: "MQ_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "As conexões de descarga garantem a estanqueidade sem dispersão de pó para o ambiente", ativa: true, criterios: { 1: "Vazamento visível", 2: "", 3: "Pequena fissura, sem risco", 4: "", 5: "Sem vazamento" } },
-            { id: "MQ_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "A carcaça e tubos dos misturadores estão isentos de \"gambiarras\" (fitas/papelão) ou furos?", ativa: true, criterios: { 1: "Furos / peças improvisadas relevantes", 2: "Gambiarras simples (fita / cola)", 3: "", 4: "Sinal leve de improviso", 5: "Tudo íntegro" } },
-            { id: "MQ_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "As facas de abrir sacaria estão íntegras e presas por cabos de segurança (evitar cair na mistura)?", ativa: true, criterios: { 1: "Soltas / risco de cair na mistura", 2: "Cabo frouxo ou lâmina desgastada", 3: "", 4: "", 5: "Presas, limpas, íntegras, cabo firme" } },
-            { id: "MQ_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "Vassouras e rodos de uso interno estão íntegros e higienizados?", ativa: true, criterios: { 1: "Quebrados / contaminados", 2: "", 3: "Desgaste perceptível", 4: "", 5: "Limpos e íntegros" } },
-            { id: "MQ_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "Utensílios (baldes/conchas) estão íntegros e sem rachaduras?", ativa: true, criterios: { 1: "Rachadura ou resíduos", 2: "", 3: "", 4: "", 5: "Perfeitamente limpos e íntegros" } },
-            { id: "MQ_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Há ferramentas, parafusos ou objetos pessoais sobre o misturador?", ativa: true, criterios: { 1: "Múltiplos objetos", 2: "", 3: "", 4: "", 5: "Área totalmente limpa, zero objetos" } },
-            { id: "MQ_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "As escadas de acesso ao topo estão limpas e sem pó acumulado?", ativa: true, criterios: { 1: "Muita sujeira", 2: "Poeira acumulada", 3: "", 4: "Poeira discreta", 5: "Limpas" } },
-            { id: "MQ_4.1", codigo: "4.1", grupo: "Operador", pergunta: "O misturador indica claramente o status ‘Limpo’ ou ‘Em Uso’? Em caso de uso, é possível identificar de forma legível a identificação do produto?", ativa: true, criterios: { 1: "Nenhuma indicação de status; identificação ilegível, incorreta ou ausente", 2: "", 3: "Status presente, porém com falhas de visibilidade ou identificação", 4: "", 5: "Status visível e legível" } },
-            { id: "MQ_4.2", codigo: "4.2", grupo: "Operador", pergunta: "Todos os controles e monitoramentos previstos no caderno de apontamento foram registrados corretamente?", ativa: true, criterios: { 1: "Registros ausentes, incorretos ou sem padrão.", 2: "Registros completos e corretos, com pequenas falhas pontuais.", 3: "", 4: "", 5: "Todos os registros completos, corretos, padronizados e sem erros." } },
-            { id: "MQ_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Os sacos de ingredientes em uso estão bem fechados e protegidos?", ativa: true, criterios: { 1: "Multiplas sacarias rasgadas", 2: "Apenas 1 sacaria com risco de contaminação grave", 3: "", 4: "", 5: "Bem fechados, sem rasgos, sem exposição" } },
-            { id: "MQ_4.4", codigo: "4.4", grupo: "Operador", pergunta: "As lixeiras estão tampadas e sem transbordar?", ativa: true, criterios: { 1: "Sacaria para fora", 2: "Transbordando", 3: "", 4: "", 5: "Limpa, tampada, organizada" } },
-            { id: "MQ_4.5", codigo: "4.5", grupo: "Operador", pergunta: "Os operadores estão com toca/máscara corretas e sem adornos?", ativa: true, criterios: { 1: "Adornos / risco crítico de contaminação", 2: "Máscara ou capacete ausentes", 3: "", 4: "Ajuste imperfeito", 5: "Total conformidade (touca cobrindo 100% do cabelo, máscara correta)" } }
-          ]
-        },
-        "Mistura_5S": {
-          id: "Mistura_5S",
-          titulo: "Checklist de 5S — Mistura",
-          macroarea: "Mistura",
-          tipo: "5S",
-          limiteMediaConforme: 4.4,
-          regrasNotas: null,
-          questoes: [
-            { id: "M5S_1.1", codigo: "1.1", grupo: "Materiais", pergunta: "Materiais de limpeza estão organizados em seus suportes ou espalhados?", ativa: true, criterios: { 1: "Total desorganização", 2: "", 3: "Mais de um item fora do suporte", 4: "", 5: "Organizados em seus suportes" } },
-            { id: "M5S_1.2", codigo: "1.2", grupo: "Materiais", pergunta: "O setor está livre de sacaria vazia acumulada (descarte imediato)?", ativa: true, criterios: { 1: "Acúmulo perceptível", 2: "Pequeno agrupamento", 3: "", 4: "1 sacaria isolada", 5: "Nenhuma sacaria no setor" } },
-            { id: "M5S_1.3", codigo: "1.3", grupo: "Materiais", pergunta: "Há itens obsoletos ou ferramentas quebradas (ocupando espaço desnecessário)?", ativa: true, criterios: { 1: "Acúmulo crítico", 2: "Alguns itens sem função clara", 3: "", 4: "", 5: "Zero itens desnecessários" } },
-            { id: "M5S_1.4", codigo: "1.4", grupo: "Materiais", pergunta: "Os locais de utensílios móveis estão demarcados e estão em seus respectivos lugares?", ativa: true, criterios: { 1: "Itens ausentes ou sem local demarcado", 2: "Vários fora da marcação", 3: "Mais de 1 fora da marcação", 4: "1 item ligeiramente fora", 5: "Todos em seus locais" } },
-            { id: "M5S_1.5", codigo: "1.5", grupo: "Materiais", pergunta: "Os cadernos de apontamento estão presentes e com fácil acesso?", ativa: true, criterios: { 1: "Caderno ausente", 2: "", 3: "Caderno distante", 4: "", 5: "Caderno próximo" } },
-            { id: "M5S_2.1", codigo: "2.1", grupo: "Máquina", pergunta: "Os carrinhos estão estacionados dentro das demarcações de solo?", ativa: true, criterios: { 1: "Poucos na marcação", 2: "Vários desalinhados", 3: "", 4: "1 desalinhado", 5: "Todos na marcação" } },
-            { id: "M5S_2.2", codigo: "2.2", grupo: "Máquina", pergunta: "O caderno está sendo preenchido corretamente?", ativa: true, criterios: { 1: "Caderno sem preenchimento", 2: "Caderno com atrasos", 3: "", 4: "", 5: "Caderno preenchido" } },
-            { id: "M5S_2.3", codigo: "2.3", grupo: "Máquina", pergunta: "As mangueiras estão íntegras e enroladas em suporte próprio (não jogadas no chão)?", ativa: true, criterios: { 1: "Danificadas e mal guardadas", 2: "Jogadas no chão", 3: "Enroladas de maneira irregular", 4: "", 5: "Guardadas no suporte" } },
-            { id: "M5S_2.4", codigo: "2.4", grupo: "Máquina", pergunta: "As ferramentas estão íntegras e limpas? (facas, escovas, conchas, instrumentos de limpeza)", ativa: true, criterios: { 1: "Ferramentas fora de condições", 2: "Ferramentas gastas", 3: "", 4: "", 5: "Ferramentas íntegras e limpas" } },
-            { id: "M5S_2.5", codigo: "2.5", grupo: "Máquina", pergunta: "As escadas estão organizadas, com degraus limpos e sem objetos pendurados nos corrimãos?", ativa: true, criterios: { 1: "Totalmente desorganizadas", 2: "Objetos pendurados ou sujeira relevante", 3: "Pequenos itens sobre as escadas", 4: "Sujeira leve", 5: "Alinhadas, limpas, nada pendurado" } },
-            { id: "M5S_3.1", codigo: "3.1", grupo: "Ambiente", pergunta: "Equipamentos quebrados ou ferramentas fora de uso foram removidos da área?", ativa: true, criterios: { 1: "Equipamentos quebrados", 2: "", 3: "Equipamentos gastos ", 4: "", 5: "Equipamentos íntegros" } },
-            { id: "M5S_3.2", codigo: "3.2", grupo: "Ambiente", pergunta: "As proteções contra impacto de carrinhos estão fixas e bem conservadas?", ativa: true, criterios: { 1: "Soltas ou ausentes", 2: "Danos relevantes", 3: "", 4: "Pequeno amassado", 5: "Firmes e conservadas" } },
-            { id: "M5S_3.3", codigo: "3.3", grupo: "Ambiente", pergunta: "As paredes e estruturas estão limpas, sem marcas de batida ou infiltrações visíveis? (goteiras, vazamentos)", ativa: true, criterios: { 1: "Vazamentos / infiltração crítica", 2: "Infiltração leve ou batidas fortes", 3: "Marcas moderadas", 4: "Poucas manchas leves", 5: "Totalmente limpas, sem marcas" } },
-            { id: "M5S_3.4", codigo: "3.4", grupo: "Ambiente", pergunta: "Não há objetos estranhos (celulares, garrafas, fitas) sobre as máquinas ou bancadas?", ativa: true, criterios: { 1: "Itens pessoais ou itens estranhos", 2: "", 3: "", 4: "", 5: "Sem itens pessoais ou estranhos" } },
-            { id: "M5S_3.5", codigo: "3.5", grupo: "Ambiente", pergunta: "O descarte de resíduos e sobras segue rigorosamente o manual de boas práticas?", ativa: true, criterios: { 1: "Sacaria pra fora", 2: "Sacaria trocada", 3: "", 4: "", 5: "Descarte adequado" } },
-            { id: "M5S_4.1", codigo: "4.1", grupo: "Operador", pergunta: "O piso da área de envase está livre de manchas ou sujeiras impregnadas?", ativa: true, criterios: { 1: "Piso crítico", 2: "Sujeira impregnada", 3: "Manchas moderadas", 4: "", 5: "Impecável" } },
-            { id: "M5S_4.2", codigo: "4.2", grupo: "Operador", pergunta: "Os escovões e materiais de lavagem de máquinas estão íntegros e guardados?", ativa: true, criterios: { 1: "Danificados e sujos", 2: "Mal armazenados", 3: "", 4: "Pequeno desgaste", 5: "Guardados, íntegros, limpos" } },
-            { id: "M5S_4.3", codigo: "4.3", grupo: "Operador", pergunta: "Paredes e teto da lavagem estão isentos de mofo, lodo ou respingos secos?", ativa: true, criterios: { 1: "Mofo/lodo", 2: "", 3: "", 4: "", 5: "Zero mofo/zero respingos" } },
-            { id: "M5S_4.4", codigo: "4.4", grupo: "Operador", pergunta: "Os cantos e locais de difícil acesso apresentam acúmulo de sujeira?", ativa: true, criterios: { 1: "Acúmulo pesado", 2: "Acúmulo relevante", 3: "", 4: "Sujeira leve", 5: "Totalmente limpos" } },
-            { id: "M5S_4.5", codigo: "4.5", grupo: "Operador", pergunta: "As estruturas dos equipamentos e partes metálicas estão íntegras e limpas (sem pó encrustado, rachaduras)?", ativa: true, criterios: { 1: "Rachaduras, ferrugem, crostas", 2: "Sujeira forte ou danos visíveis", 3: "Poeira moderada ", 4: "Poeira leve", 5: "Íntegras e limpas" } }
-          ]
-        }
-      }
-    };
+};
 
     /**
      * Converte valores externos em texto seguro para inserção em conteúdo HTML.
@@ -1520,46 +1308,7 @@
       }
     };
 
-    const CONFIG_STORAGE_KEY = "somoghiroaudit-imported-config-v1";
     const ROUTING_STORAGE_KEY = "somoghiroaudit-itsm-routing-v1";
-    // Revisão de clareza dos critérios (v2.2.0).
-    // A migração só substitui o texto original do sistema; critérios personalizados pelo usuário são preservados.
-    const CRITERIA_LEGACY_BASELINE = {"FS_1.1":{"1":"Equipamento exposto em área de operação","3":"Equipamento exposto em área sem risco","5":"Motores e esteiras protegidas"},"FS_1.2":{"1":"Não abriram Olhar Seguro","5":"Abriram Olhar Seguro"},"FS_1.3":{"1":"Mangueiras ou Paletes gerando risco","5":"Sem riscos de queda"},"FS_1.4":{"1":"Materiais apoiados sobre motor/painel ","2":"Materiais encostando ou muito perto de áreas quentes/móveis","5":"Nada próximo; área completamente livre"},"FS_1.5":{"1":"Acesso difícil OU validade vencida","2":"Acesso parcialmente obstruído OU validade quase vencendo","5":"Livre acesso, validade em dia"},"FS_2.1":{"1":"Não funciona ou impossível de acessar","2":"Sinalização desbotada/ Não identificável","4":"Sinalização levemente desgastada","5":"Visíveis, livres e funcionando"},"FS_2.2":{"1":"Não funcionam","5":"Funcionam bem"},"FS_2.3":{"1":"Removidas/faltando/quebradas","2":"Folga moderada ou peças começando a deformar.","4":"Leve desgaste ou pequena folga","5":"Fixas, íntegras e firmes"},"FS_2.4":{"1":"Sem placas obrigatórias","3":"Placas levemente desgastadas ou desbotadas","5":"Todas visíveis e legíveis"},"FS_2.5":{"1":"Painél aberto","5":"Painéis fechados e com cadeado (se houver)"},"FS_3.1":{"1":"Eletricidade exposta","3":"Fiação ressecada / mal isolada","5":"Fiação no padrão"},"FS_3.2":{"1":"Caminho bloqueado","2":"Obstrução significativa","5":"Caminho livre e demarcado"},"FS_3.3":{"1":"Chão molhado com risco imediato de queda","3":"Umidade no chão","5":"Piso totalmente seco"},"FS_3.4":{"1":"Poeira aérea densa","3":"Poeira aérea","5":"Vazamento sem riscos"},"FS_3.5":{"1":"Vazamento afetando sensores ou partes elétricas","4":"Vazamento muito leve (pontos isolados).","5":"Sem vazamentos."},"FS_4.1":{"1":"Instáveis ou inseguras","3":"Desgaste moderado","5":"Firmes e limpas"},"FS_4.2":{"1":"Estrutura solta sem parafusos","3":"Alguns parafusos faltando","5":"Parafusos e rebites presentes"},"FS_4.3":{"1":"Ajustes proibidos ","3":"Pequeno ajuste não crítico","5":"Segue integralmente"},"FS_4.4":{"1":"Vários EPIs faltando","2":"1 EPI faltando","4":"Ajuste incorreto leve (máscara abaixada, luva mal colocada)","5":"Usando tudo corretamente"},"FS_4.5":{"1":"Equipamento impactando o operador","3":"Equipamentos necessitando de reparo","5":"Equipamentos OK"},"FQ_1.1":{"1":"Superfície crítica, ferrugem ou descascando muito","4":"Pequeno desgaste","5":"Superfície perfeita, sem defeitos"},"FQ_1.2":{"1":"Vazamento claro ou vedação quebrada","5":"Tudo vedado e íntegro"},"FQ_1.3":{"1":"Vazamento acumulando no chão","3":"Vazamento controlado","5":"Sem vazamento"},"FQ_1.4":{"1":"Área molhada","3":"Pequeno acúmulo","5":"Sem sinals de umidade"},"FQ_1.5":{"1":"Paletes debilitados","3":"Paletes velhos mas utilizaveis","5":"Paletes ok"},"FQ_2.1":{"1":"Não identificados","2":"Alguns identificados","5":"Identificados"},"FQ_2.2":{"1":"Sobrepeso ou peso baixo","5":"Peso ok"},"FQ_2.3":{"1":"Contaminação evidente","3":"Risco de Contaminação","5":"Limpo"},"FQ_2.4":{"1":"Muitos itens pessoais sendo utilizados","2":"Alguns itens pessoais","5":"Sem itens pessoais"},"FQ_2.5":{"1":"Sujas","3":"Levemente sujas","5":"Limpas"},"FQ_3.1":{"1":"Embalagem ruim","3":"Algumas ruins","5":"Embalagem ok"},"FQ_3.2":{"1":"Não corresponde","5":"Corresponde"},"FQ_3.3":{"1":"Resíduo antigo","5":"Sem resíduo antigo"},"FQ_3.4":{"1":"Contaminação evidente","2":"Materiais muito perto, risco alto (dentro da máquina)","3":"Itens próximos ao produto","4":"Pequeno item próximo, mas sem risco real","5":"Nada próximo que possa contaminar"},"FQ_3.5":{"1":"Alguns objetos estranhos","5":"Sem objetos estranhos"},"FQ_4.1":{"1":"Corpos de prova não disponíveis","5":"Corpos de prova disponíveis / ou não necessários"},"FQ_4.2":{"1":"Controles feitos parcialmente ou com erros; registros incompletos","2":"Controles executados, porém com imprecisões; registros adequados, mas com falhas","5":"Operador executa todos os controles corretamente e registra tudo de forma correta"},"FQ_4.3":{"1":"Grande acúmulo de retrabalho","3":"Acúmulo relevante","5":"Nenhum / somente o necessário"},"FQ_4.4":{"1":"Sacaria para fora","2":"Sacaria trocada","3":"Resíduo na lixeira errada","5":"Tudo ok"},"FQ_4.5":{"1":"Mais de 1 ponto","3":"1 ponto","5":"Nenhum ponto"},"F5S_1.1":{"1":"Ilegíveis, rasgados ou quebrados","2":"Muito sujos, riscados ou quase ilegíveis","3":"Desgaste moderado ou legibilidade reduzida","4":"Leve desgaste (leve sujeira, arranhão pequeno)","5":"Tudo limpo, legível e sem danos"},"F5S_1.2":{"1":"Mais de um item faltando","3":"1 item faltando","5":"Todos os intens presentes"},"F5S_1.3":{"1":"Local inadequado","3":"Alguns itens fora de lugar","5":"Tudo em seus devidos lugares"},"F5S_1.4":{"1":"Improvisos graves substituindo soluções adequadas","2":"Vários improvisos evidentes","3":"1 ou 2 improvisos moderados","5":"Nenhuma gambiarra"},"F5S_1.5":{"1":"Posto muito sujo e bagunçado","3":"Acúmulo moderado perceptível","4":"Acúmulo mínimo ocasional","5":"Sempre limpo, zero acúmulo"},"F5S_2.1":{"1":"Acúmulo pesado","2":"Poeira visível em vários pontos","5":"Totalmente limpos"},"F5S_2.2":{"1":"Sujeira crítica acumulada","2":"Poeira acumulada","4":"Poeira leve","5":"Sem sujeira nos locais escondidos"},"F5S_2.3":{"1":"Inutilizáveis","2":"Desorganizados","3":"Desgastadas ou sujas","5":"Perfeito estado"},"F5S_2.4":{"1":"Sujos, quebrados, jogados ou ausentes","2":"Alguns itens desorganizados","5":"Organizados, íntegros, guardados corretamente"},"F5S_2.5":{"1":"Sujeira acumulada","3":"Poeira leve","5":"Bancada limpa"},"F5S_3.1":{"1":"Sem demarcação e tudo fora do lugar","2":"Demarcação ruim ou não visível","3":"Alguns fora do local","4":"1 item fora do lugar","5":"Tudo no lugar certo e claramente demarcado"},"F5S_3.2":{"1":"Quase nenhum alinhado","2":"Sem  marcação","3":"Vários fora","4":"1 fora","5":"Todos dentro da faixa"},"F5S_3.3":{"1":"Ferramentas debilitadas","2":"Ferramentas modificadas","3":"Ferramentas não identificadas ou gastas","5":"Ferramentas em boas condições de 5S"},"F5S_3.4":{"1":"Muitos itens de outra linha","2":"1 item isolado","5":"Nenhum item estranho"},"F5S_3.5":{"1":"Item sobre a máquina e fora do suporte","2":"Item apoiado na máquina mas sem suporte","5":"Nenhum item sobre a máquina"},"F5S_4.1":{"1":"Sujos ou com marcas","2":"Desorganizados ou espalhados","5":"Organizados e Limpos"},"F5S_4.2":{"1":"Sujeira acumulada","3":"Sujeira moderada","5":"Máquina limpa"},"F5S_4.3":{"1":"Área com equipamentos fora de uso ou equipamentos quebrados","2":"Muitos itens sem uso","5":"Nada quebrado presente"},"F5S_4.4":{"1":"Ausentes ou quebradas","3":"Danificadas ou sem identificação","5":"Lixeiras e coletores"},"F5S_4.5":{"1":"Fita substituindo soluções adequadas","3":"Pedaços de fita espalhados","5":"Sem fitas na área"},"MS_1.1":{"1":"Obstruído totalmente ou sem sinalização crítica","2":"Obstrução parcial que exige mover itens para acessar","3":"Algum objeto próximo que pode atrapalhar em emergência","4":"Desobstruído, mas sinalização parcialmente desgastada","5":"Totalmente desobstruído e sinalizado corretamente"},"MS_1.2":{"1":"Não funciona ou não está acessível","4":"Pequeno desgaste na sinalização ou leve sujeira","5":"Funciona, visível, sinalizado e livre"},"MS_1.3":{"1":"Sinalização muito fraca ou obstrução parcial séria","2":"Leve obstrução que exige mover itens","4":"Pequeno desgaste (adesivos velhos, pintura gasta)","5":"Livre, selo e sinalização perfeitos"},"MS_1.4":{"1":"Acesso difícil","3":"Rota parcialmente estreita ou com objetos de passagem","5":"Totalmente livres e demarcadas"},"MS_1.5":{"1":"Caminho bloqueado","2":"Obstrução significativa","3":"Itens que estreitam parcialmente o caminho","4":"1 item fora do lugar que não bloqueia passagem","5":"Caminho livre e demarcado"},"MS_2.1":{"1":"Buracos críticos","2":"Buracos que geram risco real de tombamento","3":"Rachos, ondulações ou buracos leves que influenciam operação","4":"Pequena irregularidade que NÃO afeta paleteira","5":"Sem buracos, nivelado"},"MS_2.2":{"1":"Risco eminente","3":"Risco progressivo","5":"Funcionamento sem riscos"},"MS_2.3":{"1":"Difícil identificar ou obstruída","3":"Faixa parcialmente apagada ou passagem parcialmente ocupada","4":"Desgaste visível da pintura","5":"Faixa totalmente pintada e livre"},"MS_2.4":{"1":"Poeira em excesso com risco claro","3":"Poeira mais intensa em áreas pontuais","5":"Piso totalmente limpo"},"MS_2.5":{"1":"Múltiplos EPIs ausentes","2":"1 EPI ausente","4":"Ajuste incorreto ou 1 EPI usado de forma inadequada","5":"Todos com EPI completo e correto"},"MS_3.1":{"1":"Pontas vivas ou áreas cortantes","3":"Ferrugem moderada que pode virar risco","4":"Pequena corrosão superficial","5":"Sem ferrugem e sem danos"},"MS_3.2":{"1":"Vazamento visível / risco de rompimento","2":"Remendos presentes (mesmo sem vazamento)","5":"Integridade total"},"MS_3.3":{"1":"Poças de água","3":"Água ligeiramente acumulada","5":"Escoamento OK, sem poças"},"MS_3.4":{"1":"Materiais quebrados ou ausentes","2":"Materiais remendados","5":"Materiais íntegros"},"MS_3.5":{"1":"Grelhas faltando","3":"Grelha torta","5":"Grelha íntegra"},"MS_4.1":{"1":"Destrancado","2":"Trancado com solução improvisada","4":"Trava com leve folga","5":"Trancados corretamente"},"MS_4.2":{"1":"Manípulos rasgados ou quebrados","2":"Manípulos remendados","5":"Manípulos funcionando"},"MS_4.3":{"1":"Fios expostos ou isolamento ruim","3":"Fiação improvisada, mesmo sem risco imediato","4":"Leve desgaste","5":"Fiação perfeita"},"MS_4.4":{"1":"Quase inoperante","3":"Eficiência reduzida","5":"Funcionando perfeitamente"},"MS_4.5":{"1":"Pregos expostos ou partes quebradas","3":"Pequenas lascas, sem risco imediato","5":"Excelente estado"},"MQ_1.1":{"1":"Ralo entupido / água parada evidente","2":"Odor forte ou água acumulada moderadamente","5":"Ralo limpo, sem odor, fluxo perfeito, sem água acumulada"},"MQ_1.2":{"1":"Piso crítico, risco de acidente ou contaminação","2":"Buraco significativo","3":"Buraco leve","4":"Pequena fissura, sem risco","5":"Piso íntegro"},"MQ_1.3":{"1":"Acúmulo pesado / Descascamento","2":"Sujeira evidente ou quina danificada","5":"Íntegras e limpas"},"MQ_1.4":{"1":"Crostas espessas / risco de queda no produto","4":"Poeira leve","5":"Totalmente limpos e sem resíduos"},"MQ_1.5":{"1":"Múltiplos sinais claros de pragas","5":"Nenhum indício"},"MQ_2.1":{"1":"Sujeira crítica / camadas grossas","2":"Acúmulo pesado","3":"Acúmulo moderado","5":"Zero acúmulo"},"MQ_2.2":{"1":"Vazamento relevante criando acúmulo","3":"Vazamento perceptível","4":"Pequeno pó no entorno","5":"Zero vazamento, vedação perfeita"},"MQ_2.3":{"1":"Mais de 1 carrinho com resíduos","3":"1 carrinho com resíduos de lote anterior","4":"1 carrinho com sujeira leve","5":"Todos 5 carrinhos limpos, secos e sem resíduos"},"MQ_2.4":{"1":"Vazamento visível","3":"Pequena fissura, sem risco","5":"Sem vazamento"},"MQ_2.5":{"1":"Furos / peças improvisadas relevantes","2":"Gambiarras simples (fita / cola)","4":"Sinal leve de improviso","5":"Tudo íntegro"},"MQ_3.1":{"1":"Soltas / risco de cair na mistura","2":"Cabo frouxo ou lâmina desgastada","5":"Presas, limpas, íntegras, cabo firme"},"MQ_3.2":{"1":"Quebrados / contaminados","3":"Desgaste perceptível","5":"Limpos e íntegros"},"MQ_3.3":{"1":"Rachadura ou resíduos","5":"Perfeitamente limpos e íntegros"},"MQ_3.4":{"1":"Múltiplos objetos","5":"Área totalmente limpa, zero objetos"},"MQ_3.5":{"1":"Muita sujeira","2":"Poeira acumulada","4":"Poeira discreta","5":"Limpas"},"MQ_4.1":{"1":"Nenhuma indicação de status; identificação ilegível, incorreta ou ausente","3":"Status presente, porém com falhas de visibilidade ou identificação","5":"Status visível e legível"},"MQ_4.2":{"1":"Registros ausentes, incorretos ou sem padrão.","2":"Registros completos e corretos, com pequenas falhas pontuais.","5":"Todos os registros completos, corretos, padronizados e sem erros."},"MQ_4.3":{"1":"Multiplas sacarias rasgadas","2":"Apenas 1 sacaria com risco de contaminação grave","5":"Bem fechados, sem rasgos, sem exposição"},"MQ_4.4":{"1":"Sacaria para fora","2":"Transbordando","5":"Limpa, tampada, organizada"},"MQ_4.5":{"1":"Adornos / risco crítico de contaminação","2":"Máscara ou capacete ausentes","4":"Ajuste imperfeito","5":"Total conformidade (touca cobrindo 100% do cabelo, máscara correta)"},"M5S_1.1":{"1":"Total desorganização","3":"Mais de um item fora do suporte","5":"Organizados em seus suportes"},"M5S_1.2":{"1":"Acúmulo perceptível","2":"Pequeno agrupamento","4":"1 sacaria isolada","5":"Nenhuma sacaria no setor"},"M5S_1.3":{"1":"Acúmulo crítico","2":"Alguns itens sem função clara","5":"Zero itens desnecessários"},"M5S_1.4":{"1":"Itens ausentes ou sem local demarcado","2":"Vários fora da marcação","3":"Mais de 1 fora da marcação","4":"1 item ligeiramente fora","5":"Todos em seus locais"},"M5S_1.5":{"1":"Caderno ausente","3":"Caderno distante","5":"Caderno próximo"},"M5S_2.1":{"1":"Poucos na marcação","2":"Vários desalinhados","4":"1 desalinhado","5":"Todos na marcação"},"M5S_2.2":{"1":"Caderno sem preenchimento","2":"Caderno com atrasos","5":"Caderno preenchido"},"M5S_2.3":{"1":"Danificadas e mal guardadas","2":"Jogadas no chão","3":"Enroladas de maneira irregular","5":"Guardadas no suporte"},"M5S_2.4":{"1":"Ferramentas fora de condições","2":"Ferramentas gastas","5":"Ferramentas íntegras e limpas"},"M5S_2.5":{"1":"Totalmente desorganizadas","2":"Objetos pendurados ou sujeira relevante","3":"Pequenos itens sobre as escadas","4":"Sujeira leve","5":"Alinhadas, limpas, nada pendurado"},"M5S_3.1":{"1":"Equipamentos quebrados","3":"Equipamentos gastos ","5":"Equipamentos íntegros"},"M5S_3.2":{"1":"Soltas ou ausentes","2":"Danos relevantes","4":"Pequeno amassado","5":"Firmes e conservadas"},"M5S_3.3":{"1":"Vazamentos / infiltração crítica","2":"Infiltração leve ou batidas fortes","3":"Marcas moderadas","4":"Poucas manchas leves","5":"Totalmente limpas, sem marcas"},"M5S_3.4":{"1":"Itens pessoais ou itens estranhos","5":"Sem itens pessoais ou estranhos"},"M5S_3.5":{"1":"Sacaria pra fora","2":"Sacaria trocada","5":"Descarte adequado"},"M5S_4.1":{"1":"Piso crítico","2":"Sujeira impregnada","3":"Manchas moderadas","5":"Impecável"},"M5S_4.2":{"1":"Danificados e sujos","2":"Mal armazenados","4":"Pequeno desgaste","5":"Guardados, íntegros, limpos"},"M5S_4.3":{"1":"Mofo/lodo","5":"Zero mofo/zero respingos"},"M5S_4.4":{"1":"Acúmulo pesado","2":"Acúmulo relevante","4":"Sujeira leve","5":"Totalmente limpos"},"M5S_4.5":{"1":"Rachaduras, ferrugem, crostas","2":"Sujeira forte ou danos visíveis","3":"Poeira moderada ","4":"Poeira leve","5":"Íntegras e limpas"}};
-    const CRITERIA_CONTEXT_LABELS = {"FS_1.1":"Proteção de motores e esteiras","FS_1.2":"Registro de Olhar Seguro","FS_1.3":"Riscos de tropeço na linha","FS_1.4":"Materiais próximos a motores e painéis","FS_1.5":"Acesso e inspeção de extintores e hidrantes","FS_2.1":"Botão de parada de emergência","FS_2.2":"Sensores de bloqueio de energia","FS_2.3":"Proteções físicas da máquina","FS_2.4":"Placas de advertência das máquinas","FS_2.5":"Portas e travas dos painéis elétricos","FS_3.1":"Fiação elétrica e isolamento","FS_3.2":"Rotas e áreas de circulação","FS_3.3":"Piso próximo à máquina","FS_3.4":"Vazamentos e exposição dos operadores","FS_3.5":"Pallets e carrinhos nas faixas de sinalização","FS_4.1":"Plataformas de trabalho","FS_4.2":"Parafusos e rebites das estruturas","FS_4.3":"Cumprimento do procedimento operacional","FS_4.4":"Uso de EPIs e EPCs","FS_4.5":"Condições dos equipamentos de apoio ao operador","FQ_1.1":"Superfícies dos equipamentos","FQ_1.2":"Conexões, portas e vedação dos equipamentos","FQ_1.3":"Vazamentos de pó, produto ou óleo","FQ_1.4":"Umidade da área","FQ_1.5":"Condição e limpeza dos paletes","FQ_2.1":"Identificação dos produtos químicos","FQ_2.2":"Peso do produto e calibração","FQ_2.3":"Limpeza das embalagens de insumos","FQ_2.4":"Itens pessoais na linha","FQ_2.5":"Limpeza das ferramentas de trabalho","FQ_3.1":"Integridade da embalagem e da selagem","FQ_3.2":"Correspondência do código de barras","FQ_3.3":"Resíduos de produtos anteriores na máquina","FQ_3.4":"Risco de contaminação cruzada","FQ_3.5":"Objetos estranhos sobre máquinas e bancadas","FQ_4.1":"Disponibilidade dos corpos de prova","FQ_4.2":"Controles, monitoramentos e registros do operador","FQ_4.3":"Volume de retrabalho","FQ_4.4":"Separação e descarte de resíduos","FQ_4.5":"Boas Práticas de Fabricação (BPF)","F5S_1.1":"Marcações, etiquetas e quadros do posto","F5S_1.2":"Itens de trabalho disponíveis na linha","F5S_1.3":"Facas, vidros e objetos pontiagudos","F5S_1.4":"Improvisos e soluções provisórias no posto","F5S_1.5":"Organização contínua do posto","F5S_2.1":"Poeira e resíduos no piso, paredes e teto","F5S_2.2":"Poeira e resíduos nas partes inferiores e escondidas das máquinas","F5S_2.3":"Limpeza, organização e integridade das ferramentas","F5S_2.4":"Organização e integridade dos utensílios de limpeza","F5S_2.5":"Limpeza das bancadas de trabalho","F5S_3.1":"Locais fixos e identificação dos utensílios da linha","F5S_3.2":"Poeira ou cola dentro das máquinas e sobre componentes quentes ou elétricos","F5S_3.3":"Condição e padronização das ferramentas","F5S_3.4":"Itens de outras linhas sobre a área","F5S_3.5":"Materiais e itens pessoais sobre ou dentro da máquina","F5S_4.1":"Limpeza e armazenamento de pás e vassouras","F5S_4.2":"Limpeza da máquina","F5S_4.3":"Retirada de equipamentos quebrados ou fora de uso","F5S_4.4":"Integridade e identificação das lixeiras e bandejas coletoras","F5S_4.5":"Uso de fitas improvisadas na área","MS_1.1":"Quadros de energia e chaves gerais","MS_1.2":"Botão de parada de emergência","MS_1.3":"Extintores, hidrantes e sinalização de solo","MS_1.4":"Passagens e saídas de emergência","MS_1.5":"Caminhos e áreas de circulação","MS_2.1":"Nivelamento e integridade do piso para paleteiras","MS_2.2":"Segurança dos equipamentos durante a operação","MS_2.3":"Faixa de circulação no solo","MS_2.4":"Pó no piso e risco de escorregamento","MS_2.5":"Uso dos EPIs nas áreas obrigatórias","MS_3.1":"Integridade das estruturas metálicas e pontas cortantes","MS_3.2":"Mangueiras de alta pressão","MS_3.3":"Escoamento de água e formação de poças","MS_3.4":"Cabos de rodos, escovas e ferramentas de lavagem","MS_3.5":"Grelhas de escoamento","MS_4.1":"Fechamento e travamento dos painéis elétricos","MS_4.2":"Manípulos de movimentação de sacarias","MS_4.3":"Fiação exposta ou com isolamento improvisado","MS_4.4":"Amortecedores dos equipamentos","MS_4.5":"Integridade dos pallets e pregos expostos","MQ_1.1":"Ralos, escoamento e água parada","MQ_1.2":"Piso e encaixe dos carrinhos","MQ_1.3":"Quinas entre paredes e piso","MQ_1.4":"Cabos e conduítes sobre o misturador","MQ_1.5":"Sinais de pragas nas estruturas e cantos","MQ_2.1":"Pó e sujeira no piso sob as juntas e saídas da máquina","MQ_2.2":"Vedação do acoplamento durante a descarga","MQ_2.3":"Limpeza interna dos carrinhos","MQ_2.4":"Vedação das conexões de descarga","MQ_2.5":"Integridade da carcaça e dos tubos do misturador","MQ_3.1":"Facas de abertura de sacaria e cabos de segurança","MQ_3.2":"Higiene e integridade de vassouras e rodos","MQ_3.3":"Integridade e limpeza de baldes e conchas","MQ_3.4":"Objetos sobre o misturador","MQ_3.5":"Limpeza das escadas de acesso ao topo","MQ_4.1":"Identificação do status e do produto no misturador","MQ_4.2":"Registros dos controles e monitoramentos","MQ_4.3":"Fechamento e proteção das sacarias de ingredientes","MQ_4.4":"Tampas e capacidade das lixeiras","MQ_4.5":"Uso correto de touca, máscara e ausência de adornos","M5S_1.1":"Organização dos materiais de limpeza","M5S_1.2":"Descarte de sacarias vazias","M5S_1.3":"Retirada de itens obsoletos e ferramentas quebradas","M5S_1.4":"Demarcação e localização dos utensílios móveis","M5S_1.5":"Disponibilidade e acesso aos cadernos de apontamento","M5S_2.1":"Estacionamento dos carrinhos nas demarcações","M5S_2.2":"Preenchimento do caderno de apontamento","M5S_2.3":"Integridade e armazenamento das mangueiras","M5S_2.4":"Integridade e limpeza das ferramentas","M5S_2.5":"Organização e limpeza das escadas","M5S_3.1":"Retirada de equipamentos quebrados ou fora de uso","M5S_3.2":"Integridade das proteções contra impacto de carrinhos","M5S_3.3":"Limpeza e integridade de paredes e estruturas","M5S_3.4":"Objetos pessoais ou estranhos sobre máquinas e bancadas","M5S_3.5":"Descarte de resíduos e sobras","M5S_4.1":"Limpeza do piso da área de trabalho","M5S_4.2":"Integridade, limpeza e armazenamento dos escovões e materiais de lavagem","M5S_4.3":"Mofo, lodo e respingos nas paredes e no teto da lavagem","M5S_4.4":"Limpeza de cantos e locais de difícil acesso","M5S_4.5":"Integridade e limpeza das estruturas e partes metálicas dos equipamentos"};
-    const CRITERIA_WORDING_OVERRIDES = {"FS_1.2":{"1":"Nenhum operador abriu um registro de Olhar Seguro no último mês.","5":"Os operadores abriram registros de Olhar Seguro no último mês."},"FS_3.4":{"1":"Há vazamento ou poeira suspensa em grande quantidade, expondo os operadores a risco à saúde.","3":"Há vazamento ou poeira suspensa em quantidade moderada, com possibilidade de exposição dos operadores.","5":"Não há vazamentos nem exposição que represente risco à saúde dos operadores."},"FS_3.5":{"1":"Pallets ou carrinhos estão fora das faixas de sinalização e bloqueiam a circulação ou criam risco de acidente.","4":"Um pallet ou carrinho está ligeiramente fora da faixa de sinalização, sem bloquear a passagem.","5":"Todos os pallets e carrinhos estão posicionados dentro das faixas de sinalização."},"FQ_1.4":{"1":"A área apresenta umidade intensa, com acúmulo de água ou piso molhado.","3":"Há pequenos pontos de umidade acumulada na área.","5":"A área está seca, sem sinais de umidade."},"FQ_1.5":{"1":"Paletes estão quebrados, deformados ou sem condições seguras de uso.","3":"Paletes apresentam desgaste, mas ainda podem ser utilizados com segurança.","5":"Todos os paletes estão limpos e em boas condições de uso."},"FQ_2.3":{"1":"Embalagens de insumos apresentam sujeira ou contaminação visível.","3":"Algumas embalagens apresentam resíduos ou sinais de contaminação que exigem limpeza.","5":"Embalagens de insumos estão limpas e sem sinais de contaminação."},"FQ_4.4":{"1":"Resíduos ou sacarias foram deixados fora do recipiente de descarte.","2":"Sacaria ou recipiente de descarte foi trocado, misturando resíduos de tipos diferentes.","3":"Pelo menos um resíduo foi depositado na lixeira incorreta.","5":"Todos os resíduos foram descartados nos recipientes corretos, seguindo as boas práticas."},"FQ_4.5":{"1":"Mais de um desvio de Boas Práticas de Fabricação (BPF) foi identificado no posto.","3":"Foi identificado um desvio pontual de Boas Práticas de Fabricação (BPF).","5":"Nenhum desvio de Boas Práticas de Fabricação (BPF) foi identificado."},"F5S_1.2":{"1":"Mais de um item necessário para o trabalho está faltando na linha.","3":"Um item necessário para o trabalho está faltando na linha.","5":"Todos os itens necessários para o trabalho estão presentes na linha."},"F5S_1.3":{"1":"Facas, vidros quebrados ou objetos pontiagudos estão espalhados ou guardados em local inadequado.","3":"Algumas facas ou objetos pontiagudos estão fora do local de armazenamento definido.","5":"Facas e objetos pontiagudos estão guardados corretamente, sem itens espalhados na área."},"F5S_3.2":{"1":"Há grande acúmulo de poeira ou cola dentro da máquina ou sobre componentes quentes/elétricos.","2":"Há acúmulo visível de poeira ou cola em vários pontos internos da máquina.","3":"Há acúmulo moderado de poeira ou cola em alguns pontos internos da máquina.","4":"Há pequena quantidade de poeira ou cola em um ponto isolado, sem acúmulo relevante.","5":"O interior da máquina e os componentes quentes/elétricos estão sem acúmulo de poeira ou cola."},"F5S_4.4":{"1":"Lixeiras ou bandejas coletoras estão ausentes ou quebradas.","3":"Lixeiras ou bandejas coletoras estão danificadas ou sem identificação.","5":"Todas as lixeiras e bandejas coletoras estão íntegras e identificadas."},"MS_1.3":{"1":"Extintores ou hidrantes estão bloqueados, ou a sinalização de solo está ausente ou ilegível.","2":"Há obstáculos próximos aos extintores/hidrantes ou a sinalização de solo está parcialmente obstruída.","4":"Acesso está livre, mas a pintura ou as placas de sinalização apresentam desgaste leve.","5":"Extintores e hidrantes estão acessíveis, lacres/selo de inspeção íntegros e sinalização de solo visível."},"MS_2.1":{"1":"Há buracos ou desníveis críticos no piso, com risco de tombamento da paleteira ou da carga.","2":"Há buracos no piso que geram risco real de tombamento da paleteira ou da carga.","3":"Há rachaduras, ondulações ou buracos leves que dificultam a movimentação da paleteira.","4":"Há pequena irregularidade no piso, sem afetar o deslocamento da paleteira.","5":"O piso está nivelado e sem buracos que ofereçam risco à paleteira ou à carga."},"MS_2.2":{"1":"Um equipamento apresenta risco imediato durante o funcionamento ou o procedimento de segurança não está sendo seguido, com perigo de acidente.","3":"Há condição de risco em evolução no equipamento ou falha no procedimento que pode se agravar se não for corrigida.","5":"Equipamentos funcionam sem riscos identificados e os operadores seguem os procedimentos de segurança."},"MS_3.4":{"1":"Cabos de rodos, escovas ou ferramentas de lavagem estão quebrados ou ausentes.","2":"Cabos de rodos, escovas ou ferramentas de lavagem apresentam remendos ou improvisos.","5":"Cabos de rodos, escovas e ferramentas de lavagem estão íntegros, sem remendos ou improvisos."},"M5S_3.5":{"1":"Sacarias ou resíduos estão fora do recipiente ou local de descarte definido.","2":"Sacarias foram colocadas no recipiente ou fluxo de descarte incorreto.","5":"Resíduos e sobras são descartados corretamente, conforme o manual de boas práticas."},"M5S_4.1":{"1":"O piso da área de trabalho apresenta sujeira intensa ou manchas críticas.","2":"Há sujeira impregnada no piso da área de trabalho, exigindo limpeza.","3":"Há manchas moderadas no piso da área de trabalho.","5":"O piso da área de trabalho está limpo, sem manchas ou sujeira impregnada."}};
-    const QUESTION_WORDING_OVERRIDES = {"MS_3.4":{"old":"Os cabos de rodos, escovas e demais ferramentas de lavagem estão íntegros e sem \"gambiarras","new":"Os cabos de rodos, escovas e demais ferramentas de lavagem estão íntegros e sem improvisos (\"gambiarras\")?"},"MQ_4.5":{"old":"Os operadores estão com toca/máscara corretas e sem adornos?","new":"Os operadores estão usando touca e máscara corretamente e sem adornos?"}};
-
-    function upgradeCriteriaClarity(config) {
-      if (!config || !config.checklists) return false;
-      let changed = false;
-      Object.values(config.checklists).forEach(checklist => {
-        (checklist.questoes || []).forEach(question => {
-          const baseline = CRITERIA_LEGACY_BASELINE[question.id];
-          const context = CRITERIA_CONTEXT_LABELS[question.id];
-          if (!baseline || !context) return;
-          question.criterios = question.criterios || {};
-          [1,2,3,4,5].forEach(score => {
-            const oldText = baseline[String(score)];
-            const currentText = question.criterios[score];
-            if (!oldText || typeof currentText !== "string" || currentText.trim() !== oldText.trim()) return;
-            const override = CRITERIA_WORDING_OVERRIDES[question.id] && CRITERIA_WORDING_OVERRIDES[question.id][score];
-            const rawText = oldText.trim().replace(/\s+/g, " ");
-            const cleanText = rawText.charAt(0).toLocaleLowerCase("pt-BR") + rawText.slice(1);
-            const sentence = cleanText.endsWith(".") || cleanText.endsWith("!") || cleanText.endsWith("?") ? cleanText : cleanText + ".";
-            question.criterios[score] = override || `${context}: ${sentence}`;
-            changed = true;
-          });
-          const questionFix = QUESTION_WORDING_OVERRIDES[question.id];
-          if (questionFix && question.pergunta === questionFix.old) {
-            question.pergunta = questionFix.new;
-            changed = true;
-          }
-        });
-      });
-      if (changed) config.version = "2.2.0";
-      return changed;
-    }
-
     const AUDIT_HISTORY_DB = "somoghiroaudit-history-db";
     const AUDIT_HISTORY_DB_VERSION = 2;
     const AUDIT_HISTORY_STORE = "audits";
@@ -1929,109 +1678,10 @@
       }
     };
 
-    function validateImportedConfig(config) {
-      const errors = [];
-      if (!config || typeof config !== "object" || Array.isArray(config)) {
-        return { valid: false, errors: ["O arquivo precisa conter um objeto JSON na raiz."] };
-      }
-      ["macroareas", "tiposAuditoria", "turnos", "areasOperacionais"].forEach(key => {
-        if (!Array.isArray(config[key]) || !config[key].length) errors.push(`O campo '${key}' deve ser uma lista não vazia.`);
-      });
-      if (!config.checklists || typeof config.checklists !== "object" || Array.isArray(config.checklists) || !Object.keys(config.checklists).length) {
-        errors.push("O campo 'checklists' precisa conter pelo menos um checklist.");
-      }
-      const macroIds = new Set((config.macroareas || []).map(x => x && x.id));
-      const tipoIds = new Set((config.tiposAuditoria || []).map(x => x && x.id));
-      (config.macroareas || []).forEach((item, i) => {
-        if (!item || !item.id || !item.nome) errors.push(`Macroárea ${i + 1}: informe id e nome.`);
-      });
-      (config.tiposAuditoria || []).forEach((item, i) => {
-        if (!item || !item.id || !item.nome) errors.push(`Tipo de auditoria ${i + 1}: informe id e nome.`);
-      });
-      (config.areasOperacionais || []).forEach((area, i) => {
-        if (!area || !area.id || !area.nome || !Array.isArray(area.linhas)) errors.push(`Área operacional ${i + 1}: informe id, nome e linhas.`);
-        else if (area.macroarea && !macroIds.has(area.macroarea)) errors.push(`Área '${area.nome}': macroárea '${area.macroarea}' não cadastrada.`);
-      });
-      let totalQuestions = 0;
-      Object.entries(config.checklists || {}).forEach(([key, checklist]) => {
-        if (!checklist || !checklist.id || !checklist.titulo || !checklist.macroarea || !checklist.tipo || !Array.isArray(checklist.questoes)) {
-          errors.push(`Checklist '${key}': estrutura incompleta (id, titulo, macroarea, tipo e questoes são obrigatórios).`);
-          return;
-        }
-        if (!macroIds.has(checklist.macroarea)) errors.push(`Checklist '${key}': macroárea '${checklist.macroarea}' não existe.`);
-        if (!tipoIds.has(checklist.tipo)) errors.push(`Checklist '${key}': tipo '${checklist.tipo}' não existe.`);
-        const questionIds = new Set();
-        checklist.questoes.forEach((q, i) => {
-          totalQuestions++;
-          if (!q || !q.id || !q.codigo || !q.grupo || !q.pergunta || typeof q.pergunta !== "string") {
-            errors.push(`Checklist '${key}', questão ${i + 1}: informe id, codigo, grupo e pergunta.`);
-          } else if (questionIds.has(q.id)) {
-            errors.push(`Checklist '${key}': ID de questão duplicado '${q.id}'.`);
-          } else questionIds.add(q.id);
-          if (q && (!q.criterios || typeof q.criterios !== "object" || Array.isArray(q.criterios))) {
-            errors.push(`Checklist '${key}', questão '${q.id || i + 1}': critérios devem ser um objeto.`);
-          }
-        });
-        if (!checklist.questoes.length) errors.push(`Checklist '${key}' não possui questões.`);
-      });
-      if (errors.length) return { valid: false, errors };
-
-      const normalized = JSON.parse(JSON.stringify(config));
-      normalized.version = String(normalized.version || "1.0.0");
-      normalized.regrasNotasPadrao = normalized.regrasNotasPadrao || JSON.parse(JSON.stringify(DEFAULT_CONFIG.regrasNotasPadrao));
-      normalized.regrasMedia = normalized.regrasMedia || { minimoMelhoria: 3 };
-      normalized.sugestoesBase = normalized.sugestoesBase || { responsaveis: [], observacoes: [] };
-      normalized.colunasRelatorio = Array.isArray(normalized.colunasRelatorio) ? normalized.colunasRelatorio : [];
-      Object.values(normalized.checklists).forEach(chk => {
-        chk.questoes.forEach(q => {
-          q.ativa = q.ativa !== false;
-          q.criterios = q.criterios || {};
-          [1, 2, 3, 4, 5].forEach(n => {
-            if (q.criterios[n] == null) q.criterios[n] = "";
-            else q.criterios[n] = String(q.criterios[n]);
-          });
-        });
-      });
-      return { valid: true, config: normalized, totalQuestions };
-    }
-
-    /**
-     * Mantém a linha Eclusa disponível no cadastro operacional do Envase,
-     * inclusive em configurações antigas já gravadas ou importadas pelo usuário.
-     */
-    function ensureEclusaLine(config) {
-      const areas = Array.isArray(config?.areasOperacionais) ? config.areasOperacionais : [];
-      const envaseArea = areas.find(area => String(area?.id || "").trim().toLowerCase() === "envase") ||
-        areas.find(area => String(area?.nome || "").trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === "envase");
-      if (!envaseArea || !Array.isArray(envaseArea.linhas)) return false;
-
-      const alreadyExists = envaseArea.linhas.some(line =>
-        String(line ?? "").trim().toLocaleLowerCase("pt-BR") === "eclusa"
-      );
-      if (alreadyExists) return false;
-
-      envaseArea.linhas.push("Eclusa");
-      return true;
-    }
-
-    // Atualiza os critérios originais usados quando ainda não existe configuração salva.
-    upgradeCriteriaClarity(DEFAULT_CONFIG);
-
     function loadSavedConfig() {
-      const saved = safeStorageGet(CONFIG_STORAGE_KEY);
-      if (!saved) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-      try {
-        const parsed = JSON.parse(saved);
-        const result = validateImportedConfig(parsed);
-        if (!result.valid) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        const upgraded = upgradeCriteriaClarity(result.config);
-        const addedEclusa = ensureEclusaLine(result.config);
-        if (upgraded || addedEclusa) safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(result.config));
-        return result.config;
-      } catch (error) {
-        console.warn("Configuração importada anteriormente não pôde ser carregada:", error);
-        return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-      }
+      const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+      config.checklists = {}; // Populado exclusivamente pelo Supabase antes de iniciar a auditoria.
+      return config;
     }
 
     // Regras determinísticas de encaminhamento ITSM, derivadas do histórico da aba RELATÓRIOS.
@@ -2727,14 +2377,15 @@
       getChecklistKey(macroarea, tipo) { return `${macroarea}_${tipo}`; },
       getChecklist(macroarea, tipo) {
         const key = this.getChecklistKey(macroarea, tipo);
-        return AppState.config.checklists[key] || null;
+        const checklist = AppState.config.checklists?.[key] || null;
+        return checklist && checklist.ativo !== false ? checklist : null;
       },
       getActiveQuestions(checklist) {
         if (!checklist || !Array.isArray(checklist.questoes)) return [];
         return checklist.questoes.filter(q => q.ativa !== false);
       },
       getRatingRules(checklist) {
-        return (checklist && checklist.regrasNotas) ? checklist.regrasNotas : AppState.config.regrasNotasPadrao;
+        return (checklist && checklist.regrasNotas) ? checklist.regrasNotas : {};
       },
       getMacroareaName(id) {
         const found = AppState.config.macroareas.find(m => m.id === id);
@@ -5755,63 +5406,443 @@
       }
     };
 
+    const SupabaseChecklistModule = {
+      session: null,
+      initialized: false,
+      loading: false,
+      subscription: null,
+
+      setStatus(message, state = "info") {
+        const el = document.getElementById("cfg-save-status");
+        if (!el) return;
+        const styles = {
+          success: "text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1",
+          error: "text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1",
+          info: "text-xs font-semibold text-blue-600 dark:text-blue-400 mt-1"
+        };
+        el.className = styles[state] || styles.info;
+        el.textContent = message;
+      },
+
+      updateAuthButton() {
+        const button = document.getElementById("cfg-auth-btn");
+        if (!button) return;
+        button.textContent = this.session ? "Sair do modo de edição" : "Entrar para editar";
+        button.className = this.session
+          ? "px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-sm font-bold transition"
+          : "px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition";
+      },
+
+      async initialize() {
+        if (!supabaseClient) {
+          this.setStatus("Biblioteca Supabase indisponível. Verifique a conexão com a internet e recarregue a página.", "error");
+          return false;
+        }
+        try {
+          const { data, error } = await supabaseClient.auth.getSession();
+          if (error) throw error;
+          this.session = data?.session || null;
+          const authState = supabaseClient.auth.onAuthStateChange((_event, session) => {
+            this.session = session || null;
+            this.updateAuthButton();
+            this.setStatus(
+              this.session ? `Conectado ao Supabase • edição autenticada (${this.session.user?.email || "usuário"}).` : "Conectado ao Supabase • somente leitura. Entre para editar.",
+              "success"
+            );
+            if (this.initialized && typeof ConfiguracoesModule !== "undefined") ConfiguracoesModule.render();
+          });
+          this.subscription = authState?.data?.subscription || null;
+          this.updateAuthButton();
+          await this.loadFromDatabase();
+          return true;
+        } catch (error) {
+          console.error("Falha na inicialização do Supabase:", error);
+          this.setStatus(`Falha ao conectar/carregar checklists: ${error.message}. Confirme se o SQL de instalação foi executado no Supabase.`, "error");
+          AppState.config.checklists = {};
+          return false;
+        }
+      },
+
+      async loadFromDatabase() {
+        if (!supabaseClient) throw new Error("Cliente Supabase não inicializado.");
+        if (this.loading) return false;
+        this.loading = true;
+        try {
+          const [checklistsResult, questionsResult] = await Promise.all([
+            supabaseClient.from("checklists")
+              .select("id,titulo,macroarea,tipo,limite_media_conforme,regras_notas,ativo")
+              .order("macroarea", { ascending: true })
+              .order("tipo", { ascending: true }),
+            supabaseClient.from("questoes_checklist")
+              .select("id,checklist_id,codigo,grupo,pergunta,criterios,ativa,ordem")
+              .order("ordem", { ascending: true })
+          ]);
+          if (checklistsResult.error) throw checklistsResult.error;
+          if (questionsResult.error) throw questionsResult.error;
+
+          const mapped = {};
+          (checklistsResult.data || []).forEach(row => {
+            mapped[row.id] = {
+              id: row.id,
+              titulo: row.titulo,
+              macroarea: row.macroarea,
+              tipo: row.tipo,
+              limiteMediaConforme: Number(row.limite_media_conforme ?? 4.8),
+              regrasNotas: row.regras_notas || null,
+              ativo: row.ativo !== false,
+              questoes: []
+            };
+          });
+          (questionsResult.data || []).forEach(row => {
+            const checklist = mapped[row.checklist_id];
+            if (!checklist) return;
+            const criterios = row.criterios && typeof row.criterios === "object" ? row.criterios : {};
+            checklist.questoes.push({
+              id: row.id,
+              codigo: row.codigo,
+              grupo: row.grupo,
+              pergunta: row.pergunta,
+              criterios: Object.fromEntries([1, 2, 3, 4, 5].map(n => [n, String(criterios[String(n)] ?? criterios[n] ?? "")])),
+              ativa: row.ativa !== false,
+              ordem: Number(row.ordem || 0)
+            });
+          });
+          Object.values(mapped).forEach(chk => chk.questoes.sort((a, b) => a.ordem - b.ordem));
+          AppState.config.checklists = mapped;
+          this.initialized = true;
+          const ids = Object.keys(mapped);
+          if (!mapped[ConfiguracoesModule.selectedChecklistId] && ids.length) ConfiguracoesModule.selectedChecklistId = ids[0];
+          this.setStatus(
+            this.session ? `Supabase conectado • ${ids.length} checklist(s) • edição autenticada (${this.session.user?.email || "usuário"}).` : `Supabase conectado • ${ids.length} checklist(s) carregados • entre para editar.`,
+            "success"
+          );
+          this.updateAuthButton();
+          return true;
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async refresh(showMessage = false) {
+        try {
+          await this.loadFromDatabase();
+          ConfiguracoesModule.render();
+          if (showMessage) App.showToast("Checklists atualizados a partir do Supabase.", "success");
+          return true;
+        } catch (error) {
+          console.error("Falha ao atualizar checklists do Supabase:", error);
+          this.setStatus(`Não foi possível atualizar os checklists: ${error.message}`, "error");
+          App.showToast("Falha ao carregar dados do banco. Verifique as tabelas e políticas RLS.", "error");
+          return false;
+        }
+      },
+
+      requireEditor() {
+        if (this.session) return true;
+        this.openLoginModal();
+        App.showToast("Entre com uma conta autorizada para editar os checklists.", "info");
+        return false;
+      },
+
+      openImportPicker() {
+        if (!this.requireEditor()) return;
+        const input = document.getElementById("cfg-checklist-import-file");
+        if (input) input.click();
+      },
+
+      /**
+       * Importa o JSON exportado pelo SomoGhiro Audit para as tabelas públicas.
+       * Registros com o mesmo ID são atualizados; novos registros são inseridos.
+       * Registros que não aparecem no arquivo não são excluídos.
+       */
+      async importJSONFile(input) {
+        const file = input?.files?.[0];
+        if (!file) return;
+        if (!this.requireEditor()) { input.value = ""; return; }
+
+        const importButton = document.getElementById("cfg-import-json-btn");
+        const originalButtonText = importButton?.textContent || "Importar critérios (JSON)";
+        try {
+          const raw = await file.text();
+          let payload;
+          try { payload = JSON.parse(raw); }
+          catch { throw new Error("O arquivo não contém um JSON válido."); }
+
+          if (!payload || !Array.isArray(payload.checklists) || !Array.isArray(payload.questoes_checklist)) {
+            throw new Error('Formato inválido. O JSON precisa conter os arrays "checklists" e "questoes_checklist".');
+          }
+          if (!payload.checklists.length) throw new Error("O arquivo não contém checklists.");
+
+          const checklistIds = new Set();
+          const questionIds = new Set();
+          const checklistRows = payload.checklists.map((item, index) => {
+            const id = String(item?.id || "").trim();
+            const titulo = String(item?.titulo || "").trim();
+            const macroarea = String(item?.macroarea || "").trim();
+            const tipo = String(item?.tipo || "").trim();
+            const limite = Number(item?.limite_media_conforme ?? item?.limiteMediaConforme ?? 4.8);
+            if (!id || !titulo || !macroarea || !tipo) {
+              throw new Error(`Checklist na posição ${index + 1}: ID, título, macroárea e tipo são obrigatórios.`);
+            }
+            if (checklistIds.has(id)) throw new Error(`O checklist "${id}" aparece mais de uma vez no JSON.`);
+            if (!Number.isFinite(limite) || limite < 1 || limite > 5) {
+              throw new Error(`Checklist "${id}": a média mínima deve estar entre 1 e 5.`);
+            }
+            checklistIds.add(id);
+            const regras = item.regras_notas ?? item.regrasNotas ?? null;
+            if (regras !== null && (typeof regras !== "object" || Array.isArray(regras))) {
+              throw new Error(`Checklist "${id}": regras_notas precisa ser um objeto JSON.`);
+            }
+            return {
+              id, titulo, macroarea, tipo,
+              limite_media_conforme: limite,
+              regras_notas: regras || {
+                "1": { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
+                "2": { classificacao: "Não conformidade", gerarRegistro: true, tipoRegistro: "Anomalia" },
+                "3": { classificacao: "Melhoria", gerarRegistro: true, tipoRegistro: "Melhoria" },
+                "4": { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null },
+                "5": { classificacao: "Conformidade", gerarRegistro: false, tipoRegistro: null }
+              },
+              ativo: item.ativo !== false,
+              atualizado_em: new Date().toISOString()
+            };
+          });
+
+          const questionRows = payload.questoes_checklist.map((item, index) => {
+            const id = String(item?.id || "").trim();
+            const checklist_id = String(item?.checklist_id || "").trim();
+            const codigo = String(item?.codigo || "").trim();
+            const grupo = String(item?.grupo || "").trim();
+            const pergunta = String(item?.pergunta || "").trim();
+            if (!id || !checklist_id || !codigo || !grupo || !pergunta) {
+              throw new Error(`Questão na posição ${index + 1}: ID, checklist, código, grupo e pergunta são obrigatórios.`);
+            }
+            if (!checklistIds.has(checklist_id)) {
+              throw new Error(`A questão "${id}" referencia o checklist "${checklist_id}", que não está no arquivo.`);
+            }
+            if (questionIds.has(id)) throw new Error(`A questão "${id}" aparece mais de uma vez no JSON.`);
+            questionIds.add(id);
+            const sourceCriteria = item.criterios && typeof item.criterios === "object" && !Array.isArray(item.criterios)
+              ? item.criterios : null;
+            if (!sourceCriteria) throw new Error(`A questão "${id}" não possui o objeto "criterios".`);
+            const criterios = {};
+            [1, 2, 3, 4, 5].forEach(nota => {
+              const value = sourceCriteria[String(nota)] ?? sourceCriteria[nota] ?? "";
+              if (value !== null && typeof value === "object") throw new Error(`A questão "${id}" possui critério inválido para a nota ${nota}.`);
+              criterios[String(nota)] = String(value ?? "");
+            });
+            const ordem = Number(item.ordem ?? index + 1);
+            if (!Number.isInteger(ordem) || ordem < 0 || ordem > 32767) {
+              throw new Error(`A questão "${id}" possui uma ordem inválida.`);
+            }
+            return {
+              id, checklist_id, codigo, grupo, pergunta, criterios,
+              ativa: item.ativa !== false,
+              ordem,
+              atualizado_em: new Date().toISOString()
+            };
+          });
+
+          if (!questionRows.length) throw new Error("O arquivo não contém questões.");
+          const confirmed = window.confirm(
+            `Importar ${checklistRows.length} checklist(s) e ${questionRows.length} questão(ões)?\n\n` +
+            "Registros com o mesmo ID serão atualizados. Novos registros serão inseridos. " +
+            "O que já existe no banco e não estiver no arquivo não será excluído."
+          );
+          if (!confirmed) return;
+
+          if (importButton) { importButton.disabled = true; importButton.textContent = "Importando..."; }
+          this.setStatus(`Importando ${checklistRows.length} checklists e ${questionRows.length} questões...`, "info");
+
+          // Primeiro grava os checklists para satisfazer a chave estrangeira das questões.
+          const { error: checklistError } = await supabaseClient.from("checklists")
+            .upsert(checklistRows, { onConflict: "id" });
+          if (checklistError) throw checklistError;
+
+          // Envia lotes menores para evitar payloads grandes na API REST do Supabase.
+          const batchSize = 50;
+          for (let offset = 0; offset < questionRows.length; offset += batchSize) {
+            const batch = questionRows.slice(offset, offset + batchSize);
+            const { error } = await supabaseClient.from("questoes_checklist")
+              .upsert(batch, { onConflict: "id" });
+            if (error) throw error;
+          }
+
+          await this.loadFromDatabase();
+          ConfiguracoesModule.render();
+          this.setStatus(`Importação concluída: ${checklistRows.length} checklists e ${questionRows.length} questões atualizados/inseridos no Supabase.`, "success");
+          App.showToast("Critérios e checklists importados para o banco com sucesso.", "success");
+        } catch (error) {
+          console.error("Falha ao importar JSON de checklists:", error);
+          this.setStatus(`Falha na importação: ${error.message}`, "error");
+          App.showToast(`Não foi possível importar o JSON: ${error.message}`, "error");
+        } finally {
+          if (importButton) { importButton.disabled = false; importButton.textContent = originalButtonText; }
+          if (input) input.value = "";
+        }
+      },
+
+      toggleAuth() {
+        if (this.session) return this.signOut();
+        this.openLoginModal();
+      },
+
+      openLoginModal() {
+        if (!supabaseClient) {
+          App.showToast("O cliente Supabase não carregou. Verifique a conexão com a internet.", "error");
+          return;
+        }
+        App.openModal(`
+          <form onsubmit="SupabaseChecklistModule.signIn(event)" class="space-y-4">
+            <div class="space-y-1">
+              <p class="text-xs font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400">Acesso de edição</p>
+              <h3 class="text-xl font-extrabold">Entrar no SomoGhiro Audit</h3>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Use o usuário criado em Supabase Authentication. A leitura dos checklists continua pública; alterações exigem autenticação.</p>
+            </div>
+            <div>
+              <label for="supabase-login-email" class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">E-mail</label>
+              <input id="supabase-login-email" type="email" autocomplete="username" required class="w-full px-3.5 py-3 rounded-xl border bg-white dark:bg-slate-800" placeholder="seu@email.com" />
+            </div>
+            <div>
+              <label for="supabase-login-password" class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Senha</label>
+              <input id="supabase-login-password" type="password" autocomplete="current-password" required class="w-full px-3.5 py-3 rounded-xl border bg-white dark:bg-slate-800" placeholder="Sua senha" />
+            </div>
+            <div id="supabase-login-error" class="hidden text-sm text-rose-600 dark:text-rose-300" role="alert"></div>
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button type="button" onclick="App.closeModal()" class="px-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 font-bold">Cancelar</button>
+              <button id="supabase-login-submit" type="submit" class="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold">Entrar</button>
+            </div>
+          </form>`);
+      },
+
+      async signIn(event) {
+        event.preventDefault();
+        const email = document.getElementById("supabase-login-email")?.value.trim();
+        const password = document.getElementById("supabase-login-password")?.value;
+        const button = document.getElementById("supabase-login-submit");
+        const errorBox = document.getElementById("supabase-login-error");
+        if (button) { button.disabled = true; button.textContent = "Entrando..."; }
+        if (errorBox) errorBox.classList.add("hidden");
+        try {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          this.session = data.session;
+          this.updateAuthButton();
+          App.closeModal();
+          await this.refresh(false);
+          App.showToast("Acesso de edição autorizado.", "success");
+        } catch (error) {
+          console.error("Falha no login Supabase:", error);
+          if (errorBox) { errorBox.textContent = error.message || "Não foi possível entrar."; errorBox.classList.remove("hidden"); }
+          if (button) { button.disabled = false; button.textContent = "Entrar"; }
+        }
+      },
+
+      async signOut() {
+        try {
+          const { error } = await supabaseClient.auth.signOut();
+          if (error) throw error;
+          this.session = null;
+          this.updateAuthButton();
+          ConfiguracoesModule.render();
+          this.setStatus("Supabase conectado • somente leitura. Entre para editar.", "success");
+          App.showToast("Sessão de edição encerrada.", "success");
+        } catch (error) {
+          console.error("Falha ao encerrar sessão Supabase:", error);
+          App.showToast("Não foi possível encerrar a sessão: " + error.message, "error");
+        }
+      },
+
+      async updateChecklist(id, fields) {
+        if (!this.requireEditor()) return false;
+        const { error } = await supabaseClient.from("checklists")
+          .update({ ...fields, atualizado_em: new Date().toISOString() })
+          .eq("id", id);
+        if (error) throw error;
+        return true;
+      },
+
+      async insertQuestion(question) {
+        if (!this.requireEditor()) return false;
+        const { error } = await supabaseClient.from("questoes_checklist").insert(question);
+        if (error) throw error;
+        return true;
+      },
+
+      async updateQuestion(id, checklistId, fields) {
+        if (!this.requireEditor()) return false;
+        const { error } = await supabaseClient.from("questoes_checklist")
+          .update({ ...fields, atualizado_em: new Date().toISOString() })
+          .eq("id", id).eq("checklist_id", checklistId);
+        if (error) throw error;
+        return true;
+      },
+
+      async deleteQuestion(id, checklistId) {
+        if (!this.requireEditor()) return false;
+        const { error } = await supabaseClient.from("questoes_checklist")
+          .delete().eq("id", id).eq("checklist_id", checklistId);
+        if (error) throw error;
+        return true;
+      }
+    };
+
     const ConfiguracoesModule = {
       selectedChecklistId: "Fabrica_Seguranca",
 
-      persistConfigStatusOnly() {
-        const status = document.getElementById("cfg-save-status");
-        if (status && safeStorageGet(CONFIG_STORAGE_KEY)) {
-          status.textContent = "Alterações salvas automaticamente neste navegador.";
-          status.className = "text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1";
-        }
+      setSaveStatus(message, success = true) {
+        SupabaseChecklistModule.setStatus(message, success ? "success" : "error");
       },
 
-      persistConfig(showToast = false) {
-        const saved = safeStorageSet(CONFIG_STORAGE_KEY, JSON.stringify(AppState.config));
-        const status = document.getElementById("cfg-save-status");
-        if (status) {
-          status.textContent = saved
-            ? `Salvo automaticamente neste navegador às ${new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`
-            : "Não foi possível salvar. Exporte a configuração para não perder as alterações.";
-          status.className = saved
-            ? "text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1"
-            : "text-xs font-semibold text-rose-600 dark:text-rose-400 mt-1";
-        }
-        if (!saved) App.showToast("Não foi possível salvar a configuração neste navegador. Exporte o JSON para guardar as alterações.", "error");
-        else if (showToast) App.showToast("Critérios e perguntas salvos. As próximas auditorias usarão esta configuração.", "success");
-        return saved;
-      },
-
-      exportConfigJSON() {
+      async persistChecklist(chk, successMessage = "Alterações salvas no Supabase.") {
+        if (!SupabaseChecklistModule.requireEditor()) { this.render(); return false; }
         try {
-          const payload = JSON.stringify(AppState.config, null, 2);
-          const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          link.download = `SomoGhiro_Checklists_${new Date().toISOString().slice(0,10)}.json`;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-          URL.revokeObjectURL(url);
-          App.showToast("Configuração atual exportada em JSON.", "success");
+          await SupabaseChecklistModule.updateChecklist(chk.id, {
+            limite_media_conforme: chk.limiteMediaConforme,
+            regras_notas: chk.regrasNotas || {}
+          });
+          this.setSaveStatus(`${successMessage} ${new Date().toLocaleTimeString("pt-BR", {hour:"2-digit",minute:"2-digit"})}.`, true);
+          return true;
         } catch (error) {
-          console.error("Erro ao exportar configuração:", error);
-          App.showToast("Não foi possível exportar a configuração: " + error.message, "error");
+          console.error("Falha ao salvar checklist:", error);
+          this.setSaveStatus(`Erro ao salvar no Supabase: ${error.message}`, false);
+          App.showToast("Não foi possível salvar no banco. Verifique o login e as políticas RLS.", "error");
+          await SupabaseChecklistModule.refresh(false);
+          return false;
         }
       },
 
       render() {
         const select = document.getElementById("cfg-checklist-select");
-        const keys = Object.keys(AppState.config.checklists);
-        select.innerHTML = keys.map(k => {
-          const chk = AppState.config.checklists[k];
-          return `<option value="${escapeHTML(k)}" ${k === this.selectedChecklistId ? "selected" : ""}>${escapeHTML(chk.titulo)} (${chk.questoes.length} q.)</option>`;
-        }).join("");
-        const chk = AppState.config.checklists[this.selectedChecklistId];
-        if (!chk) return;
-        this.persistConfigStatusOnly();
-        document.getElementById("cfg-pass-threshold").value = chk.limiteMediaConforme;
+        const checklists = Object.values(AppState.config.checklists || {}).sort((a, b) =>
+          `${a.macroarea}_${a.tipo}`.localeCompare(`${b.macroarea}_${b.tipo}`, "pt-BR")
+        );
+        const keys = checklists.map(chk => chk.id);
+        if (!keys.includes(this.selectedChecklistId)) this.selectedChecklistId = keys[0] || null;
+        select.innerHTML = checklists.map(chk =>
+          `<option value="${escapeHTML(chk.id)}" ${chk.id === this.selectedChecklistId ? "selected" : ""}>${escapeHTML(chk.titulo)} (${chk.questoes.length} q.)${chk.ativo === false ? " • inativo" : ""}</option>`
+        ).join("");
+        const chk = this.selectedChecklistId ? AppState.config.checklists[this.selectedChecklistId] : null;
+        const threshold = document.getElementById("cfg-pass-threshold");
+        const addButton = document.querySelector('#view-configuracoes button[onclick="ConfiguracoesModule.openQuestionModal(null)"]');
+        const label = select?.closest("div")?.querySelector("label");
+        if (label) label.textContent = `Checklist (${checklists.length} no banco)`;
+        if (!chk) {
+          threshold.value = "";
+          threshold.disabled = true;
+          if (addButton) addButton.disabled = true;
+          document.getElementById("cfg-rating-rules-grid").innerHTML = "";
+          document.getElementById("cfg-questions-list").innerHTML = `
+            <div class="p-8 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center space-y-2">
+              <p class="text-base font-bold text-slate-700 dark:text-slate-200">Nenhum checklist foi carregado do banco.</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Execute o arquivo SQL de instalação no Supabase e use "Atualizar do banco".</p>
+            </div>`;
+          this.renderRoutingSettings();
+          return;
+        }
+        threshold.disabled = false;
+        if (addButton) addButton.disabled = chk.ativo === false;
+        threshold.value = chk.limiteMediaConforme;
         this.renderRatingRules(chk);
         this.renderQuestionsList(chk);
         this.renderRoutingSettings();
@@ -5826,13 +5857,19 @@
         this.render();
       },
 
-      updateThreshold() {
+      async updateThreshold() {
+        const chk = AppState.config.checklists[this.selectedChecklistId];
         const val = parseFloat(document.getElementById("cfg-pass-threshold").value);
-        if (!isNaN(val) && val >= 1 && val <= 5) {
-          AppState.config.checklists[this.selectedChecklistId].limiteMediaConforme = val;
-          this.persistConfig();
-          App.showToast("Meta de média atualizada.", "success");
+        if (!chk || Number.isNaN(val) || val < 1 || val > 5) return;
+        if (!SupabaseChecklistModule.requireEditor()) { this.render(); return; }
+        const previous = chk.limiteMediaConforme;
+        chk.limiteMediaConforme = val;
+        if (await this.persistChecklist(chk, "Meta de média salva no Supabase.")) {
+          App.showToast("Meta de média atualizada no banco.", "success");
           AuditoriaModule.updateChecklistPreview();
+        } else {
+          chk.limiteMediaConforme = previous;
+          this.render();
         }
       },
 
@@ -5840,7 +5877,7 @@
         const rules = ChecklistsModule.getRatingRules(chk);
         const container = document.getElementById("cfg-rating-rules-grid");
         container.innerHTML = [5, 4, 3, 2, 1].map(nota => {
-          const r = rules[nota];
+          const r = rules[nota] || rules[String(nota)];
           return `
             <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
               <div class="flex items-center justify-between">
@@ -5860,27 +5897,34 @@
         }).join("");
       },
 
-      updateRule(nota, field, value) {
+      async updateRule(nota, field, value) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
-        if (!chk.regrasNotas) chk.regrasNotas = JSON.parse(JSON.stringify(AppState.config.regrasNotasPadrao));
-        chk.regrasNotas[nota][field] = value;
-        if (field === "classificacao") {
-          chk.regrasNotas[nota].tipoRegistro = value === "Não conformidade" ? "Anomalia" : (value === "Melhoria" ? "Melhoria" : null);
+        if (!chk || !SupabaseChecklistModule.requireEditor()) { this.render(); return; }
+        const rules = JSON.parse(JSON.stringify(chk.regrasNotas || {}));
+        const rule = rules[nota] || rules[String(nota)];
+        rule[field] = value;
+        if (field === "classificacao") rule.tipoRegistro = value === "Não conformidade" ? "Anomalia" : (value === "Melhoria" ? "Melhoria" : null);
+        if (field === "gerarRegistro" && value && !rule.tipoRegistro) rule.tipoRegistro = nota <= 2 ? "Anomalia" : "Melhoria";
+        try {
+          await SupabaseChecklistModule.updateChecklist(chk.id, { regras_notas: rules });
+          chk.regrasNotas = rules;
+          this.renderRatingRules(chk);
+          this.setSaveStatus("Regras de classificação salvas no Supabase.", true);
+          App.showToast(`Regra da nota ${nota} atualizada no banco.`, "success");
+        } catch (error) {
+          console.error("Falha ao salvar regra de nota:", error);
+          await SupabaseChecklistModule.refresh(false);
+          App.showToast("Não foi possível salvar a regra no banco: " + error.message, "error");
         }
-        if (field === "gerarRegistro" && value && !chk.regrasNotas[nota].tipoRegistro) {
-          chk.regrasNotas[nota].tipoRegistro = nota <= 2 ? "Anomalia" : "Melhoria";
-        }
-        this.persistConfig();
-        App.showToast(`Regra da nota ${nota} atualizada.`, "info");
       },
 
       renderQuestionsList(chk) {
         const container = document.getElementById("cfg-questions-list");
-        if (chk.questoes.length === 0) {
+        if (!chk.questoes.length) {
           container.innerHTML = `
             <div class="p-8 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 text-center space-y-2">
               <p class="text-base font-bold text-slate-700 dark:text-slate-200">Este checklist ainda não possui questões.</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">Clique em "+ Adicionar Questão" para cadastrar.</p>
+              <p class="text-sm text-slate-500 dark:text-slate-400">Entre no modo de edição e clique em "+ Adicionar Questão" para cadastrar.</p>
             </div>`;
           return;
         }
@@ -5888,7 +5932,7 @@
           const missingCount = [1, 2, 3, 4, 5].filter(n => !(q.criterios?.[n] || "").trim()).length;
           return `
             <div class="p-4 rounded-2xl border ${q.ativa !== false ? "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900" : "border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 opacity-60"} flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="space-y-1">
+              <div class="space-y-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <span class="px-2.5 py-0.5 rounded-lg bg-slate-900 dark:bg-slate-700 text-white text-sm font-extrabold">${escapeHTML(q.codigo)}</span>
                   <span class="px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold">${escapeHTML(q.grupo)}</span>
@@ -5896,6 +5940,9 @@
                   ${q.ativa === false ? `<span class="px-2 py-0.5 rounded-lg bg-rose-100 dark:bg-rose-900/40 text-rose-800 dark:text-rose-200 text-xs font-bold">Desativada</span>` : ""}
                 </div>
                 <p class="text-base font-bold">${escapeHTML(q.pergunta)}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-1 text-xs text-slate-500 dark:text-slate-400">
+                  ${[5,4,3,2,1].map(n => `<p><strong>Nota ${n}:</strong> ${escapeHTML(q.criterios?.[n] || "Sem critério definido")}</p>`).join("")}
+                </div>
               </div>
               <div class="flex flex-wrap items-center gap-1.5 shrink-0">
                 <button type="button" onclick="ConfiguracoesModule.moveQuestion(${idx}, -1)" ${idx === 0 ? "disabled" : ""} class="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-bold disabled:opacity-30">↑</button>
@@ -5908,168 +5955,128 @@
         }).join("");
       },
 
-      moveQuestion(index, delta) {
+      async moveQuestion(index, delta) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
+        if (!chk || !SupabaseChecklistModule.requireEditor()) return;
         const target = index + delta;
         if (target < 0 || target >= chk.questoes.length) return;
-        const temp = chk.questoes[index];
-        chk.questoes[index] = chk.questoes[target];
-        chk.questoes[target] = temp;
-        this.persistConfig();
-        this.render();
+        const first = chk.questoes[index], second = chk.questoes[target];
+        try {
+          const firstOrder = first.ordem || index + 1;
+          const secondOrder = second.ordem || target + 1;
+          const [a, b] = await Promise.all([
+            supabaseClient.from("questoes_checklist").update({ ordem: secondOrder }).eq("id", first.id).eq("checklist_id", chk.id),
+            supabaseClient.from("questoes_checklist").update({ ordem: firstOrder }).eq("id", second.id).eq("checklist_id", chk.id)
+          ]);
+          if (a.error) throw a.error;
+          if (b.error) throw b.error;
+          [first.ordem, second.ordem] = [secondOrder, firstOrder];
+          [chk.questoes[index], chk.questoes[target]] = [second, first];
+          this.render();
+        } catch (error) {
+          console.error("Falha ao reordenar questão:", error);
+          await SupabaseChecklistModule.refresh(false);
+          App.showToast("Não foi possível reordenar as questões: " + error.message, "error");
+        }
       },
 
-      toggleQuestionActive(index) {
+      async toggleQuestionActive(index) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
-        chk.questoes[index].ativa = chk.questoes[index].ativa === false ? true : false;
-        this.persistConfig();
-        this.render();
+        const q = chk?.questoes[index];
+        if (!q || !SupabaseChecklistModule.requireEditor()) return;
+        const nextActive = q.ativa === false;
+        try {
+          await SupabaseChecklistModule.updateQuestion(q.id, chk.id, { ativa: nextActive });
+          q.ativa = nextActive;
+          this.render();
+          AuditoriaModule.updateChecklistPreview();
+          App.showToast(nextActive ? "Questão ativada no banco." : "Questão desativada no banco.", "success");
+        } catch (error) {
+          console.error("Falha ao alterar estado da questão:", error);
+          App.showToast("Não foi possível atualizar a questão: " + error.message, "error");
+        }
       },
 
-      deleteQuestion(index) {
+      async deleteQuestion(index) {
         const chk = AppState.config.checklists[this.selectedChecklistId];
-        chk.questoes.splice(index, 1);
-        this.persistConfig();
-        this.render();
-        AuditoriaModule.updateChecklistPreview();
-        App.showToast("Questão removida.", "info");
+        const q = chk?.questoes[index];
+        if (!q || !SupabaseChecklistModule.requireEditor()) return;
+        if (!window.confirm(`Excluir permanentemente a questão ${q.codigo} do banco de dados?`)) return;
+        try {
+          await SupabaseChecklistModule.deleteQuestion(q.id, chk.id);
+          chk.questoes.splice(index, 1);
+          this.render();
+          AuditoriaModule.updateChecklistPreview();
+          App.showToast("Questão excluída do Supabase.", "success");
+        } catch (error) {
+          console.error("Falha ao excluir questão:", error);
+          App.showToast("Não foi possível excluir a questão: " + error.message, "error");
+        }
       },
 
       openQuestionModal(index) {
+        if (!SupabaseChecklistModule.requireEditor()) return;
         const chk = AppState.config.checklists[this.selectedChecklistId];
+        if (!chk) return;
         const isEdit = index !== null && index !== undefined;
         const q = isEdit ? chk.questoes[index] : {
-          id: `${this.selectedChecklistId}_${Date.now()}`, codigo: "", grupo: "Materiais", pergunta: "", ativa: true,
+          id: "", codigo: "", grupo: "Materiais", pergunta: "", ativa: true,
           criterios: { 5: "", 4: "", 3: "", 2: "", 1: "" }
         };
         App.openModal(`
           <form onsubmit="ConfiguracoesModule.saveQuestionModal(event, ${isEdit ? index : "null"})" class="space-y-4">
-            <h3 class="text-lg font-extrabold">${isEdit ? "Editar Questão" : "Nova Questão"}</h3>
+            <h3 class="text-lg font-extrabold">${isEdit ? "Editar Questão no Banco" : "Nova Questão no Banco"}</h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Código *</label>
-                <input type="text" id="modal-q-codigo" value="${escapeHTML(q.codigo)}" required placeholder="Ex: 1.1"
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-bold" />
-              </div>
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Grupo *</label>
-                <input type="text" id="modal-q-grupo" value="${escapeHTML(q.grupo)}" required placeholder="Ex: Materiais, Máquina..."
-                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-medium" />
-              </div>
+              <div><label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Código *</label><input type="text" id="modal-q-codigo" value="${escapeHTML(q.codigo)}" required placeholder="Ex: 1.1" class="w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-800 text-base font-bold" /></div>
+              <div class="sm:col-span-2"><label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Grupo *</label><input type="text" id="modal-q-grupo" value="${escapeHTML(q.grupo)}" required placeholder="Ex: Materiais, Máquina..." class="w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-800 text-base font-medium" /></div>
             </div>
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Pergunta *</label>
-              <textarea id="modal-q-pergunta" rows="2" required placeholder="Digite a pergunta..."
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base font-medium">${escapeHTML(q.pergunta)}</textarea>
+            <div><label class="block text-xs font-bold uppercase text-slate-600 dark:text-slate-400 mb-1">Pergunta *</label><textarea id="modal-q-pergunta" rows="2" required placeholder="Digite a pergunta..." class="w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-800 text-base font-medium">${escapeHTML(q.pergunta)}</textarea></div>
+            <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800"><p class="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Critérios por Nota</p>
+              ${[5, 4, 3, 2, 1].map(n => `<div class="flex items-center gap-2.5"><span class="w-9 h-9 rounded-lg bg-slate-900 dark:bg-slate-700 text-white font-black text-base flex items-center justify-center shrink-0">${n}</span><input type="text" id="modal-q-crit-${n}" value="${escapeHTML(q.criterios?.[n] || "")}" placeholder="Critério para nota ${n}..." class="w-full px-3.5 py-2.5 rounded-xl border bg-white dark:bg-slate-800 text-sm" /></div>`).join("")}
             </div>
-            <div class="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <p class="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Critérios por Nota</p>
-              ${[5, 4, 3, 2, 1].map(n => `
-                <div class="flex items-center gap-2.5">
-                  <span class="w-9 h-9 rounded-lg bg-slate-900 dark:bg-slate-700 text-white font-black text-base flex items-center justify-center shrink-0">${n}</span>
-                  <input type="text" id="modal-q-crit-${n}" value="${escapeHTML(q.criterios?.[n] || "")}"
-                    placeholder="Critério para nota ${n}..."
-                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm" />
-                </div>`).join("")}
-            </div>
-            <div class="flex justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <button type="button" onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-base font-bold">Cancelar</button>
-              <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-base font-bold">Salvar</button>
-            </div>
+            <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800"><button type="button" onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-base font-bold">Cancelar</button><button id="modal-q-save" type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-base font-bold">Salvar no banco</button></div>
           </form>`);
       },
 
-      saveQuestionModal(event, index) {
+      async saveQuestionModal(event, index) {
         event.preventDefault();
+        if (!SupabaseChecklistModule.requireEditor()) return;
         const chk = AppState.config.checklists[this.selectedChecklistId];
+        if (!chk) return;
         const codigo = document.getElementById("modal-q-codigo").value.trim();
         const grupo = document.getElementById("modal-q-grupo").value.trim();
         const pergunta = document.getElementById("modal-q-pergunta").value.trim();
         const criterios = {};
-        [5, 4, 3, 2, 1].forEach(n => { criterios[n] = document.getElementById(`modal-q-crit-${n}`).value.trim(); });
-        if (index !== null) {
-          chk.questoes[index] = { ...chk.questoes[index], codigo, grupo, pergunta, criterios };
-        } else {
-          chk.questoes.push({ id: `${this.selectedChecklistId}_${Date.now()}`, codigo, grupo, pergunta, ativa: true, criterios });
-        }
-        App.closeModal();
-        this.persistConfig();
-        this.render();
-        AuditoriaModule.updateChecklistPreview();
-        App.showToast("Questão, pergunta e critérios salvos automaticamente!", "success");
-      },
-
-      confirmRestoreDefaults() {
-        App.openModal(`
-          <div class="space-y-4">
-            <h3 class="text-lg font-extrabold">Restaurar configurações originais?</h3>
-            <p class="text-base text-slate-600 dark:text-slate-300">Todas as edições serão substituídas pelo padrão.</p>
-            <div class="flex justify-end gap-2 pt-2">
-              <button onclick="App.closeModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-base font-bold">Cancelar</button>
-              <button onclick="ConfiguracoesModule.restoreDefaults()" class="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-base font-bold">Restaurar</button>
-            </div>
-          </div>`);
-      },
-
-      restoreDefaults() {
-        AppState.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
-        this.persistConfig();
-        App.closeModal();
-        this.render();
-        AuditoriaModule.initSetupForm();
-        App.showToast("Configurações restauradas.", "info");
-      }
-    };
-
-    const ConfigImportModule = {
-      async importFile(input) {
-        const file = input && input.files && input.files[0];
-        if (!file) return;
+        [1, 2, 3, 4, 5].forEach(n => { criterios[String(n)] = document.getElementById(`modal-q-crit-${n}`).value.trim(); });
+        const button = document.getElementById("modal-q-save");
+        if (button) { button.disabled = true; button.textContent = "Salvando..."; }
         try {
-          const raw = await file.text();
-          let content = raw.replace(/^\uFEFF/, "").trim();
-          content = content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-          const parsed = JSON.parse(content);
-          const result = validateImportedConfig(parsed);
-          if (result.valid) {
-            upgradeCriteriaClarity(result.config);
-            ensureEclusaLine(result.config);
+          if (index !== null) {
+            const existing = chk.questoes[index];
+            await SupabaseChecklistModule.updateQuestion(existing.id, chk.id, { codigo, grupo, pergunta, criterios });
+          } else {
+            const randomId = window.crypto?.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+            const nextOrder = chk.questoes.reduce((max, q) => Math.max(max, Number(q.ordem || 0)), 0) + 1;
+            await SupabaseChecklistModule.insertQuestion({
+              id: `${chk.id}_${randomId}`,
+              checklist_id: chk.id,
+              codigo, grupo, pergunta, criterios,
+              ativa: true,
+              ordem: nextOrder
+            });
           }
-          if (!result.valid) {
-            App.showToast("Arquivo inválido: " + result.errors.slice(0, 2).join(" "), "error");
-            if (result.errors.length > 2) console.error("Erros na configuração importada:", result.errors);
-            return;
-          }
-          const checklistCount = Object.keys(result.config.checklists).length;
-          const questionCount = result.totalQuestions;
-          const confirmed = window.confirm(
-            `Importar configuração ${result.config.version}?\n\n` +
-            `${checklistCount} checklist(s) e ${questionCount} questão(ões).\n\n` +
-            `Isso substituirá os critérios e questões usados em NOVAS auditorias. Auditorias já iniciadas mantêm seu checklist original. Deseja continuar?`
-          );
-          if (!confirmed) return;
-
-          AppState.config = result.config;
-          const saved = ConfiguracoesModule.persistConfig();
-          ConfiguracoesModule.selectedChecklistId = null;
-          ConfiguracoesModule.render();
-          if (!AppState.audit) AuditoriaModule.initSetupForm();
-          else AuditoriaModule.updateChecklistPreview();
-          App.showToast(
-            saved
-              ? `Configuração ${result.config.version} importada e salva neste navegador.`
-              : "Configuração importada, mas o navegador não permitiu salvá-la permanentemente.",
-            saved ? "success" : "info"
-          );
+          App.closeModal();
+          await SupabaseChecklistModule.refresh(false);
+          this.render();
+          AuditoriaModule.updateChecklistPreview();
+          App.showToast("Questão e critérios salvos no Supabase.", "success");
         } catch (error) {
-          console.error("Falha ao importar critérios e questões:", error);
-          App.showToast("Não foi possível ler o arquivo. Verifique se ele contém JSON válido.", "error");
-        } finally {
-          if (input) input.value = "";
+          console.error("Falha ao salvar questão:", error);
+          App.showToast("Não foi possível salvar a questão: " + error.message, "error");
+          if (button) { button.disabled = false; button.textContent = "Salvar no banco"; }
         }
       }
     };
-    window.ConfigImportModule = ConfigImportModule;
 
     const App = {
       currentView: "auditoria",
@@ -6128,6 +6135,8 @@
 
       async init() {
         this.applyTheme(AppState.theme);
+        // Checklists, questões e critérios vêm do Supabase; não existe mais cópia JSON local.
+        await SupabaseChecklistModule.initialize();
         AppState.auditHistory = await AuditHistoryStore.list();
         this.scheduleArchiveRetentionCleanup();
         AuditoriaModule.initSetupForm();
