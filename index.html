@@ -5457,7 +5457,7 @@
       },
 
       navigate(viewName) {
-        const validViews = ["auditoria", "revisao", "perfil-auditoria", "configuracoes"];
+        const validViews = ["auditoria", "revisao", "perfil-auditoria", "configuracoes", "relatorios"];
         const targetView = validViews.includes(viewName) ? viewName : "auditoria";
         this.currentView = targetView;
         validViews.forEach(view => {
@@ -6898,13 +6898,16 @@
         <div id="rg-body"></div>
       </section>`);
 
+    // A tela de relatórios participa do mesmo roteamento das demais telas.
+    // O App.navigate principal já controla a visibilidade de todas as sections
+    // e o estado do menu; este adaptador apenas aciona a renderização do módulo.
     const origNav = App.navigate.bind(App);
-    App.navigate = v => {
-      origNav(v);
-      const show = v === "relatorios";
-      $("view-relatorios").classList.toggle("hidden", !show);
-      $("rg-nav").className = `nav-drawer-btn w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left font-semibold text-base transition ${show ? "bg-blue-600 text-white" : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"}`;
-      if (show) RG.render();
+    App.navigate = viewName => {
+      const validViews = ["auditoria", "revisao", "perfil-auditoria", "configuracoes", "relatorios"];
+      const targetView = validViews.includes(viewName) ? viewName : "auditoria";
+      origNav(targetView);
+      if (targetView === "relatorios") RG.render();
+      return targetView;
     };
   })();
   </script>
